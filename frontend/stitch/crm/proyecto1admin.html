@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse - Gestión de Proyectos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "emerald-custom": "#10b981",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 bg-white border-r border-slate-200 flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xl">domain</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight text-slate-900">BrightHouse</h2>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg" href="#">
+<span class="material-symbols-outlined">apartment</span>
+<span class="text-sm font-semibold">Proyectos</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-sm font-medium">Inventario</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Clientes</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Reportes</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200">
+<div class="flex items-center gap-3 px-2">
+<div class="size-10 rounded-full bg-slate-200" data-alt="User profile avatar placeholder"></div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-slate-900 leading-tight">Admin User</span>
+<span class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">SuperAdmin</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+<!-- Header -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-8 py-4 flex items-center justify-between">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm" placeholder="Buscar proyectos o unidades..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="size-10 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="size-10 flex items-center justify-center text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<div class="p-8">
+<!-- Page Title & Actions -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+<div>
+<h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Proyectos</h1>
+<p class="text-slate-500 mt-1 max-w-xl">Administra proyectos, inventario y asignación comercial en tiempo real</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-900 font-bold text-sm rounded-lg hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-lg">upload</span>
+<span>Importar Unidades</span>
+</button>
+<button class="flex items-center gap-2 px-6 py-2.5 bg-primary text-white font-bold text-sm rounded-lg shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-lg">add_business</span>
+<span>Nuevo Proyecto</span>
+</button>
+</div>
+</div>
+<!-- Tabs & Filters -->
+<div class="flex items-center justify-between mb-6 border-b border-slate-200">
+<div class="flex gap-8">
+<button class="pb-4 text-sm font-bold border-b-2 border-primary text-primary">Todos los Proyectos</button>
+<button class="pb-4 text-sm font-medium text-slate-500 hover:text-slate-700">En Preventa</button>
+<button class="pb-4 text-sm font-medium text-slate-500 hover:text-slate-700">En Construcción</button>
+<button class="pb-4 text-sm font-medium text-slate-500 hover:text-slate-700">Finalizados</button>
+</div>
+<div class="flex items-center gap-2 pb-2">
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+<span class="material-symbols-outlined">grid_view</span>
+</button>
+</div>
+</div>
+<!-- Projects Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+<div class="h-48 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-3 right-3 z-20">
+<span class="bg-emerald-custom text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Activo</span>
+</div>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Luxury modern apartment building with glass facade" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUibHONR7itDO9jGZD0D55f0kuWDTJOS40LLDJfOF9xrBTe0oEbA1Ibb6kGEVjIovD05lnEpUXi4hVPKhv-3KMPclfO948p6ulwITCgOXK19cSt2KOJZMKgr-hNgGit-4dRUXXtvmV58tW_T1Ao2j7zsHOoWPY5Am5oCeKJ8nJydsPTQCsLubryQkoZpTEPhfNxMS6afMKrr_XxyS56mXHLEopvCTPQXmzx-iLNF7O5hkaqTfJFk-fswllx34vYhYvIQ_EyDr0-rs"/>
+<div class="absolute bottom-4 left-4 z-20">
+<div class="flex items-center gap-1 text-white/90">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span class="text-xs font-medium" data-location="Ciudad de México">Polanco, CDMX</span>
+</div>
+<h3 class="text-white font-bold text-lg leading-tight mt-1">Torre Vista Marina</h3>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 uppercase font-bold">Unidades</span>
+<span class="text-lg font-bold text-slate-900">120 Total</span>
+</div>
+<div class="text-right">
+<span class="text-xs text-slate-400 uppercase font-bold">Ventas</span>
+<span class="block text-lg font-bold text-emerald-custom">75%</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-slate-100 h-2 rounded-full mb-6 overflow-hidden">
+<div class="bg-emerald-custom h-full w-3/4"></div>
+</div>
+<!-- Counters Grid -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">30</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Disponibles</span>
+</div>
+<div class="text-center border-x border-slate-100">
+<span class="block text-xl font-bold text-primary">15</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">En Proceso</span>
+</div>
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">75</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Vendidas</span>
+</div>
+</div>
+<div class="mt-auto flex items-center gap-2">
+<button class="flex-1 bg-primary text-white font-bold text-sm py-2.5 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Administrar
+                                </button>
+<button class="p-2.5 text-slate-400 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+<div class="h-48 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-3 right-3 z-20">
+<span class="bg-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Preventa</span>
+</div>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Modern architecture skyscraper with reflections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS-kTFiHC0X8GT8ZXxMmRUphDP5OWk4mnk6Z-XCWdrwvyiCa68UOds2jcCx9IcSDqNQ0UjRZjnTNxClfuSZDL11_n4A1khaMSKQElbLsls_-pUTofvxxkBTDbsJZYGgOoOKY2ykHALBRaXC0dCucmqlxBVsT6ffpnqbrB1fC590fyUSeh8rED7r6T1j7EiQzUZwluw7ZysgZutiTij3mryLMuZYN3cdAbkMSbOOyqiTF5V0Hvi6HOO-B7HA_6Fqzr18-KwGFFrv1Y"/>
+<div class="absolute bottom-4 left-4 z-20">
+<div class="flex items-center gap-1 text-white/90">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span class="text-xs font-medium" data-location="Monterrey">San Pedro, Monterrey</span>
+</div>
+<h3 class="text-white font-bold text-lg leading-tight mt-1">Altos de Valle</h3>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 uppercase font-bold">Unidades</span>
+<span class="text-lg font-bold text-slate-900">45 Total</span>
+</div>
+<div class="text-right">
+<span class="text-xs text-slate-400 uppercase font-bold">Ventas</span>
+<span class="block text-lg font-bold text-emerald-custom">22%</span>
+</div>
+</div>
+<div class="w-full bg-slate-100 h-2 rounded-full mb-6 overflow-hidden">
+<div class="bg-emerald-custom h-full w-[22%]"></div>
+</div>
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">35</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Disponibles</span>
+</div>
+<div class="text-center border-x border-slate-100">
+<span class="block text-xl font-bold text-primary">5</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">En Proceso</span>
+</div>
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">5</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Vendidas</span>
+</div>
+</div>
+<div class="mt-auto flex items-center gap-2">
+<button class="flex-1 bg-primary text-white font-bold text-sm py-2.5 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Administrar
+                                </button>
+<button class="p-2.5 text-slate-400 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+<div class="h-48 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute top-3 right-3 z-20">
+<span class="bg-emerald-custom text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Activo</span>
+</div>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="High-end residential complex with pool" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUU5qHjC25TPu85iekYeKkyotrNqzOUfMpaq7K_3lCLgqZSdO8jJ1PfmPpWiGNKljml_re9MCG1Xbay0fzmZHAelAnFuNxodywZtm9lhblTF0MY-vSOEMTns2CQLHcFkAb1qY4skgVTQoHGG1SNCap96bTasKazqS9iQ8l0scNhG1fCq-tWdg8-Y0uVBkDgnGbRLwB0X-XUjfilMR8nuhPyp4i7yTQiMEDtyQxdebO6PAPOYTbE3WqYijxK6dr_RuLuwzVpphDFFU"/>
+<div class="absolute bottom-4 left-4 z-20">
+<div class="flex items-center gap-1 text-white/90">
+<span class="material-symbols-outlined text-sm">location_on</span>
+<span class="text-xs font-medium" data-location="Cancún">Zona Hotelera, Cancún</span>
+</div>
+<h3 class="text-white font-bold text-lg leading-tight mt-1">Azul Residencial</h3>
+</div>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 uppercase font-bold">Unidades</span>
+<span class="text-lg font-bold text-slate-900">88 Total</span>
+</div>
+<div class="text-right">
+<span class="text-xs text-slate-400 uppercase font-bold">Ventas</span>
+<span class="block text-lg font-bold text-emerald-custom">92%</span>
+</div>
+</div>
+<div class="w-full bg-slate-100 h-2 rounded-full mb-6 overflow-hidden">
+<div class="bg-emerald-custom h-full w-[92%]"></div>
+</div>
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">4</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Disponibles</span>
+</div>
+<div class="text-center border-x border-slate-100">
+<span class="block text-xl font-bold text-primary">3</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">En Proceso</span>
+</div>
+<div class="text-center">
+<span class="block text-xl font-bold text-slate-900">81</span>
+<span class="text-[10px] text-slate-400 uppercase font-bold">Vendidas</span>
+</div>
+</div>
+<div class="mt-auto flex items-center gap-2">
+<button class="flex-1 bg-primary text-white font-bold text-sm py-2.5 rounded-lg hover:bg-blue-700 transition-colors">
+                                    Administrar
+                                </button>
+<button class="p-2.5 text-slate-400 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-lg">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

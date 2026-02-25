@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Marketing Figital Control Center V1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#1152d4",
+                        "primary-dark": "#0d3da0",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "accent-green": "#10b981", // Emerald green for success/positive stats
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-hidden h-screen flex">
+<!-- Sidebar -->
+<aside class="w-72 bg-white dark:bg-[#1a202c] border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between h-full flex-shrink-0 z-20 shadow-sm">
+<div class="flex flex-col gap-6 p-6">
+<div class="flex gap-3 items-center">
+<div class="bg-primary/10 flex items-center justify-center rounded-xl h-10 w-10 text-primary">
+<span class="material-symbols-outlined">real_estate_agent</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">BrightHouse</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">CRM Premium</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-slate-600 dark:text-slate-300 font-medium group-hover:text-primary transition-colors">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined fill-1">campaign</span>
+<span class="font-bold">Marketing Figital</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">groups</span>
+<span class="text-slate-600 dark:text-slate-300 font-medium group-hover:text-primary transition-colors">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">apartment</span>
+<span class="text-slate-600 dark:text-slate-300 font-medium group-hover:text-primary transition-colors">Propiedades</span>
+</a>
+</nav>
+</div>
+<div class="p-6 border-t border-slate-200 dark:border-slate-800">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">settings</span>
+<span class="text-slate-600 dark:text-slate-300 font-medium group-hover:text-primary transition-colors">Configuración</span>
+</a>
+<div class="mt-4 flex items-center gap-3 px-4">
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center" data-alt="User profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAigxYYIg_-No3F-tv3_qdshgWo1Gfy3YaOy7DA4yw5nTV6-IezaLI2J_W-Ljp7ap2lt5E8wBdFGZQbJWj9npKV0y223lJjMOYJAIvSeaqhGR7mUOpRY4pAQVWqt3zjxUwnOncsR4Vxp7-yQG9fP4ZGF4emLoF6FhTmp9bUMBbq2fbRBDR1a-e9rIOCVeIG3CEBJJlezL9EVfzUXk9BjwmC5zycw73yed5aKQGX7OC_lTnS1cs6QI-n1SQcWanbOIOFD3uezRQnDSs');"></div>
+<div>
+<p class="text-sm font-bold text-slate-900 dark:text-white">Ana García</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="h-20 px-8 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#1a202c] sticky top-0 z-10">
+<div>
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white">Marketing Figital</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">Gestión unificada de experiencias físicas y digitales</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 w-64" placeholder="Buscar evento..." type="text"/>
+</div>
+<button class="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-5 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    Nuevo Evento
+                </button>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-8 scrollbar-hide">
+<div class="grid grid-cols-1 xl:grid-cols-4 gap-8 max-w-[1600px] mx-auto">
+<!-- Main Column (Stats & Grid) -->
+<div class="xl:col-span-3 flex flex-col gap-8">
+<!-- Metrics Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-primary">
+<span class="material-symbols-outlined">event</span>
+</div>
+<span class="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-full">+2 este mes</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Eventos Activos</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">12</h3>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600">
+<span class="material-symbols-outlined">person_pin_circle</span>
+</div>
+<span class="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 15%
+                                </span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Leads Físicos</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">450</h3>
+</div>
+<!-- Card 3 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-600">
+<span class="material-symbols-outlined">devices</span>
+</div>
+<span class="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 8%
+                                </span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Leads Digitales</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">1,230</h3>
+</div>
+<!-- Card 4 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600">
+<span class="material-symbols-outlined">sync_alt</span>
+</div>
+<span class="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-full">+1.2%</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Conversión</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">18.5%</h3>
+</div>
+<!-- Card 5 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-pink-50 dark:bg-pink-900/20 rounded-lg text-pink-600">
+<span class="material-symbols-outlined">monetization_on</span>
+</div>
+<span class="bg-accent-green/10 text-accent-green text-xs font-bold px-2 py-1 rounded-full">+15%</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">ROI Total</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">240%</h3>
+</div>
+<!-- Card 6 -->
+<div class="bg-white dark:bg-[#1a202c] p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold px-2 py-1 rounded-full">Estable</span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Ventas Cerradas</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white mt-1">85</h3>
+</div>
+</div>
+<!-- Events Section -->
+<div>
+<div class="flex justify-between items-end mb-6">
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Eventos Destacados</h3>
+<button class="text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+                                Ver todos <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Event Card 1 -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-lg transition-all duration-300">
+<div class="h-48 bg-slate-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Modern office building during sunset conference" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuANnVKsO-KrqOaDapr30SJjZj3yUIqr-8KzcL3JTgOf4Pz8D3ARMZ91HAroymABhuhhpOURVzd1-H32XrRuslWP22srfY0baA_mK1Xq94E4rkbP_7BsKFPiu0HjNSxO3BHqF_fg6brCnQorXfVpZpRXQrThS2gskC-vOlPWOh6roQcMblA6mfOmK-my-12ipPrwOtiQWFZgUbFPI4RFJGG_YYR5CjuQmhzX6WZqf5VluSq176QNMIb1dgOptqHy-jEkypd-juQyKRk');"></div>
+<div class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm dark:bg-black/60 px-3 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-white shadow-sm">
+                                        En Curso
+                                    </div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+<div class="flex items-center gap-2 text-white/90 text-sm">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Centro de Convenciones, CDMX</span>
+</div>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Feria Inmobiliaria 2024</h4>
+<div class="flex -space-x-2">
+<img alt="Agent 1" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDcvRyqy9OHdni76wkmhUQFF6EaoHLUYsJsHvZ_ozzvBlsAuaAyKkyFVbF4PG76u9IxXDA8JHwVPRM6m0Gu3UgSepAmLV0Rf_Q9rgkrX6bJH5rr5Frr9-O2G5t3daMTgxc9cm9Uwcun9FZI0dMSYksMPu5G_o2yygDisjdITHe7IRK7WLM_cQ6z8Iwmn7PLDo7-JDr6aIHWUagI-ppYTtI0zoVmGUua1C0_PetdbQxLWeZJkA_tQm8Ljj9qLnuPkJOJoLSHNxqo14"/>
+<img alt="Agent 2" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7n_Yot5t1g7KnIBuqZaQH_65-KsBS9Xs0lBKpLQKbms1x3336TTGKU_KaMZH2a7nWnX79SM1NVs_kDRmRI-3pBKYEYMQZDJkCN7RiMRyyV0J4eCmeVCjw4vOCBHLwdiECIBzfLxv4FW4E1mSeZS02PvAZZNfqzslLXSPmF-_GU0DaoWawt-D1xLtaC9lQtaR9K4tqCamuLbUvm5lEInyY-2Adu1Q9QyRB01g05wmrf1c-zPKdpPuXnEwNPHVQEgw1cZbDww9g9EI"/>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 font-bold">+3</div>
+</div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Promoción exclusiva de Torre Altavista y Residencial Cumbres.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Leads Totales</span>
+<span class="text-lg font-bold text-slate-900 dark:text-white">124</span>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Interés Alto</span>
+<span class="text-lg font-bold text-accent-green">42%</span>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Event Card 2 -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-lg transition-all duration-300">
+<div class="h-48 bg-slate-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Luxury apartment interior open house" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBmJ1fhtjunXbVhmA3T8LfxhXeWUKoC8NXHQ3ibpr1ILYLFZNxCpABcaOOLWHICfpB83S7MGisw4CUVmDLT101HgkoDwLeiOPGezl28Pw-C7DMBjwqWrIi4eQxTJ87iauTkFMOfsxcKiqcIuVD6OalkUDOh7-4u60IQfQl70HT2KS1ABu6ieOjAxbmdGQtk6HA4-8TDDK6cXWGXG_Yw78X7SSqeucc9oUe6Ir9UP7BmJFLZnaIUYK6ULI8oD2WeZ_gUGdXxNiaHA8o');"></div>
+<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">
+                                        Próximo
+                                    </div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+<div class="flex items-center gap-2 text-white/90 text-sm">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Showroom Polanco</span>
+</div>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Open House: Green Park</h4>
+<div class="flex -space-x-2">
+<img alt="Agent 3" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMnHLanSZsY7k5FR1xYaHFf1Ii8TrFvL_B-2L05LAevv9FPxZJjGrNg9LdFm2Rhyq95EHuYvNsOBVJC2hppwiJobf8X-Gxkqadb-pjRN4TZVY8qKUIbAQ_l1lMGICzQxrjkbJ4e58z6mExXyfjlDC_Y8TIXDts5y0xuyIkzrUZvqAA8qloJo1k_bLMrUfRg5nS8jZeROiLtalMzHHKT8XPwNJT7YArcG1RKnOzoajdAVs0UxYxSMrkSzHGW4bHmIhKknZ4XpGMIfE"/>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 font-bold">+1</div>
+</div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Lanzamiento oficial de la fase 2 con descuentos de preventa.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Registrados</span>
+<span class="text-lg font-bold text-slate-900 dark:text-white">85</span>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Confirmados</span>
+<span class="text-lg font-bold text-primary">68%</span>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Event Card 3 -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-lg transition-all duration-300">
+<div class="h-48 bg-slate-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Digital webinar presentation on laptop" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDzQDLv8qzepFCmd95PwCGt3PST0eHfgg_H-lvobtBYgNnMMBnYMkioEhwSK_xp5koD4GYPkEv_ve19GwDFW5JwdLGmXvTJusdiVLL8z9ZYeaa0alUxq-4F4qLlilFd0oAdW3F9lrFsoZu8Ojq_rPqnsnv4CgV9kGaKn-xyc00x0jYPV6akr9UoHAZh4zdsSOMKOP0iYOizhFrLH6uwbKXYTkGucr74pGR8BrJ9TVlSJeZCuMljBQHj2lVlB4NL421jTqsDDZ6jXcY');"></div>
+<div class="absolute top-4 right-4 bg-purple-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">
+                                        Webinar
+                                    </div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+<div class="flex items-center gap-2 text-white/90 text-sm">
+<span class="material-symbols-outlined text-[18px]">videocam</span>
+<span>Zoom Live Stream</span>
+</div>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Inversión Inteligente</h4>
+<div class="flex -space-x-2">
+<img alt="Agent 4" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrRB3MVhBafnPyEjRPe_LsMD2884eHXbEq7rUjy_My0ORpvbmlD58wqF4RbPvCxw_P6op-VQwMYsVxfhRj48FdR5P3MgikDvk5l-KY8p25HFCb5hRxUiTNHYvqYpilTuFPJWaA-aRZslpvRKNuWtWmHbXlrW58z9qu5ued_JnrWm8gC0BcD1vmG79UMaLzVQzXAd94exnhJXng_N0Cq4vuR-M0Fo3G4gOtpDq1sMG3Ox_HrOleHOu9lhfmV-tGYMbZSNtL5T39ukk"/>
+</div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Masterclass sobre plusvalía en zonas emergentes de la ciudad.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Asistentes</span>
+<span class="text-lg font-bold text-slate-900 dark:text-white">340</span>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Engagement</span>
+<span class="text-lg font-bold text-purple-600">High</span>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Event Card 4 -->
+<div class="group bg-white dark:bg-[#1a202c] rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 hover:shadow-lg transition-all duration-300">
+<div class="h-48 bg-slate-200 relative overflow-hidden">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Modern house exterior with garden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIjKp2GII5hvAaeHGvjaCsN6Kvl9_JBIf7JVGphZ2y52cRJO-txA1go8makyWFg6Be39Ckfe6BZVkAqaG2uwcRuuOtYCAS_zqCO4PxlXj6ZD-z7KmyKnMoxsyKvRuRdhZGCyRKLbq-cMoyx8_P_kyvyLgxYW-wC5yPpFnzTmXBGW4gOgrAF4Vgf36vGq6rp0viBPkJYCaHHizbsM8aChilPQEm1qJuwoSrioV811V-BaXrPRTMyMdhzqI7065c5rT738USU1uwWpE');"></div>
+<div class="absolute top-4 right-4 bg-slate-600 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">
+                                        Finalizado
+                                    </div>
+<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+<div class="flex items-center gap-2 text-white/90 text-sm">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Residencial Los Robles</span>
+</div>
+</div>
+</div>
+<div class="p-5">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">Visita Guiada VIP</h4>
+<div class="flex -space-x-2">
+<img alt="Agent 5" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_fEcSmZxDUc8ehQF_EArgO_lcIurNW8PzbudxczDbwHe97HTC4bZGHPBsuiY2hOwIymV4Yghw1wQmKSTh9MK-JEZ-oH1Qz_YBMahA6E8zwL3EKAni2DMqMgG5KyEnhhzsl4hMJTZnPMSX5UBKeg3EyFXMHifWeITWnbxI1qCp9eQDvmkKN-qHTI1yhy_vbTewI5mSK-QCmt9PxZf6Pk-PsTRnIvyuOCEnJ-3uVmZq5XycUa5w79E1Fz7r97ifzYndkxzmDiOoEEQ"/>
+<img alt="Agent 6" class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAp3gOy1kRawyAcgwZ6kIj8DNxi9X7g7dQ0FP63I529iWSTCKPVtCAiE8YdJnMzk_Udgkk6iXxxzM28euUFlv0lIhff897Sbgd-FxK8kPBiQH5a41WFm5G25e1LCh8gWtEIaz__KelGemiunjiJZ7XqFXOKBGquUysCURqt4Fl3RyOkapMwrmmqSY8Hx121BEN4hlK9dhBF0ggQp8x_6EP63k6EaqlupZCTWMHH5kID8I0DWpsXq1Nd1bQ7thb08bPFqNLKVdyrMfs"/>
+</div>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Tour privado para inversionistas extranjeros en propiedades de lujo.</p>
+<div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700">
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Cierres</span>
+<span class="text-lg font-bold text-slate-900 dark:text-white">4</span>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex flex-col">
+<span class="text-xs text-slate-400 font-medium uppercase tracking-wider">ROI Evento</span>
+<span class="text-lg font-bold text-accent-green">520%</span>
+</div>
+<button class="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar (AI Suggestions) -->
+<div class="xl:col-span-1">
+<div class="bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-800 dark:to-slate-900 rounded-3xl p-6 text-white h-full relative overflow-hidden shadow-xl border border-slate-700/50">
+<!-- Abstract Background Decoration -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 w-48 h-48 bg-accent-green/10 rounded-full blur-3xl -ml-16 -mb-16 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col h-full">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-accent-green animate-pulse">auto_awesome</span>
+<h3 class="text-lg font-bold tracking-tight">Optimización IA</h3>
+</div>
+<div class="space-y-6 flex-1">
+<!-- Insight 1 -->
+<div class="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-semibold text-white/90">Horario Ideal</h4>
+<span class="material-symbols-outlined text-xs text-accent-green">trending_up</span>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+                                        Los eventos de tipo <span class="text-white font-medium">Open House</span> tienen un 35% más de asistencia los Jueves a las 18:00 hrs.
+                                    </p>
+<div class="mt-3 flex items-center gap-2">
+<button class="text-[10px] bg-primary hover:bg-primary-dark text-white px-2 py-1 rounded transition-colors">Agendar</button>
+</div>
+</div>
+<!-- Insight 2 -->
+<div class="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-semibold text-white/90">Lead Scoring</h4>
+<span class="material-symbols-outlined text-xs text-orange-400">warning</span>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+                                        Detectamos 15 leads del evento <span class="text-white font-medium">Feria 2024</span> con alta probabilidad de compra que no han sido contactados.
+                                    </p>
+<div class="mt-3 flex items-center gap-2">
+<button class="text-[10px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded transition-colors">Ver lista</button>
+</div>
+</div>
+<!-- Insight 3 -->
+<div class="bg-white/5 backdrop-blur-md rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<h4 class="text-sm font-semibold text-white/90">Perfil Ideal</h4>
+<span class="material-symbols-outlined text-xs text-blue-400">person_search</span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<div class="bg-blue-500/20 p-1.5 rounded-full">
+<span class="material-symbols-outlined text-sm text-blue-300">family_restroom</span>
+</div>
+<div>
+<p class="text-xs font-bold">Familias Jóvenes</p>
+<p class="text-[10px] text-slate-400">Ingreso: $45k - $60k</p>
+</div>
+</div>
+<p class="text-xs text-slate-300 leading-relaxed">
+                                        Este segmento está mostrando mayor interés en propiedades con amenidades infantiles este mes.
+                                    </p>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-white/10 text-center">
+<button class="w-full py-2 bg-gradient-to-r from-primary to-blue-600 rounded-lg text-xs font-bold text-white hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+                                    Generar Campaña Automática
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<footer class="mt-12 mb-4 text-center text-slate-400 text-sm">
+<p>© 2024 BrightHouse Systems. Todos los derechos reservados.</p>
+</footer>
+</div>
+</main>
+</body></html>

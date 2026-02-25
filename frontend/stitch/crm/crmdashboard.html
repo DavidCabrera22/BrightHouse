@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse AI Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "primary-dark": "#001F3F", // Deep blue requested by user
+                        "accent-green": "#50C878", // Emerald green requested by user
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full bg-background-light dark:bg-background-dark">
+<!-- Sidebar -->
+<aside class="w-64 h-full bg-primary-dark flex flex-col justify-between shadow-xl z-20 hidden lg:flex">
+<div class="p-6">
+<!-- Brand -->
+<div class="flex items-center gap-3 mb-10">
+<div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+<span class="material-symbols-outlined text-white" style="font-size: 24px;">real_estate_agent</span>
+</div>
+<div>
+<h1 class="text-white text-lg font-bold leading-tight">BrightHouse</h1>
+<p class="text-slate-400 text-xs font-medium">AI Real Estate CRM</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined filled">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">view_kanban</span>
+<span class="text-sm font-medium">Pipeline</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Actions -->
+<div class="p-6 border-t border-white/10">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors mb-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+<div class="h-10 w-10 rounded-full bg-cover bg-center border-2 border-white/20" data-alt="Portrait of a smiling professional man in a suit" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBF1pX4ocxu3wzLBvCeb3eQh5VIEe5IS0yL1swdbSvyUl5y6_h3Ec3qFCuNek2BJ0wCagwnI3iB1fZPFPrhBFkyisP457G9_fivYPfju3Nq6RosPpCblTaLGKUwfge2JzwjqXLJNMsCuWjJSglXxKxa-G7XHzx4snDUwIKP2rFYJ3SbRKu0rwF2A88THmJFgy_lV-Uts5ONH_sUnjBzv-Z67kbjMFYx-fcZry2AsTj16aACLYH_1TwyOT84N7MxYIWgiAQkZcYQk2E');"></div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">David Miller</p>
+<p class="text-slate-400 text-xs">Senior Broker</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- Header -->
+<header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 z-10">
+<div class="flex items-center gap-4 lg:hidden">
+<button class="text-slate-500 hover:text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-slate-900 dark:text-white font-bold text-lg">BrightHouse</span>
+</div>
+<div class="hidden lg:flex items-center gap-2">
+<h2 class="text-xl font-bold text-slate-800 dark:text-white">Dashboard Overview</h2>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search -->
+<div class="relative hidden md:block group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors text-[20px]">search</span>
+<input class="h-10 pl-10 pr-4 rounded-full bg-slate-100 dark:bg-slate-800 border-none focus:ring-2 focus:ring-primary/20 text-sm w-64 text-slate-700 dark:text-slate-200 placeholder-slate-400 transition-all" placeholder="Search leads, properties..." type="text"/>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+</button>
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+<button class="bg-primary hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>New Lead</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto p-6 md:p-8">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Metric Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between h-36">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">New Leads</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">124</h3>
+</div>
+<div class="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-primary">
+<span class="material-symbols-outlined">group_add</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-4">
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+                                    +12%
+                                </span>
+<span class="text-slate-400 text-xs">vs last week</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between h-36">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">AI Qualified</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">45</h3>
+</div>
+<div class="bg-purple-50 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-4">
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+                                    +8%
+                                </span>
+<span class="text-slate-400 text-xs">High Intent Score</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between h-36">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Conversion Rate</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">3.2%</h3>
+</div>
+<div class="bg-orange-50 dark:bg-orange-900/30 p-2 rounded-lg text-orange-600">
+<span class="material-symbols-outlined">swap_horiz</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-4">
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+                                    +0.5%
+                                </span>
+<span class="text-slate-400 text-xs">Steady growth</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between h-36">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">Projected Sales</p>
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">$1.2M</h3>
+</div>
+<div class="bg-emerald-50 dark:bg-emerald-900/30 p-2 rounded-lg text-accent-green">
+<span class="material-symbols-outlined">payments</span>
+</div>
+</div>
+<div class="flex items-center gap-2 mt-4">
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+                                    +15%
+                                </span>
+<span class="text-slate-400 text-xs">Q3 Forecast</span>
+</div>
+</div>
+</div>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-[500px]">
+<!-- Left Column: Chart -->
+<div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Performance Overview</h3>
+<p class="text-slate-500 text-sm">Leads Generated vs. Sales Closed</p>
+</div>
+<div class="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
+<button class="px-3 py-1 text-xs font-medium bg-white dark:bg-slate-600 rounded text-slate-900 dark:text-white shadow-sm">6 Months</button>
+<button class="px-3 py-1 text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white">Year</button>
+</div>
+</div>
+<div class="flex-1 w-full relative min-h-[300px]">
+<!-- Chart Visualization (SVG) -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 800 300">
+<!-- Grid Lines -->
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="250" y2="250"></line>
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="190" y2="190"></line>
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="130" y2="130"></line>
+<line stroke="#e2e8f0" stroke-dasharray="4 4" stroke-width="1" x1="0" x2="800" y1="70" y2="70"></line>
+<!-- Area Gradient Defs -->
+<defs>
+<lineargradient id="gradientPrimary" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#1152d4" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#1152d4" stop-opacity="0"></stop>
+</lineargradient>
+<lineargradient id="gradientGreen" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#50C878" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#50C878" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Data Line 1: Leads (Primary Blue) -->
+<path d="M0,200 C100,180 150,220 250,150 C350,80 450,120 550,90 C650,60 700,100 800,50 L800,300 L0,300 Z" fill="url(#gradientPrimary)"></path>
+<path d="M0,200 C100,180 150,220 250,150 C350,80 450,120 550,90 C650,60 700,100 800,50" fill="none" stroke="#1152d4" stroke-linecap="round" stroke-width="3"></path>
+<!-- Data Line 2: Sales (Emerald Green) -->
+<path d="M0,260 C120,250 180,270 300,220 C400,180 500,200 600,160 C700,120 750,140 800,100 L800,300 L0,300 Z" fill="url(#gradientGreen)"></path>
+<path d="M0,260 C120,250 180,270 300,220 C400,180 500,200 600,160 C700,120 750,140 800,100" fill="none" stroke="#50C878" stroke-dasharray="8 4" stroke-linecap="round" stroke-width="3"></path>
+<!-- Interactive Dot Example -->
+<circle cx="550" cy="90" fill="#1152d4" r="6" stroke="white" stroke-width="2"></circle>
+</svg>
+<!-- Tooltip (Absolute positioning over SVG) -->
+<div class="absolute top-[20%] right-[30%] bg-slate-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+<p class="font-bold mb-1">May 2024</p>
+<div class="flex justify-between gap-4">
+<span class="text-blue-200">Leads: 215</span>
+<span class="text-green-200">Sales: 84</span>
+</div>
+</div>
+</div>
+<div class="flex justify-between px-2 mt-4 text-xs font-medium text-slate-400">
+<span>Jan</span>
+<span>Feb</span>
+<span>Mar</span>
+<span>Apr</span>
+<span>May</span>
+<span>Jun</span>
+</div>
+</div>
+<!-- Right Column: AI Insights -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-0 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden">
+<div class="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-white to-purple-50 dark:from-slate-800 dark:to-purple-900/10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-600">psychology</span>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">AI Insights</h3>
+</div>
+<span class="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Live</span>
+</div>
+<div class="p-6 space-y-5 flex-1 overflow-y-auto">
+<!-- Insight Card 1 -->
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-1 h-2 w-2 rounded-full bg-red-500 shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">Market Shift Detected</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                Sudden 15% drop in listing prices in <span class="font-bold text-slate-700 dark:text-slate-300">Downtown District</span>. Recommend adjusting project timeline for "Skyline Tower".
+                                            </p>
+</div>
+</div>
+<div class="ml-5 mt-2">
+<button class="text-xs font-medium text-primary hover:text-blue-700 flex items-center gap-1">
+                                            View Analysis <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-700 w-full"></div>
+<!-- Insight Card 2 -->
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-1 h-2 w-2 rounded-full bg-accent-green shrink-0"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<p class="text-sm font-semibold text-slate-800 dark:text-slate-200">High Probability Lead</p>
+<span class="text-[10px] font-bold bg-green-100 text-green-700 px-1.5 py-0.5 rounded">98 Score</span>
+</div>
+<div class="flex items-center gap-2 mb-1">
+<div class="w-6 h-6 rounded-full bg-cover bg-center" data-alt="Portrait of Sarah Jenkins" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1tBRNovqnb-QV445OvS8pUnvDQIYdLn-NitGQPdlSLrfSSSycQFrRNGB5SbKJRkemuCHJNfPb0GcjoZAJwWTmNdSnoM3kA2TDJe_4IWJ7KI1OzWYMtrhA-NJxYoIXcgObzPYca5SDO4qLcjOpjVvrAdnLJxtfPs5SjGks2vXYAmFzaXTT95a8CqfzCwFQ11pHDxkPOMNV9F53zPRCBlNEiDEjxsGH-RsGOFv0X14TIz6HmOi_f2A0ww9otwZamaooofnZwyTSmIk');"></div>
+<span class="text-xs font-medium text-slate-700 dark:text-slate-300">Sarah Jenkins</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                Sarah has visited the pricing page 4 times today. Best time to call: <span class="font-bold">Now</span>.
+                                            </p>
+</div>
+</div>
+<div class="ml-5 mt-3 flex gap-2">
+<button class="flex-1 bg-primary text-white text-xs font-medium py-1.5 rounded hover:bg-blue-700 transition-colors">Call Sarah</button>
+<button class="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium py-1.5 rounded hover:bg-slate-200 transition-colors">Email</button>
+</div>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-700 w-full"></div>
+<!-- Insight Card 3 -->
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-1 h-2 w-2 rounded-full bg-orange-400 shrink-0"></div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">Follow-up Required</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                Contract expiring for <span class="font-medium">The Oaks Estate</span> in 3 days. Prepare renewal proposal.
+                                            </p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-700 text-center">
+<button class="text-xs font-semibold text-primary hover:text-blue-800 transition-colors">View All Insights</button>
+</div>
+</div>
+</div>
+<!-- Recent Activity Section -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Recent Leads</h3>
+<button class="text-sm text-slate-500 hover:text-primary font-medium">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-xs text-slate-500 border-b border-slate-100 dark:border-slate-700">
+<th class="px-6 py-3 font-medium">Lead Name</th>
+<th class="px-6 py-3 font-medium">Status</th>
+<th class="px-6 py-3 font-medium">Property Interest</th>
+<th class="px-6 py-3 font-medium">Predicted Value</th>
+<th class="px-6 py-3 font-medium">Last Contact</th>
+<th class="px-6 py-3 font-medium text-right">Action</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Portrait of Michael Chen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABnS2EYJWqiaN0bYmRE1Cyni7yUWh0cx7gf_E92gNYO6t_ETbwd9ZuVXjuFc3fGH5_zO7h9QxIcwCyZNXijUz604tflL7JfR74pEV-vcSFt-KUR9Ov0jaYuoEZURZx9z3n7vFxnPr5rDYI9pROofeG_tmtZWj0KxVCc-ZYQ_nV6y7FlobBBeIZtKsoOlDNF9klfFCTScBK-oA1ux1yRps_00FTZIZsYB18zE90u8q8Mgd45-gulHlAzxlBqcfuvpDPnVIXWH9jNu8');"></div>
+<span class="font-medium text-slate-900 dark:text-white">Michael Chen</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> Qualified
+                                            </span>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Modern Loft, Downtown</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">$850,000</td>
+<td class="px-6 py-4 text-slate-500">2 hours ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Portrait of Emma Wilson" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBCO4jXV8I77h4EP1eTPmFgaqc-e7A1YXALB0Y0mm1eSTFCSN7QeW9JSH-97r5a6F8S27H12MUQYBd4uEg-qyO2A9Rsqi9a6nmfqs6puNsaW10RWMZNXjU7PsxjkLnNOxtdzOQd9VHMZ6fkrQIqCFYusPWtGAS6qhE5zgW9qS3iI3WhMfU0_45C7iqADgUqDN90YF04M_-4ceCy4wEz8rIZT9KUDL5ZlNwgNIPkkLXXBQMsgYkUAXBg4yfWoCNc1UL9gSo9qEtY6hk');"></div>
+<span class="font-medium text-slate-900 dark:text-white">Emma Wilson</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> New
+                                            </span>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Suburban Family Home</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">$1,200,000</td>
+<td class="px-6 py-4 text-slate-500">1 day ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors last:border-0">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Portrait of Lisa Ray" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ2-MLNfpB-oL1BVmFh0DTWcMQ7sxIxWHQqIjjNRwezzinGbgE32GUJmL3xgIN1wi_OehU1nL60g0gAuq1izRq3IXREU6Q17H23rXv_nw-ucE01NV78q3bymtMrc9yAUyUGI9zpxS37AapVsdVUEKVqd7x-UIRXPvs5HQvvkgEoOSe8Sf5yrFnZ324Ktnzvahuk0Ty2PcjmULFv33VatBP6fRhktOI1sTRO8pnW45h1jKtzE-82iC-EEnPzpsopuUZWNTm54-U-4o');"></div>
+<span class="font-medium text-slate-900 dark:text-white">Lisa Ray</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+<span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span> Negotiating
+                                            </span>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Commercial Space A4</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">$2,400,000</td>
+<td class="px-6 py-4 text-slate-500">3 days ago</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

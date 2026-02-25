@@ -32,4 +32,22 @@ export class CreateLeadDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  potential_value?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  ai_score?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  priority?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  interested_in?: string;
 }

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse AI Dashboard - Omnichannel Conversations</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "primary-dark": "#001F3F", 
+                        "accent-green": "#50C878", 
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full bg-background-light dark:bg-background-dark">
+<aside class="w-64 h-full bg-primary-dark flex flex-col justify-between shadow-xl z-20 hidden lg:flex shrink-0">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-10">
+<div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+<span class="material-symbols-outlined text-white" style="font-size: 24px;">real_estate_agent</span>
+</div>
+<div>
+<h1 class="text-white text-lg font-bold leading-tight">BrightHouse</h1>
+<p class="text-slate-400 text-xs font-medium">AI Real Estate CRM</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">view_kanban</span>
+<span class="text-sm font-medium">Pipeline</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined filled">chat_bubble</span>
+<span class="text-sm font-semibold">Conversations</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+</nav>
+</div>
+<div class="p-6 border-t border-white/10">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors mb-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+<div class="h-10 w-10 rounded-full bg-cover bg-center border-2 border-white/20" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCDMl7NHgbZTmHrb3U_hjKVEW3STg5rbFQWqPvSB5qckMDU_imzoTJijMCE-K_5KfQrcK-ds87qhNTSTENMUnI4zul2Sr9G7QVamTkye6VfEK_Y9rcfRbGb2OScNJWm0mYDx9_fD9_Nj2dp1QqLyAeCW_LCkb6kGYwXZH8U_NHk-Yt2opaMhahjizscj5PpBqf8mcJVJfOUK3UstGzjCcDW3Sanm8Doy6kEGUQFFLKOq-_opEyjp50s3rUYuu-GVaRSOo-Ry7B_7eY');"></div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">David Miller</p>
+<p class="text-slate-400 text-xs">Senior Broker</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
+<header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 z-10">
+<div class="flex items-center gap-4 lg:hidden">
+<button class="text-slate-500 hover:text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-slate-900 dark:text-white font-bold text-lg">BrightHouse</span>
+</div>
+<div class="hidden lg:flex items-center gap-4">
+<h2 class="text-xl font-bold text-slate-800 dark:text-white">Inbox Inteligente</h2>
+<div class="h-5 w-px bg-slate-300 dark:bg-slate-700"></div>
+<p class="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500"></span> Online
+            </p>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-3">
+<div class="relative">
+<input class="appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-9 pr-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 w-64" placeholder="Search conversations..." type="text"/>
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">search</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+</button>
+<button class="bg-primary hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add_comment</span>
+<span>New Chat</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex-1 flex overflow-hidden bg-background-light dark:bg-background-dark">
+<div class="w-80 lg:w-96 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 h-full">
+<div class="p-4 border-b border-slate-100 dark:border-slate-800">
+<div class="flex gap-2 mb-4">
+<button class="flex-1 py-1.5 px-3 bg-primary/10 text-primary text-sm font-semibold rounded-lg">All (12)</button>
+<button class="flex-1 py-1.5 px-3 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-medium rounded-lg transition-colors">Unread (4)</button>
+<button class="flex-1 py-1.5 px-3 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-medium rounded-lg transition-colors">Priority</button>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-400">
+<span>Sorted by: Last Activity</span>
+<span class="material-symbols-outlined text-sm cursor-pointer">sort</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-l-4 border-l-primary transition-all">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-600 text-[18px]">chat</span>
+<span class="text-xs font-bold text-slate-500 uppercase">WhatsApp</span>
+</div>
+<span class="text-xs text-slate-400 font-medium">2m ago</span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvq6dnXEo07po4xZVLeSTOkVcbQDNOJ8FSoZlKq9sARkeFjwLMNhrq_x4gsh93OJIxglexBJeCzT6yAy_mxNBmUAat7tYjqyoe5qvhB-Ax52WCO6r2Hrs0VQbWRK24IFESnyZbiwJuKEPUIIb70Se4N3qI_Mh9ZO4sWPRF42pTsjLCNA3BJRM7uA-GmV0F3h0CSrDd6TWPQW45toTL6ftVfWes2Rym1NxbgvIFRti3V00mu_Op5r76eD81VPAOvPZwr81tyypmQIA');"></div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-sm">James Wilson</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Skyline Tower</p>
+</div>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">I'm interested in the 3-bedroom unit facing the...</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-accent-green/10 text-accent-green border border-accent-green/20">
+<span class="material-symbols-outlined text-[12px]">verified</span> High Intent
+                        </span>
+</div>
+</div>
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all border-l-4 border-l-transparent">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-600 text-[18px]">mail</span>
+<span class="text-xs font-bold text-slate-500 uppercase">Email</span>
+</div>
+<span class="text-xs text-slate-400 font-medium">1h ago</span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBTHEokWid_cPEH67-s9-kG4_4ms0ZOE9W3yZX6XfhTT5rJBFMyJ2WrnyB8tnDr8nL1gzjJWAvhAodx9GdocWNzvKpfv02nNFwhELafK_Ry48JGDI4k5LMkmsyc6ioiLy7-u4dCcHGFvgZOAceRrUAEKHWgSv9k_DRjtqAJDQWZ9gKztrRBbGNeYu5r5Mrb73cruUEtbN0gTb7LDbWD0n40UrVo2ca8axwwGtGo1hdQlaMC5jgzvGI4kx_QmPNJh0-Z41weK-3iPog');"></div>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-sm">Elena Rodriguez</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Ocean Breeze</p>
+</div>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-1 font-semibold">Re: Contract details for unit 402</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300">
+<span class="material-symbols-outlined text-[12px]">gavel</span> Negotiation
+                        </span>
+</div>
+</div>
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all border-l-4 border-l-transparent opacity-70">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-500 text-[18px]">forum</span>
+<span class="text-xs font-bold text-slate-500 uppercase">Webchat</span>
+</div>
+<span class="text-xs text-slate-400 font-medium">3h ago</span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD4_y7nCidMaQH4bqm04YVFFQVNP0xSxeOHQA2WA7uqeGWSED1BAcKCOtrzBxBWd6ETLzgB-vcu3E95JrKkbAAz7R4g4ZBHwoRii2rfAzNayu7YU43YtptoJ_frcvpS-Xl0l1ynX6-_mfgqeawVLtUAVpwTGHSPF9faVZ2YYN2SsPRFouL7wRHyKVSfPqrq0e4-SKf05GNdkiFsBpLJTPyIknVEuODhvAwpus6DB36lxZYnCiKccQ1UXtZeECMEEJyXoxBfovWC0c0');"></div>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-sm">Michael Chang</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Downtown Lofts</p>
+</div>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">When can I schedule a visit?</p>
+</div>
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-all border-l-4 border-l-transparent">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-green-600 text-[18px]">chat</span>
+<span class="text-xs font-bold text-slate-500 uppercase">WhatsApp</span>
+</div>
+<span class="text-xs text-slate-400 font-medium">5h ago</span>
+</div>
+<div class="flex items-center gap-3 mb-2">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfY-LWG2qJgv1F_LBleZD7B6RofK6t68kr3nzyd9WLu0ln0m3YxVkG1tGbadq9NCUfrj_cYkLjFYOtpFAq3aHYAtz0mSkc5zLXlkXoXimIWGZvOY9mpstT-vXZdW5cRBbntR6ids4XBT1FJj9XX0P3SNl57pAJ6Q-4unOaFdDb44KwBIUBvFmSkAYVhkNso6Wx_PbI6MNowtM8cZOa86j24RrEW8GQFwnL36z6pSZ2XD8IOE5TViu6AVSOQdxdf54BZfnppU-l2xU');"></div>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-white text-sm">Sarah Jenkins</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400">Green Valley</p>
+</div>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-1">Is the price negotiable?</p>
+<div class="mt-2 flex gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
+<span class="material-symbols-outlined text-[12px]">warning</span> Follow Up
+                        </span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col min-w-0 bg-slate-50/50 dark:bg-background-dark relative">
+<div class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0">
+<div class="flex items-center gap-4">
+<div class="relative">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvq6dnXEo07po4xZVLeSTOkVcbQDNOJ8FSoZlKq9sARkeFjwLMNhrq_x4gsh93OJIxglexBJeCzT6yAy_mxNBmUAat7tYjqyoe5qvhB-Ax52WCO6r2Hrs0VQbWRK24IFESnyZbiwJuKEPUIIb70Se4N3qI_Mh9ZO4sWPRF42pTsjLCNA3BJRM7uA-GmV0F3h0CSrDd6TWPQW45toTL6ftVfWes2Rym1NxbgvIFRti3V00mu_Op5r76eD81VPAOvPZwr81tyypmQIA');"></div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-white text-base">James Wilson</h3>
+<div class="flex items-center gap-2 text-xs">
+<span class="text-slate-500 dark:text-slate-400">Active now</span>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="text-primary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> 85% Likely to Close
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div class="text-center">
+<span class="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs px-3 py-1 rounded-full">Today, 10:23 AM</span>
+</div>
+<div class="flex gap-4 max-w-3xl">
+<div class="h-8 w-8 rounded-full bg-cover bg-center shrink-0 mt-1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvq6dnXEo07po4xZVLeSTOkVcbQDNOJ8FSoZlKq9sARkeFjwLMNhrq_x4gsh93OJIxglexBJeCzT6yAy_mxNBmUAat7tYjqyoe5qvhB-Ax52WCO6r2Hrs0VQbWRK24IFESnyZbiwJuKEPUIIb70Se4N3qI_Mh9ZO4sWPRF42pTsjLCNA3BJRM7uA-GmV0F3h0CSrDd6TWPQW45toTL6ftVfWes2Rym1NxbgvIFRti3V00mu_Op5r76eD81VPAOvPZwr81tyypmQIA');"></div>
+<div class="flex flex-col gap-1">
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
+<p>Hi, I was looking at the Skyline Tower project on your website. Is the 3-bedroom unit still available?</p>
+</div>
+<span class="text-xs text-slate-400 ml-1">10:23 AM</span>
+</div>
+</div>
+<div class="flex gap-4 max-w-3xl ml-auto flex-row-reverse">
+<div class="h-8 w-8 rounded-full bg-cover bg-center shrink-0 mt-1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCDMl7NHgbZTmHrb3U_hjKVEW3STg5rbFQWqPvSB5qckMDU_imzoTJijMCE-K_5KfQrcK-ds87qhNTSTENMUnI4zul2Sr9G7QVamTkye6VfEK_Y9rcfRbGb2OScNJWm0mYDx9_fD9_Nj2dp1QqLyAeCW_LCkb6kGYwXZH8U_NHk-Yt2opaMhahjizscj5PpBqf8mcJVJfOUK3UstGzjCcDW3Sanm8Doy6kEGUQFFLKOq-_opEyjp50s3rUYuu-GVaRSOo-Ry7B_7eY');"></div>
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary text-white p-4 rounded-2xl rounded-tr-none shadow-md shadow-primary/20 text-sm leading-relaxed">
+<p>Hello James! Yes, we have two 3-bedroom units currently available in Skyline Tower. One on the 15th floor and another on the 22nd with a panoramic view.</p>
+</div>
+<span class="text-xs text-slate-400 mr-1 flex items-center gap-1">10:25 AM <span class="material-symbols-outlined text-[14px]">done_all</span></span>
+</div>
+</div>
+<div class="flex gap-4 max-w-3xl">
+<div class="h-8 w-8 rounded-full bg-cover bg-center shrink-0 mt-1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvq6dnXEo07po4xZVLeSTOkVcbQDNOJ8FSoZlKq9sARkeFjwLMNhrq_x4gsh93OJIxglexBJeCzT6yAy_mxNBmUAat7tYjqyoe5qvhB-Ax52WCO6r2Hrs0VQbWRK24IFESnyZbiwJuKEPUIIb70Se4N3qI_Mh9ZO4sWPRF42pTsjLCNA3BJRM7uA-GmV0F3h0CSrDd6TWPQW45toTL6ftVfWes2Rym1NxbgvIFRti3V00mu_Op5r76eD81VPAOvPZwr81tyypmQIA');"></div>
+<div class="flex flex-col gap-1">
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm text-slate-800 dark:text-slate-200 text-sm leading-relaxed">
+<p>That sounds great. I'm interested in the one with the panoramic view. What is the price range for that unit?</p>
+</div>
+<div class="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-2xl rounded-tl-none shadow-sm text-slate-800 dark:text-slate-200 text-sm leading-relaxed mt-1">
+<p>Also, do you have floor plans?</p>
+</div>
+<span class="text-xs text-slate-400 ml-1">10:28 AM</span>
+</div>
+</div>
+</div>
+<div class="px-6 pb-2">
+<div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800/50 rounded-xl p-3 border border-blue-100 dark:border-slate-700 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm">smart_toy</span> AI Assistant
+                        </div>
+<button class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">Dismiss</button>
+</div>
+<div class="flex gap-2 overflow-x-auto scrollbar-hide">
+<button class="flex-shrink-0 bg-white dark:bg-slate-700 hover:border-primary text-slate-700 dark:text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm transition-all text-left">
+<span class="font-bold block mb-0.5">Suggest Reply</span>
+                            "The unit on the 22nd floor is listed at $450k..."
+                        </button>
+<button class="flex-shrink-0 bg-white dark:bg-slate-700 hover:border-primary text-slate-700 dark:text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm transition-all text-left">
+<span class="font-bold block mb-0.5">Share Document</span>
+                            Skyline Tower Floorplans PDF
+                        </button>
+<button class="flex-shrink-0 bg-white dark:bg-slate-700 hover:border-primary text-slate-700 dark:text-slate-200 text-xs py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm transition-all text-left">
+<span class="font-bold block mb-0.5">Schedule Visit</span>
+                            Propose slots for this Friday
+                        </button>
+</div>
+</div>
+</div>
+<div class="p-6 pt-2 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+<div class="relative">
+<textarea class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-12 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none h-24" placeholder="Type your message..."></textarea>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">attach_file</span></button>
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">mood</span></button>
+<button class="text-slate-400 hover:text-primary transition-colors"><span class="material-symbols-outlined text-[20px]">mic</span></button>
+</div>
+<div class="absolute bottom-3 right-3">
+<button class="bg-primary hover:bg-blue-700 text-white p-2 rounded-lg shadow-lg shadow-primary/30 transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shrink-0 h-full overflow-y-auto hidden xl:block">
+<div class="p-6">
+<div class="text-center mb-6">
+<div class="h-20 w-20 rounded-full bg-cover bg-center mx-auto mb-3 ring-4 ring-slate-50 dark:ring-slate-800" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBvq6dnXEo07po4xZVLeSTOkVcbQDNOJ8FSoZlKq9sARkeFjwLMNhrq_x4gsh93OJIxglexBJeCzT6yAy_mxNBmUAat7tYjqyoe5qvhB-Ax52WCO6r2Hrs0VQbWRK24IFESnyZbiwJuKEPUIIb70Se4N3qI_Mh9ZO4sWPRF42pTsjLCNA3BJRM7uA-GmV0F3h0CSrDd6TWPQW45toTL6ftVfWes2Rym1NxbgvIFRti3V00mu_Op5r76eD81VPAOvPZwr81tyypmQIA');"></div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">James Wilson</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Architect • New York, NY</p>
+<div class="flex justify-center gap-3 mt-4">
+<button class="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm">mail</span>
+</button>
+<button class="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm">call</span>
+</button>
+<button class="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm">calendar_month</span>
+</button>
+</div>
+</div>
+<div class="mb-6">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Commercial Status</h4>
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+<div class="mb-3">
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500">Pipeline Stage</span>
+<span class="font-bold text-slate-900 dark:text-white">Contacted</span>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 40%"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-3">
+<span class="text-xs text-slate-500">AI Probability</span>
+<span class="text-xs font-bold text-accent-green bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900/30">85% High</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-xs text-slate-500">Budget</span>
+<span class="text-sm font-bold text-slate-900 dark:text-white">$450k - $500k</span>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Interests</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-md">Skyline Tower</span>
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-md">3 Bedroom</span>
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-md">High Floor</span>
+<span class="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-md">Parking</span>
+</div>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h4>
+<div class="space-y-2">
+<button class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group">
+<div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">edit_calendar</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Schedule Visit</span>
+<span class="text-xs text-slate-400">Add to calendar</span>
+</div>
+</button>
+<button class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group">
+<div class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center group-hover:bg-green-600 group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Move Stage</span>
+<span class="text-xs text-slate-400">Upgrade to 'Qualified'</span>
+</div>
+</button>
+<button class="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group">
+<div class="w-8 h-8 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">note_add</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Add Note</span>
+<span class="text-xs text-slate-400">Internal remark</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+</body></html>

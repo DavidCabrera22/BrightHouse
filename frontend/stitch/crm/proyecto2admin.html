@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse - Dashboard de Proyecto</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "emerald-custom": "#10b981",
+                        "deep-blue": "#0a192f",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .sidebar-active {
+            background-color: rgba(17, 82, 212, 0.2);
+            border-left: 4px solid #1152d4;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-deep-blue text-white flex flex-col shrink-0 border-r border-slate-200 dark:border-slate-800">
+<div class="p-6 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white">domain</span>
+</div>
+<div>
+<h1 class="text-lg font-extrabold tracking-tight">BrightHouse</h1>
+<p class="text-xs text-slate-400">SaaS Inmobiliario</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl sidebar-active text-primary transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-semibold text-sm">Resumen</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">apartment</span>
+<span class="font-semibold text-sm">Unidades</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">badge</span>
+<span class="font-semibold text-sm">Agentes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-semibold text-sm">Documentos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-semibold text-sm">Analítica</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<div class="flex items-center gap-3 p-2 rounded-xl bg-white/5">
+<div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden" data-alt="Avatar de usuario administrador">
+<img alt="Admin" data-alt="Retrato de hombre joven con traje profesional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_CYePuX-TVszXTydEeObUT2dAeeJD3QPs1LSoUZJHUJXhOsauQePsSqhIJlf4BGVy6HDGw0eQi90MJGR25vjv4bUqokKNBBLwEvg7DtRHuVfB0WJAa6M9nHHNE-Uo9A8tE-lH0-M6b-CSzLeautgERinho_SpVq4nuEb2-MDwccQsk8ffdRxDKZAaSd-lYNho9LYWaKPfulYIBfBLj77cfWmqcLJtda-R4rsVujMtzArMJpadva8Gqj3shLZV6of5peFfeK2l4CA"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-xs font-bold truncate">Carlos Méndez</p>
+<p class="text-[10px] text-slate-400 truncate">Project Manager</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-sm">settings</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-background-light">
+<!-- Header -->
+<header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-xl font-bold text-slate-800">Dashboard de Proyecto</h2>
+<div class="h-6 w-px bg-slate-200"></div>
+<div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5">
+<span class="material-symbols-outlined text-slate-500 text-lg">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 placeholder:text-slate-400" placeholder="Buscar en el proyecto..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white"></span>
+</button>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+<span class="material-symbols-outlined text-lg">download</span>
+                        Exportar Informe
+                    </button>
+</div>
+</header>
+<div class="p-8 space-y-8 max-w-7xl mx-auto">
+<!-- Title and Quick Actions -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h3 class="text-3xl font-black text-slate-900 tracking-tight">Resumen Ejecutivo</h3>
+<p class="text-slate-500 mt-1">Vista consolidada de métricas clave y rendimiento operativo.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-primary">groups</span>
+                            Asignar agentes
+                        </button>
+<button class="bg-white border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
+<span class="material-symbols-outlined text-primary">auto_fix</span>
+                            Generar unidades
+                        </button>
+<button class="bg-emerald-custom text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-custom/20 hover:bg-emerald-600 transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+                            Agregar unidad
+                        </button>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Total unidades</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-slate-900">120</span>
+<span class="text-xs font-bold text-slate-400">Total</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-full"></div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Disponibles</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-slate-900">45</span>
+<span class="text-xs font-bold text-emerald-custom">+5%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-custom w-[37%]"></div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">En proceso</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-slate-900">15</span>
+<span class="text-xs font-bold text-red-500">-2%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-amber-400 w-[12%]"></div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Separadas</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-slate-900">10</span>
+<span class="text-xs font-bold text-red-500">-1%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-blue-400 w-[8%]"></div>
+</div>
+</div>
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+<p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">Vendidas</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-slate-900">50</span>
+<span class="text-xs font-bold text-emerald-custom">+12%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[41%]"></div>
+</div>
+</div>
+<div class="bg-primary p-5 rounded-2xl border border-primary shadow-lg shadow-primary/10">
+<p class="text-white/60 text-xs font-bold uppercase tracking-wider mb-1">Valor vendido</p>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-black text-white">$12.5M</span>
+<span class="text-xs font-bold text-emerald-400">+8%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-white w-[65%]"></div>
+</div>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Sales Trend -->
+<div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200 p-6 flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h4 class="text-lg font-bold text-slate-900">Ventas por Mes</h4>
+<p class="text-sm text-slate-500">Volumen de transacciones mensuales</p>
+</div>
+<select class="bg-slate-50 border-slate-200 rounded-lg text-sm font-medium focus:ring-primary">
+<option>Últimos 6 meses</option>
+<option>Año 2023</option>
+</select>
+</div>
+<div class="flex-1 flex items-end justify-between gap-4 h-64 min-h-[250px] relative">
+<!-- Chart Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+<div class="w-full border-t border-slate-100"></div>
+<div class="w-full border-t border-slate-100"></div>
+<div class="w-full border-t border-slate-100"></div>
+<div class="w-full border-t border-slate-100"></div>
+</div>
+<!-- Bars -->
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary/20 hover:bg-primary transition-all rounded-t-lg w-full h-[40%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$1.2M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-400">ENE</p>
+</div>
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary/20 hover:bg-primary transition-all rounded-t-lg w-full h-[65%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$2.4M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-400">FEB</p>
+</div>
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary/20 hover:bg-primary transition-all rounded-t-lg w-full h-[55%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$1.9M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-400">MAR</p>
+</div>
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary/20 hover:bg-primary transition-all rounded-t-lg w-full h-[85%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$3.1M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-400">ABR</p>
+</div>
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary hover:bg-primary transition-all rounded-t-lg w-full h-[95%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$3.8M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-900">MAY</p>
+</div>
+<div class="flex-1 flex flex-col justify-end group">
+<div class="bg-primary/20 hover:bg-primary transition-all rounded-t-lg w-full h-[75%] relative">
+<span class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">$2.8M</span>
+</div>
+<p class="text-center text-[10px] mt-4 font-bold text-slate-400">JUN</p>
+</div>
+</div>
+</div>
+<!-- Distribution -->
+<div class="bg-white rounded-3xl border border-slate-200 p-6 flex flex-col">
+<h4 class="text-lg font-bold text-slate-900 mb-1">Estado de Unidades</h4>
+<p class="text-sm text-slate-500 mb-8">Distribución por fase de venta</p>
+<div class="flex-1 flex flex-col justify-center items-center">
+<div class="relative size-48">
+<!-- Fake Donut Chart SVG -->
+<svg class="size-full" viewbox="0 0 36 36">
+<path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="41, 100" stroke-linecap="round" stroke-width="4"></path>
+<path class="text-emerald-custom" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="37, 100" stroke-dashoffset="-41" stroke-linecap="round" stroke-width="4"></path>
+<path class="text-amber-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="12, 100" stroke-dashoffset="-78" stroke-linecap="round" stroke-width="4"></path>
+<path class="text-blue-400" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="8, 100" stroke-dashoffset="-90" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-3xl font-black text-slate-900">120</span>
+<span class="text-[10px] font-bold text-slate-500 uppercase">Unidades</span>
+</div>
+</div>
+<div class="w-full mt-8 grid grid-cols-2 gap-4">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-xs font-semibold text-slate-600">Vendidas (41%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-emerald-custom"></div>
+<span class="text-xs font-semibold text-slate-600">Dispon. (37%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-amber-400"></div>
+<span class="text-xs font-semibold text-slate-600">Proceso (12%)</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-blue-400"></div>
+<span class="text-xs font-semibold text-slate-600">Separ. (8%)</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Table Component (Generated) -->
+<div class="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+<div class="p-6 border-b border-slate-100 flex items-center justify-between">
+<h4 class="text-lg font-bold text-slate-900">Últimas Actualizaciones</h4>
+<button class="text-primary text-sm font-bold hover:underline">Ver todo</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 border-b border-slate-100">
+<tr>
+<th class="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Unidad</th>
+<th class="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Agente</th>
+<th class="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Estado</th>
+<th class="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Fecha</th>
+<th class="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-right">Valor</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500 text-sm">home</span>
+</div>
+<span class="text-sm font-bold text-slate-800">Apartamento 402-B</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden" data-alt="Avatar miniatura agente 1">
+<img alt="Agente" data-alt="Rostro de hombre con gafas sonriendo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaiNopVna7V3raBAFvRFQqCPFe9ZeDXQGNGMi_OiFKP-w-PyufbvspiX1aGwqfIaPQhuI3_3s1mlqoPDf4TdVwatEOjoG_tz2FUmgGI1uVMl_3lmy9M05OU0VHs3DzcfnN4KLrayTYwb26aY0HcIq117rn5Yhw85Of49fBP091gmiF1yCe0NGpru2-p31iryH27JG9cFhQlfnAZkV5Sx1RYn0-tJbSd767AOXtA3ysK_XQCiqeSy2kemjGTHsszj8g51htQX3TEU8"/>
+</div>
+<span class="text-sm text-slate-600">Javier López</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[10px] font-black uppercase">Vendido</span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Hoy, 10:45 AM</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-900 text-right">$245,000</td>
+</tr>
+<tr class="hover:bg-slate-50/80 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-slate-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500 text-sm">home</span>
+</div>
+<span class="text-sm font-bold text-slate-800">Penthouse 1201</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="size-6 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden" data-alt="Avatar miniatura agente 2">
+<img alt="Agente" data-alt="Rostro de mujer joven sonriendo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBB_gfWFK3aPwbS3JwqY61mY5rg41wiy_w37YzpZ8oKu_kO8dFjjJPg9nhKJQNF1nWR9WycZKM3FU2OsiKPdeguzbz2U--4mEXHMasCfzuE8OyJgq7Wmv7c7oh8mNlCcSc7Vx3C760pePrc5fpia-BYa6rDF_loyEMws5bjQHvN-atiMXEqNacoRyX8q3Na-NVFNa2-849DwZFMokPxMo_o0xFathcj6HmMyKp6UQMLj_TMZ0cufSVNBnfBiid9jkeoFmXomwAN23c"/>
+</div>
+<span class="text-sm text-slate-600">Lucía Torres</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">Separado</span>
+</td>
+<td class="px-6 py-4 text-sm text-slate-500">Ayer, 4:20 PM</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-900 text-right">$520,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

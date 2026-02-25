@@ -12,6 +12,14 @@
   
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
+
+  /* CRM Specific Colors and Fonts */
+  --color-crm-primary: #1152d4;
+  --color-crm-dark: #001F3F;
+  --color-crm-green: #50C878;
+  --color-crm-bg-light: #f6f6f8;
+  --color-crm-bg-dark: #101622;
+  --font-manrope: 'Manrope', sans-serif;
 }
 
 body { font-family: 'Inter', sans-serif; }

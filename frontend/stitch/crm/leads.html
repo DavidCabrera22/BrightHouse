@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse AI Leads Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "primary-dark": "#001F3F", // Deep blue
+                        "accent-green": "#50C878", // Emerald green
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased overflow-hidden">
+<div class="flex h-screen w-full bg-background-light dark:bg-background-dark">
+<aside class="w-64 h-full bg-primary-dark flex flex-col justify-between shadow-xl z-20 hidden lg:flex shrink-0">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-10">
+<div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+<span class="material-symbols-outlined text-white" style="font-size: 24px;">real_estate_agent</span>
+</div>
+<div>
+<h1 class="text-white text-lg font-bold leading-tight">BrightHouse</h1>
+<p class="text-slate-400 text-xs font-medium">AI Real Estate CRM</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined filled">group</span>
+<span class="text-sm font-semibold">Leads</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">view_kanban</span>
+<span class="text-sm font-medium">Pipeline</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-sm font-medium">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+</nav>
+</div>
+<div class="p-6 border-t border-white/10">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors mb-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+<div class="flex items-center gap-3 mt-4 pt-4 border-t border-white/10">
+<div class="h-10 w-10 rounded-full bg-cover bg-center border-2 border-white/20" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBF1pX4ocxu3wzLBvCeb3eQh5VIEe5IS0yL1swdbSvyUl5y6_h3Ec3qFCuNek2BJ0wCagwnI3iB1fZPFPrhBFkyisP457G9_fivYPfju3Nq6RosPpCblTaLGKUwfge2JzwjqXLJNMsCuWjJSglXxKxa-G7XHzx4snDUwIKP2rFYJ3SbRKu0rwF2A88THmJFgy_lV-Uts5ONH_sUnjBzv-Z67kbjMFYx-fcZry2AsTj16aACLYH_1TwyOT84N7MxYIWgiAQkZcYQk2E');"></div>
+<div class="flex flex-col">
+<p class="text-white text-sm font-medium">David Miller</p>
+<p class="text-slate-400 text-xs">Senior Broker</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 shrink-0 z-10">
+<div class="flex items-center gap-4 lg:hidden">
+<button class="text-slate-500 hover:text-primary">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="text-slate-900 dark:text-white font-bold text-lg">BrightHouse</span>
+</div>
+<div class="flex flex-col justify-center">
+<h2 class="text-xl font-bold text-slate-800 dark:text-white">Gestión Inteligente de Leads</h2>
+<p class="text-xs text-slate-500 hidden sm:block">AI-powered lead scoring and distribution</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-[18px]">upload</span>
+                    Importar
+                </button>
+<button class="bg-primary hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-lg shadow-primary/30 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Nuevo Lead</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-hidden relative flex">
+<div class="flex-1 overflow-y-auto p-6 md:p-8">
+<div class="max-w-[1600px] mx-auto space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">New Leads</p>
+<span class="bg-blue-50 dark:bg-blue-900/30 text-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</span>
+</div>
+<div class="flex items-end gap-3">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">215</h3>
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    +12%
+                                </span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">AI Qualified</p>
+<span class="bg-purple-50 dark:bg-purple-900/30 text-purple-600 p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">auto_awesome</span>
+</span>
+</div>
+<div class="flex items-end gap-3">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">86</h3>
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    +24%
+                                </span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Follow-up</p>
+<span class="bg-orange-50 dark:bg-orange-900/30 text-orange-600 p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">timelapse</span>
+</span>
+</div>
+<div class="flex items-end gap-3">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">42</h3>
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    +5%
+                                </span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Est. Conversion</p>
+<span class="bg-emerald-50 dark:bg-emerald-900/30 text-accent-green p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">monetization_on</span>
+</span>
+</div>
+<div class="flex items-end gap-3">
+<h3 class="text-2xl font-bold text-slate-900 dark:text-white">$3.4M</h3>
+<span class="flex items-center text-xs font-bold text-accent-green bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full mb-1">
+<span class="material-symbols-outlined text-[14px] mr-0.5">trending_up</span>
+                                    +18%
+                                </span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-wrap gap-4 items-center">
+<div class="flex-1 min-w-[200px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="Search leads by name, email..." type="text"/>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+<select class="form-select bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-sm py-2 px-4 pr-8 focus:ring-primary/50 focus:border-primary cursor-pointer text-slate-600 dark:text-slate-300">
+<option>All Projects</option>
+<option>Skyline Tower</option>
+<option>Oceanview Estate</option>
+</select>
+<select class="form-select bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-sm py-2 px-4 pr-8 focus:ring-primary/50 focus:border-primary cursor-pointer text-slate-600 dark:text-slate-300">
+<option>Status: All</option>
+<option>New</option>
+<option>Qualified</option>
+<option>Negotiating</option>
+</select>
+<select class="form-select bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-sm py-2 px-4 pr-8 focus:ring-primary/50 focus:border-primary cursor-pointer text-slate-600 dark:text-slate-300">
+<option>Agent: All</option>
+<option>David Miller</option>
+<option>Sarah Jenkins</option>
+</select>
+<select class="form-select bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-full text-sm py-2 px-4 pr-8 focus:ring-primary/50 focus:border-primary cursor-pointer text-slate-600 dark:text-slate-300">
+<option>AI Score: High to Low</option>
+<option>Low to High</option>
+</select>
+<button class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors ml-auto">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-900/50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100 dark:border-slate-700">
+<th class="px-6 py-4">Lead Name</th>
+<th class="px-6 py-4">Project</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4">AI Score</th>
+<th class="px-6 py-4">Source</th>
+<th class="px-6 py-4">Agent</th>
+<th class="px-6 py-4">Last Activity</th>
+<th class="px-6 py-4 text-right">Potential Value</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-700 text-sm">
+<tr class="bg-blue-50/50 dark:bg-blue-900/10 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center border border-slate-200" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1tBRNovqnb-QV445OvS8pUnvDQIYdLn-NitGQPdlSLrfSSSycQFrRNGB5SbKJRkemuCHJNfPb0GcjoZAJwWTmNdSnoM3kA2TDJe_4IWJ7KI1OzWYMtrhA-NJxYoIXcgObzPYca5SDO4qLcjOpjVvrAdnLJxtfPs5SjGks2vXYAmFzaXTT95a8CqfzCwFQ11pHDxkPOMNV9F53zPRCBlNEiDEjxsGH-RsGOFv0X14TIz6HmOi_f2A0ww9otwZamaooofnZwyTSmIk');"></div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">sarah.j@example.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Skyline Tower</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/30">
+<span class="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span> Qualified
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="relative h-9 w-9">
+<svg class="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-slate-100 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-accent-green" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="98, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200">98</div>
+</div>
+<span class="text-xs text-slate-500">Very High</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">language</span>
+<span class="text-slate-600 dark:text-slate-300">Website</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="h-8 w-8 rounded-full bg-gray-300 border-2 border-white dark:border-slate-800 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBF1pX4ocxu3wzLBvCeb3eQh5VIEe5IS0yL1swdbSvyUl5y6_h3Ec3qFCuNek2BJ0wCagwnI3iB1fZPFPrhBFkyisP457G9_fivYPfju3Nq6RosPpCblTaLGKUwfge2JzwjqXLJNMsCuWjJSglXxKxa-G7XHzx4snDUwIKP2rFYJ3SbRKu0rwF2A88THmJFgy_lV-Uts5ONH_sUnjBzv-Z67kbjMFYx-fcZry2AsTj16aACLYH_1TwyOT84N7MxYIWgiAQkZcYQk2E');" title="David Miller"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                            Viewed Pricing <br/>
+<span class="text-xs text-slate-400">2h ago</span>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">$1,250,000</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center border border-slate-200" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABnS2EYJWqiaN0bYmRE1Cyni7yUWh0cx7gf_E92gNYO6t_ETbwd9ZuVXjuFc3fGH5_zO7h9QxIcwCyZNXijUz604tflL7JfR74pEV-vcSFt-KUR9Ov0jaYuoEZURZx9z3n7vFxnPr5rDYI9pROofeG_tmtZWj0KxVCc-ZYQ_nV6y7FlobBBeIZtKsoOlDNF9klfFCTScBK-oA1ux1yRps_00FTZIZsYB18zE90u8q8Mgd45-gulHlAzxlBqcfuvpDPnVIXWH9jNu8');"></div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Michael Chen</p>
+<p class="text-xs text-slate-500">m.chen@tech.co</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Oceanview Estate</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30">
+<span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span> New
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="relative h-9 w-9">
+<svg class="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-slate-100 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-yellow-500" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="65, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200">65</div>
+</div>
+<span class="text-xs text-slate-500">Medium</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">campaign</span>
+<span class="text-slate-600 dark:text-slate-300">Ad Campaign</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-xs text-slate-400 italic">Unassigned</span>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                            Form Submit <br/>
+<span class="text-xs text-slate-400">5h ago</span>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">$850,000</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center border border-slate-200" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJ2-MLNfpB-oL1BVmFh0DTWcMQ7sxIxWHQqIjjNRwezzinGbgE32GUJmL3xgIN1wi_OehU1nL60g0gAuq1izRq3IXREU6Q17H23rXv_nw-ucE01NV78q3bymtMrc9yAUyUGI9zpxS37AapVsdVUEKVqd7x-UIRXPvs5HQvvkgEoOSe8Sf5yrFnZ324Ktnzvahuk0Ty2PcjmULFv33VatBP6fRhktOI1sTRO8pnW45h1jKtzE-82iC-EEnPzpsopuUZWNTm54-U-4o');"></div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Lisa Ray</p>
+<p class="text-xs text-slate-500">lisa.ray@design.net</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Commercial A4</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30">
+<span class="h-1.5 w-1.5 rounded-full bg-purple-500"></span> Negotiating
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="relative h-9 w-9">
+<svg class="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-slate-100 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-accent-green" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="88, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200">88</div>
+</div>
+<span class="text-xs text-slate-500">High</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">person</span>
+<span class="text-slate-600 dark:text-slate-300">Referral</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="h-8 w-8 rounded-full bg-gray-300 border-2 border-white dark:border-slate-800 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBCO4jXV8I77h4EP1eTPmFgaqc-e7A1YXALB0Y0mm1eSTFCSN7QeW9JSH-97r5a6F8S27H12MUQYBd4uEg-qyO2A9Rsqi9a6nmfqs6puNsaW10RWMZNXjU7PsxjkLnNOxtdzOQd9VHMZ6fkrQIqCFYusPWtGAS6qhE5zgW9qS3iI3WhMfU0_45C7iqADgUqDN90YF04M_-4ceCy4wEz8rIZT9KUDL5ZlNwgNIPkkLXXBQMsgYkUAXBg4yfWoCNc1UL9gSo9qEtY6hk');" title="Emma Wilson"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                            Meeting Scheduled <br/>
+<span class="text-xs text-slate-400">1d ago</span>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">$2,400,000</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center border border-slate-200" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBCO4jXV8I77h4EP1eTPmFgaqc-e7A1YXALB0Y0mm1eSTFCSN7QeW9JSH-97r5a6F8S27H12MUQYBd4uEg-qyO2A9Rsqi9a6nmfqs6puNsaW10RWMZNXjU7PsxjkLnNOxtdzOQd9VHMZ6fkrQIqCFYusPWtGAS6qhE5zgW9qS3iI3WhMfU0_45C7iqADgUqDN90YF04M_-4ceCy4wEz8rIZT9KUDL5ZlNwgNIPkkLXXBQMsgYkUAXBg4yfWoCNc1UL9gSo9qEtY6hk');"></div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Emma Wilson</p>
+<p class="text-xs text-slate-500">emma.w@mail.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">Skyline Tower</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30">
+<span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span> Follow-up
+                                            </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="relative h-9 w-9">
+<svg class="h-full w-full transform -rotate-90" viewBox="0 0 36 36">
+<path class="text-slate-100 dark:text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-accent-green" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="72, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700 dark:text-slate-200">72</div>
+</div>
+<span class="text-xs text-slate-500">Good</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-[18px]">share</span>
+<span class="text-slate-600 dark:text-slate-300">Social</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2">
+<div class="h-8 w-8 rounded-full bg-gray-300 border-2 border-white dark:border-slate-800 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBF1pX4ocxu3wzLBvCeb3eQh5VIEe5IS0yL1swdbSvyUl5y6_h3Ec3qFCuNek2BJ0wCagwnI3iB1fZPFPrhBFkyisP457G9_fivYPfju3Nq6RosPpCblTaLGKUwfge2JzwjqXLJNMsCuWjJSglXxKxa-G7XHzx4snDUwIKP2rFYJ3SbRKu0rwF2A88THmJFgy_lV-Uts5ONH_sUnjBzv-Z67kbjMFYx-fcZry2AsTj16aACLYH_1TwyOT84N7MxYIWgiAQkZcYQk2E');" title="David Miller"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-300">
+                                            Sent Brochure <br/>
+<span class="text-xs text-slate-400">3d ago</span>
+</td>
+<td class="px-6 py-4 text-right font-bold text-slate-900 dark:text-white">$950,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-6 py-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+<span class="text-sm text-slate-500">Showing 1-4 of 248 leads</span>
+<div class="flex gap-2">
+<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<aside class="w-[400px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col shrink-0 z-20">
+<div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start">
+<div class="flex gap-4">
+<div class="h-14 w-14 rounded-full bg-slate-200 bg-cover bg-center ring-2 ring-white dark:ring-slate-800 shadow-lg" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1tBRNovqnb-QV445OvS8pUnvDQIYdLn-NitGQPdlSLrfSSSycQFrRNGB5SbKJRkemuCHJNfPb0GcjoZAJwWTmNdSnoM3kA2TDJe_4IWJ7KI1OzWYMtrhA-NJxYoIXcgObzPYca5SDO4qLcjOpjVvrAdnLJxtfPs5SjGks2vXYAmFzaXTT95a8CqfzCwFQ11pHDxkPOMNV9F53zPRCBlNEiDEjxsGH-RsGOFv0X14TIz6HmOi_f2A0ww9otwZamaooofnZwyTSmIk');"></div>
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Sarah Jenkins</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs text-slate-500">Lead ID: #LH-8821</span>
+<span class="h-1 w-1 bg-slate-300 rounded-full"></span>
+<div class="flex text-amber-400">
+<span class="material-symbols-outlined text-[14px] filled">star</span>
+<span class="material-symbols-outlined text-[14px] filled">star</span>
+<span class="material-symbols-outlined text-[14px] filled">star</span>
+<span class="material-symbols-outlined text-[14px] filled">star</span>
+<span class="material-symbols-outlined text-[14px] filled">star_half</span>
+</div>
+</div>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-8">
+<div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-800/30">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-purple-600 dark:text-purple-400">psychology_alt</span>
+<h4 class="font-bold text-slate-800 dark:text-white">AI Analysis</h4>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-300 mb-3 leading-relaxed">
+                            Sarah shows <strong class="text-purple-700 dark:text-purple-400">very high intent</strong>. She has visited the pricing page 4 times today and downloaded the "Skyline Tower" brochure. 
+                        </p>
+<div class="flex items-center justify-between bg-white/60 dark:bg-slate-800/60 rounded-lg p-3 backdrop-blur-sm">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Conversion Probability</span>
+<span class="text-sm font-bold text-accent-green">98% Very High</span>
+</div>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Quick Actions</h4>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-blue-700 text-white py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors shadow-lg shadow-blue-500/20">
+<span class="material-symbols-outlined text-[18px]">call</span>
+                                Call Now
+                            </button>
+<button class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-[18px]">mail</span>
+                                Email
+                            </button>
+<button class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+                                Meeting
+                            </button>
+<button class="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-2.5 px-4 rounded-lg text-sm font-semibold transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+                                More
+                            </button>
+</div>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Recent Activity</h4>
+<div class="space-y-6 relative pl-2">
+<div class="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700"></div>
+<div class="relative flex gap-4">
+<div class="relative z-10 bg-white dark:bg-slate-900 rounded-full p-0.5">
+<div class="h-5 w-5 rounded-full bg-accent-green border-2 border-white dark:border-slate-900"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Visited Pricing Page</p>
+<p class="text-xs text-slate-500 mt-0.5">2 hours ago • Web Activity</p>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="relative z-10 bg-white dark:bg-slate-900 rounded-full p-0.5">
+<div class="h-5 w-5 rounded-full bg-blue-500 border-2 border-white dark:border-slate-900"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Downloaded Brochure</p>
+<p class="text-xs text-slate-500 mt-0.5">5 hours ago • Skyline Tower PDF</p>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="relative z-10 bg-white dark:bg-slate-900 rounded-full p-0.5">
+<div class="h-5 w-5 rounded-full bg-purple-500 border-2 border-white dark:border-slate-900"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Email Opened</p>
+<p class="text-xs text-slate-500 mt-0.5">Yesterday • "Exclusive Preview"</p>
+</div>
+</div>
+<div class="relative flex gap-4">
+<div class="relative z-10 bg-white dark:bg-slate-900 rounded-full p-0.5">
+<div class="h-5 w-5 rounded-full bg-slate-300 border-2 border-white dark:border-slate-900"></div>
+</div>
+<div>
+<p class="text-sm font-medium text-slate-900 dark:text-white">Lead Created</p>
+<p class="text-xs text-slate-500 mt-0.5">2 days ago • From Facebook Ad</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+<button class="w-full py-2 text-xs font-semibold text-slate-500 hover:text-primary transition-colors flex items-center justify-center gap-1">
+                        Full Profile Details <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</aside>
+</div>
+</main>
+</div>
+
+</body></html>

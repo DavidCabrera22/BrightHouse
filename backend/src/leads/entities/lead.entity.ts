@@ -36,6 +36,18 @@ export class Lead {
   @Column({ default: 'new' })
   status: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  potential_value: number;
+
+  @Column({ type: 'int', nullable: true })
+  ai_score: number;
+
+  @Column({ nullable: true })
+  priority: string;
+
+  @Column({ nullable: true })
+  interested_in: string;
+
   @CreateDateColumn()
   created_at: Date;
 }

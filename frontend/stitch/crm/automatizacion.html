@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "emerald-custom": "#10b981",
+                        "deep-blue": "#1e293b",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 lg:px-40 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">home_work</span>
+</div>
+<h2 class="text-deep-blue dark:text-white text-xl font-bold leading-tight tracking-tight">BrightHouse <span class="text-primary">CRM</span></h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors" href="#">Leads</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors" href="#">Proyectos</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-1" href="#">Automatizaciones</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4">
+<label class="hidden sm:flex flex-col min-w-40 h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+<div class="text-slate-400 flex items-center justify-center pl-4">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:ring-0 placeholder:text-slate-400 px-3 text-sm font-normal" placeholder="Buscar flujo..." value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-xl size-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-xl size-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+<div class="bg-primary/20 rounded-full size-10 flex items-center justify-center overflow-hidden border-2 border-primary/10">
+<img alt="Avatar de usuario" class="w-full h-full object-cover" data-alt="Professional user profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBE9IhkpDa7rZwb8lK6tRwvfaLZtJ2gI4CD1ipVOVNAZF2EiqmZ3W8vNissk_wwkBbVKZqXCKM1OZZO_80WbklmtKZ-mk34yaST1Hco5HH0XkACufwjMFvOdaY3mfnpzc4Ri_4jQJwFSx54hqu9lHSuJAAyKIH0fPTqypuA-M-Fe6tHRgwzfo7bUWxukMTVZKY_b_cN2YRMmDua0FTX5nIUIIebtiCM13cZgI6SwLR-TPNHTHw-AhXpekyM3UigIg7uxoOQSPUS3KQ"/>
+</div>
+</div>
+</header>
+<main class="flex-1 px-4 lg:px-40 py-8 max-w-[1440px] mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+<div class="flex flex-col gap-1">
+<h1 class="text-slate-900 dark:text-white text-3xl font-extrabold tracking-tight">Automatizaciones Inteligentes</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-medium">Gestiona y optimiza tus flujos de conversión de leads con IA.</p>
+</div>
+<button class="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+<span>Nueva automatización</span>
+</button>
+</div>
+<!-- Tabs Navigation -->
+<div class="mb-8 border-b border-slate-200 dark:border-slate-800">
+<div class="flex gap-8">
+<button class="pb-4 border-b-2 border-primary text-primary font-bold text-sm flex items-center gap-2">
+<span>Activos</span>
+<span class="bg-primary/10 px-2 py-0.5 rounded-full text-xs">12</span>
+</button>
+<button class="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-bold text-sm flex items-center gap-2 transition-colors">
+<span>Pausados</span>
+<span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-xs">4</span>
+</button>
+<button class="pb-4 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-bold text-sm flex items-center gap-2 transition-colors">
+<span>Borradores</span>
+<span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-xs">8</span>
+</button>
+</div>
+</div>
+<!-- Automation Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1: Active -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-primary/5 transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 bg-emerald-custom/10 text-emerald-custom px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+<span class="size-2 bg-emerald-custom rounded-full animate-pulse"></span>
+                            Activo
+                        </div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mb-6">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Nutrición de Leads Premium</h3>
+<div class="flex items-center gap-1.5 text-slate-500 text-sm">
+<span class="material-symbols-outlined text-[16px]">apartment</span>
+                            Residencial Esmeralda
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Leads Activos</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">1,240</p>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Conversión</p>
+<p class="text-emerald-custom text-lg font-extrabold tracking-tight">18.5%</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                            Editar
+                        </button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Duplicar">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Pausar">
+<span class="material-symbols-outlined text-[20px]">pause_circle</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Active -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-primary/5 transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 bg-emerald-custom/10 text-emerald-custom px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+<span class="size-2 bg-emerald-custom rounded-full animate-pulse"></span>
+                            Activo
+                        </div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mb-6">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Seguimiento Post-Visita</h3>
+<div class="flex items-center gap-1.5 text-slate-500 text-sm">
+<span class="material-symbols-outlined text-[16px]">apartment</span>
+                            Brighthouse Towers
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Leads Activos</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">458</p>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Conversión</p>
+<p class="text-emerald-custom text-lg font-extrabold tracking-tight">12.2%</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                            Editar
+                        </button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">pause_circle</span>
+</button>
+</div>
+</div>
+<!-- Card 3: Paused -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 opacity-80 hover:opacity-100 transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                            Pausado
+                        </div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mb-6">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Campaña Hot Sale 2024</h3>
+<div class="flex items-center gap-1.5 text-slate-500 text-sm">
+<span class="material-symbols-outlined text-[16px]">apartment</span>
+                            Villas del Mar
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Leads Activos</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">0</p>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Conversión</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">--</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex-1 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+                            Editar
+                        </button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+</button>
+<button class="p-2 text-emerald-custom hover:bg-emerald-custom/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">play_circle</span>
+</button>
+</div>
+</div>
+<!-- Card 4: Draft -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary/50 transition-all">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                            Borrador
+                        </div>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<div class="mb-6">
+<h3 class="text-slate-900 dark:text-white text-lg font-bold mb-1">Recuperación de Leads Fríos</h3>
+<div class="flex items-center gap-1.5 text-slate-500 text-sm">
+<span class="material-symbols-outlined text-[16px]">apartment</span>
+                            Global Portfolio
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Leads Activos</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">--</p>
+</div>
+<div>
+<p class="text-slate-400 text-xs font-bold uppercase mb-1">Conversión</p>
+<p class="text-slate-900 dark:text-white text-lg font-extrabold tracking-tight">--</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex-1 bg-primary text-white hover:bg-primary/90 transition-all py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 shadow-md shadow-primary/10">
+                            Continuar
+                        </button>
+<button class="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<!-- Add New Automation Placeholder -->
+<button class="group flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 hover:bg-primary/5 hover:border-primary transition-all gap-4">
+<div class="size-14 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">add_circle</span>
+</div>
+<div class="text-center">
+<p class="text-slate-900 dark:text-white font-bold">Crear automatización</p>
+<p class="text-slate-500 text-xs">Usa una plantilla o empieza de cero</p>
+</div>
+</button>
+</div>
+<!-- Stats Overview Summary -->
+<div class="mt-12 p-8 bg-deep-blue dark:bg-slate-900 rounded-2xl text-white shadow-2xl relative overflow-hidden">
+<div class="absolute top-0 right-0 p-12 opacity-10">
+<span class="material-symbols-outlined text-[120px]">auto_awesome</span>
+</div>
+<div class="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+<div>
+<h2 class="text-2xl font-bold mb-2">Impacto en el Negocio</h2>
+<p class="text-slate-400">Tus automatizaciones han ahorrado un total de <span class="text-emerald-custom font-bold">142 horas</span> de trabajo manual este mes.</p>
+</div>
+<div class="flex gap-12">
+<div class="text-center">
+<p class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Tasa Promedio</p>
+<p class="text-4xl font-extrabold">15.4%</p>
+<p class="text-emerald-custom text-xs font-bold mt-1 flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +2.1%
+                            </p>
+</div>
+<div class="text-center">
+<p class="text-slate-400 text-sm font-semibold uppercase tracking-wider mb-2">Total Leads</p>
+<p class="text-4xl font-extrabold">4.8k</p>
+<p class="text-emerald-custom text-xs font-bold mt-1 flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +12%
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 lg:px-40 py-6">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
+<p>© 2024 BrightHouse CRM. Potenciado con IA.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Términos</a>
+<a class="hover:text-primary transition-colors" href="#">Privacidad</a>
+<a class="hover:text-primary transition-colors" href="#">Centro de Ayuda</a>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse CRM - Advanced Predictive Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "accent-emerald": "#10b981",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .chart-gradient {
+            background: linear-gradient(180deg, rgba(17, 82, 212, 0.1) 0%, rgba(17, 82, 212, 0) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 lg:px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl">domain</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">BrightHouse CRM</h2>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="#">Analytics</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Leads</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Properties</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64" placeholder="Search analytics..."/>
+</div>
+<button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden" data-alt="User profile avatar">
+<img alt="Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr-jjjsNAPOPUe7oLJlmcjEU81oeBV5sn66uYEQF8WfhSU3uItvqQMLh8ltWOJmn_xdhqF7PqCh28lhAD4qVWzV0r1MfXYx6TlbfJc6lsi2lfZbVjUGl9xOYNv5rTE3p5MoPyU2IKi8mk_7ZkRD7gY3v0WLGtyKlWQ5Q1YsBU-Pl8VilvMlcTyNtelBozTsh33lzhBw5UKP23NbJFNCan8sRPwT51lQeJb-zsakOoMIbGkpr3zkwLdorG_Z3sJ31GCy6F6pHfON7M"/>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-4 lg:px-10 py-8">
+<!-- Header & Breadcrumbs -->
+<div class="mb-8">
+<div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+<span>Analytics</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary">Predictive Module</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl font-black text-slate-900 dark:text-white leading-tight">Advanced Predictive Analytics</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Harness AI-driven insights to optimize your sales funnel and advisor performance.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined text-sm">download</span> Export Data
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+<span class="material-symbols-outlined text-sm">refresh</span> Update Models
+                    </button>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left Column: IA Insights & Trends -->
+<div class="lg:col-span-8 flex flex-col gap-6">
+<!-- Predictive Intelligence Block -->
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-8xl text-primary">psychology</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-primary text-white uppercase tracking-tighter">AI Driven</span>
+<h3 class="text-xl font-bold text-slate-900 dark:text-white">Predicción Inteligente</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+<div class="bg-white/50 dark:bg-slate-900/50 p-4 rounded-lg backdrop-blur-sm border border-white/20">
+<p class="text-xs text-slate-500 font-medium uppercase mb-1">Forecasted Sales</p>
+<p class="text-2xl font-black text-primary">$2.42M</p>
+<p class="text-xs text-accent-emerald flex items-center gap-1 mt-1 font-bold">
+<span class="material-symbols-outlined text-xs">trending_up</span> +12.4% vs last month
+                                </p>
+</div>
+<div class="bg-white/50 dark:bg-slate-900/50 p-4 rounded-lg backdrop-blur-sm border border-white/20">
+<p class="text-xs text-slate-500 font-medium uppercase mb-1">High-Prob Leads</p>
+<p class="text-2xl font-black text-slate-800 dark:text-white">15</p>
+<p class="text-xs text-slate-500 mt-1">Score &gt; 85% probability</p>
+</div>
+<div class="bg-white/50 dark:bg-slate-900/50 p-4 rounded-lg backdrop-blur-sm border border-white/20">
+<p class="text-xs text-slate-500 font-medium uppercase mb-1">At Risk Projects</p>
+<p class="text-2xl font-black text-red-500">03</p>
+<p class="text-xs text-slate-500 mt-1">Immediate action required</p>
+</div>
+</div>
+<div class="bg-primary/10 dark:bg-white/5 p-4 rounded-lg border border-primary/10">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1">lightbulb</span>
+<div>
+<p class="font-bold text-sm text-slate-800 dark:text-slate-200">Strategic Recommendation</p>
+<p class="text-sm text-slate-600 dark:text-slate-400">Re-engage leads from <span class="font-bold text-primary">'Emerald Valley' phase 1</span> immediately. Our models show a 35% increase in conversion for cold leads reactivated during this market window.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Trends and Projections Chart -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="font-bold text-lg">Market Growth &amp; Forecast</h3>
+<p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Volume Trends 2023 - 2024</p>
+</div>
+<div class="flex items-center gap-4 text-xs">
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-primary"></span> Historical
+                            </div>
+<div class="flex items-center gap-1">
+<span class="w-3 h-3 rounded-full bg-primary/30 border border-dashed border-primary"></span> Projections
+                            </div>
+</div>
+</div>
+<!-- Simplified Visual Chart Placeholder -->
+<div class="h-64 relative flex items-end justify-between gap-1 overflow-hidden">
+<div class="absolute inset-0 chart-gradient opacity-40"></div>
+<div class="w-full h-[30%] bg-primary/20 rounded-t border-t-2 border-primary relative group">
+<div class="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded">Jan: 1.2M</div>
+</div>
+<div class="w-full h-[45%] bg-primary/20 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[38%] bg-primary/20 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[55%] bg-primary/30 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[62%] bg-primary/40 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[58%] bg-primary/50 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[75%] bg-primary/60 rounded-t border-t-2 border-primary"></div>
+<div class="w-full h-[82%] bg-primary/30 rounded-t border-t-2 border-primary border-dashed opacity-70"></div>
+<div class="w-full h-[90%] bg-primary/20 rounded-t border-t-2 border-primary border-dashed opacity-50"></div>
+<div class="w-full h-[95%] bg-primary/10 rounded-t border-t-2 border-primary border-dashed opacity-30"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+<span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span>
+</div>
+</div>
+<!-- Advisor Performance Table -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+<h3 class="font-bold text-lg">Advisor Performance Performance</h3>
+<button class="text-primary text-xs font-bold hover:underline">View All Advisors</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
+<th class="px-6 py-4">Advisor Name</th>
+<th class="px-6 py-4">Leads</th>
+<th class="px-6 py-4">Sales Closed</th>
+<th class="px-6 py-4">Conv. Rate</th>
+<th class="px-6 py-4">Value Generated</th>
+<th class="px-6 py-4">Projected Comm.</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+<td class="px-6 py-4 flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" data-alt="Advisor 1 portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrYYRxZ5S6Bc7AJs1ovygjjpJTfvBKDC5sqSE7uOUEYC7Z-WQhaWRpmGFPIAL5K-CoeIkK6HlMgNA47JEwhVWKXQVUZSyzaYnRMy8JxoawgEIbPVier87ulVwj6XevOl9vBxUSYdeGjc3YcTpmTCwPaYu4FRnYZi1a6t3tBbRovH09p0IuOVb6PGgPgV1O-tEjLoawC4exfSUKElu8547WqudbjPb3ZK5_RvO6zKPkRsiqQso4Bl1r8lX648yPjFnjMCRwy1Gvibk"/>
+<span class="font-bold">Sofia Martinez</span>
+</td>
+<td class="px-6 py-4">124</td>
+<td class="px-6 py-4">18</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">14.5%</span>
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-accent-emerald" style="width: 75%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">$1.2M</td>
+<td class="px-6 py-4 text-primary font-bold">$36,000</td>
+</tr>
+<tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30">
+<td class="px-6 py-4 flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" data-alt="Advisor 2 portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDln-7wQWnO_5TbNTLn2CWl-wYoAepxB-lvxdF5Za1qpOGVYY_efXFCJwJd3coSjFC0m_NlKLc_xem4aYiJ6hEyt0WWKn7E9UiLwPYPhQdlLedQU5fUy5zEc2AeezjG6O79N8e8WikXxhkOTgOXuKE8BHa2q6G7bOroh27GNr3lgJJvJhi7KPf6yMxa3gzZVRFkTjhlPTnCdB7yv-JqxeC4DS6wJayD3t7FG9PDzSln6HylcOHV0emRBJKTGQON0ORtuhclVlx5zUA"/>
+<span class="font-bold">Lucas Thorne</span>
+</td>
+<td class="px-6 py-4">98</td>
+<td class="px-6 py-4">12</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">12.2%</span>
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-accent-emerald" style="width: 60%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">$890K</td>
+<td class="px-6 py-4 text-primary font-bold">$26,700</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+<td class="px-6 py-4 flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" data-alt="Advisor 3 portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrJnjaivVhG2D5xFSvWghkwoaP4mlNdyxEkrkHxZ1UEiT6X_E-qXdEXgryBv4tNIh9Za9v2XkFLET93z6OYUFfucYtDj_3OdwkHQpH6mDr22yrb-IzGcIXYPLCr-YP5guwscq2G_zHs_RZ-LM5E7bPrGkf4brEkjTj9tUz0N7W4fZ-r4xzj5rX1xY5mRhJmsZjOYq7cbGnero8IwRlDJAKWRm9-x5e2TMQu0CavPjVVyRgs1NhQwOUjS59of8gCSYZFITxwOL5yo8"/>
+<span class="font-bold">Elena Ruiz</span>
+</td>
+<td class="px-6 py-4">156</td>
+<td class="px-6 py-4">09</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="font-bold">5.7%</span>
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-orange-400" style="width: 30%"></div>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-bold">$1.8M</td>
+<td class="px-6 py-4 text-primary font-bold">$54,000</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Column: Marketing Analytics & Extras -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Marketing Figital Analytics Section -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">hub</span>
+<h3 class="font-bold text-lg">Marketing Figital</h3>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between mb-2">
+<span class="text-sm font-medium">Physical vs Digital Leads</span>
+<span class="text-xs font-bold text-slate-400">Total 1,240</span>
+</div>
+<div class="flex h-4 rounded-full overflow-hidden w-full">
+<div class="bg-primary w-[35%] h-full relative group">
+<div class="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded">Physical (35%)</div>
+</div>
+<div class="bg-accent-emerald w-[65%] h-full relative group">
+<div class="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded">Digital (65%)</div>
+</div>
+</div>
+<div class="flex gap-4 mt-2">
+<div class="flex items-center gap-1 text-[10px] font-bold">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Events
+                                </div>
+<div class="flex items-center gap-1 text-[10px] font-bold">
+<span class="w-2 h-2 rounded-full bg-accent-emerald"></span> Social/Web
+                                </div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<p class="text-[10px] text-slate-500 font-black uppercase mb-1">Event ROI</p>
+<p class="text-xl font-black text-slate-800 dark:text-white">4.2x</p>
+<span class="text-[10px] text-accent-emerald font-bold">+0.8 vs prev.</span>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+<p class="text-[10px] text-slate-500 font-black uppercase mb-1">Conv. per Event</p>
+<p class="text-xl font-black text-slate-800 dark:text-white">8.4%</p>
+<span class="text-[10px] text-primary font-bold">Top: Emerald VIP</span>
+</div>
+</div>
+<div class="border-t border-slate-100 dark:border-slate-800 pt-4">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Recent Activations</p>
+<div class="space-y-3">
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>Luxury Expo NY</span>
+</div>
+<span class="font-bold">42 Leads</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span>Golf Club Soirée</span>
+</div>
+<span class="font-bold">28 Leads</span>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent-emerald"></span>
+<span>Instagram Ads Q3</span>
+</div>
+<span class="font-bold">814 Leads</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Predictive Action List -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<h3 class="font-bold text-lg mb-4">Urgent Actions</h3>
+<div class="space-y-4">
+<div class="flex gap-4 p-3 rounded-lg border border-red-100 bg-red-50 dark:bg-red-900/10 dark:border-red-900/20">
+<span class="material-symbols-outlined text-red-500">warning</span>
+<div>
+<p class="text-xs font-bold text-slate-900 dark:text-white">Phase 2 Delay Risk</p>
+<p class="text-[11px] text-slate-600 dark:text-slate-400">3 properties in Phase 2 are 15 days behind schedule. Predicted revenue loss: $45k.</p>
+</div>
+</div>
+<div class="flex gap-4 p-3 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-900/20">
+<span class="material-symbols-outlined text-blue-500">campaign</span>
+<div>
+<p class="text-xs font-bold text-slate-900 dark:text-white">Upsell Opportunity</p>
+<p class="text-[11px] text-slate-600 dark:text-slate-400">12 leads from 'Park Residence' are showing high interest in 'Grand Towers'. Strategy: Cross-sell campaign.</p>
+</div>
+</div>
+<div class="flex gap-4 p-3 rounded-lg border border-emerald-100 bg-emerald-50 dark:bg-emerald-900/10 dark:border-emerald-900/20">
+<span class="material-symbols-outlined text-emerald-500">verified</span>
+<div>
+<p class="text-xs font-bold text-slate-900 dark:text-white">Model Confidence</p>
+<p class="text-[11px] text-slate-600 dark:text-slate-400">Predictive accuracy has reached 94.2% for the current quarter. Recommended: Increase ad spend.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BrightHouse - Gestión de Unidades</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1152d4",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .status-badge { transition: all 0.2s ease; }
+        tr:hover { background-color: rgba(17, 82, 212, 0.02); }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen flex-col">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-12 py-3">
+<div class="mx-auto flex max-w-7xl items-center justify-between">
+<div class="flex items-center gap-10">
+<div class="flex items-center gap-2">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined text-2xl">apartment</span>
+</div>
+<h2 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">BrightHouse</h2>
+</div>
+<nav class="hidden items-center gap-8 md:flex">
+<a class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors border-b-2 border-primary pb-1" href="#">Proyectos</a>
+<a class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors" href="#">Clientes</a>
+<a class="text-sm font-semibold text-slate-500 hover:text-primary transition-colors" href="#">Reportes</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="h-10 w-64 rounded-lg border-slate-200 bg-slate-50 pl-10 text-sm focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800" placeholder="Buscar unidades..." type="text"/>
+</div>
+<button class="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+</button>
+<div class="h-10 w-10 overflow-hidden rounded-full border-2 border-primary/20 bg-slate-200">
+<img class="h-full w-full object-cover" data-alt="User profile avatar of a project manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeRJnn27dkVA96w7g5Ty5sx1v-w6RuXjqI1szCf1IGf-e0iLAQpwtRSWCYo5RIuXYr_cv1OIcksSxzwW_25PwC2Gcx8ONpbuKGRW6I_zqhxi22usxbtJlyeD9kEDsKpMJeMgTsynjig8guIsKkC-GI2MvUwyrdg5rodVeOB2czOybmX3Zz0XFwx0Juog0qWIcgAuSjKgol00GNvvABWKxeluwvNyUEieqvYgNXBwI1KsKLi9iZg6bQUFd1O-VBDrkchVxbirDFp3w"/>
+</div>
+</div>
+</div>
+</header>
+<main class="mx-auto w-full max-w-7xl flex-1 px-6 py-8 lg:px-12">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-end">
+<div>
+<nav class="mb-2 flex items-center gap-2 text-xs font-medium text-slate-500">
+<a class="hover:text-primary" href="#">Proyectos</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<a class="hover:text-primary" href="#">Residencial Central Park</a>
+</nav>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Unidades (Apartamentos)</h1>
+<p class="mt-1 text-slate-500 dark:text-slate-400">Inventario en tiempo real y gestión comercial por torre.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
+<span class="material-symbols-outlined text-lg">download</span>
+                    Exportar
+                </button>
+<button class="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md transition-all hover:bg-primary/90 hover:shadow-lg active:scale-95">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                    Nueva Unidad
+                </button>
+</div>
+</div>
+<!-- Advanced Filter Bar -->
+<div class="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+<div class="relative">
+<label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Torre</label>
+<select class="w-full appearance-none rounded-lg border-slate-200 bg-slate-50 text-sm focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800">
+<option>Todas las Torres</option>
+<option>Torre Norte</option>
+<option>Torre Sur</option>
+<option>Torre Este</option>
+</select>
+</div>
+<div>
+<label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Estado</label>
+<select class="w-full appearance-none rounded-lg border-slate-200 bg-slate-50 text-sm focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800">
+<option>Todos los Estados</option>
+<option>Disponible</option>
+<option>En Proceso</option>
+<option>Separada</option>
+<option>Vendida</option>
+</select>
+</div>
+<div>
+<label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Agente</label>
+<select class="w-full appearance-none rounded-lg border-slate-200 bg-slate-50 text-sm focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800">
+<option>Cualquier Agente</option>
+<option>Carlos Ruiz</option>
+<option>Ana Milena</option>
+<option>Roberto Gómez</option>
+</select>
+</div>
+<div>
+<label class="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Rango de Precio</label>
+<select class="w-full appearance-none rounded-lg border-slate-200 bg-slate-50 text-sm focus:border-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800">
+<option>Cualquier precio</option>
+<option>$300M - $450M</option>
+<option>$450M - $600M</option>
+<option>$600M+</option>
+</select>
+</div>
+<div class="flex items-end">
+<button class="w-full rounded-lg bg-slate-100 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700">
+                        Limpiar Filtros
+                    </button>
+</div>
+</div>
+</div>
+<!-- Units Table Container -->
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="custom-scrollbar overflow-x-auto">
+<table class="w-full border-collapse text-left">
+<thead>
+<tr class="border-b border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/50">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Código</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Torre</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500 text-center">Piso</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Área m²</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Precio</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Estado</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-500">Agente Asignado</th>
+<th class="px-6 py-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Unit Row: Disponible -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">A-204</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Norte</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">2</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">85 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$450,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                                    Disponible
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBS3ChLfB25iNYMcyjFlOAQCWw7roXIHguj-y-zAuhZjAxmyg5BfJsqOf6jKDa6Vu2-7--CU9OR6ISfgDp3Lajsz1R1t42yKR42y6qYFnNdPIYUC-tv7Xbht8mPhcQwIsCX2HxnSCok4GQryf1efWBzhlPKZ1Q_GjVPmF9RlGubDdW4woM92S1xkq-KPRzcv-6NSAAagqKvrGNPZEdhoXdok9tTfLYgNd9-2cdvCnCt5H0zN_P-7a474inM80x_Syz2yOUGqJ6uhVk')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Carlos Ruiz</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<!-- Unit Row: En Proceso -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">B-501</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Sur</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">5</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">120 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$620,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+<span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+                                    En proceso
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDqcYnjq310abNvcY7f8IOwL1yF99ZXEbIvys9nEm3P6DINshk2He3TCNhdBb6oJDoswOOl6EpDQQvmnBkwlc4CS1E6SrEwvDgUjnCcOAq7M2SR-Y05KgIDXbJbUiuWFWFbkAp01Vc1hzg6DH0eulKsA9pf5Ai5fnG2kYtWs3yI5I-jqcgjRmVbgT8-ZX3m-9zCymzODim_hf54CwkcWVu2Peu8l1CS2zWA0A35aBZrbNDQGDXmMPqORLbTYLtTtrVYoDHsrCa_M9k')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Ana Milena</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<!-- Unit Row: Separada -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">A-102</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Norte</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">1</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">92 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$480,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+                                    Separada
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA3vANRF12FuZ65VbV1o4r5lLuks1NQ-mOdCMrl7Fce_48nCtj7kmS002_mpyVh-LvBKTNh8w5K31GYdsTzpGMZaWzIJp73g6wQ60wCc56YY_Farvhc4EUwuMwGABIVV_9DHsAtkQiNFveU9JQdq0VFtJLcs5QXor3HpCbCTpEtHPM3r5NLcj2PL8OCYE8BC0s3giQ2pX7u5PLOrZ8LyjMGyqp9jeuU_jfR--NXWuljAmL8xJ4yuFs8CsONufbnQetPwWLX0cACEyo')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Roberto Gómez</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<!-- Unit Row: Promesa -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">C-303</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Este</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">3</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">78 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$390,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+<span class="h-1.5 w-1.5 rounded-full bg-purple-500"></span>
+                                    Promesa
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5eF8C9oMVqAugWaUvhCf8itzKaCXlWDiglqLgyDCdVR94R5-Bxrn0biBIdiXN-j7RqDQ4E5ZYbiziT-cEdrDVC-ehvzwurPqw5ZoxD-WfcefWLqYp5pzeCSnMGf3IiIRskXORb7D1OhhajHJj6-AS17gaJu-lAhmVW_m3QFkUdCxHa8Fq-jlnl5ofkr2PDyUL7rgpIbugg-DJpjryFsktfU16Een59Vg3Lq4vmbkBpmF7XfVUNjoG0ms-DXsMxhUNlJMI7NEpTFM')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Lucía Fernández</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<!-- Unit Row: Escrituración -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">B-804</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Sur</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">8</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">110 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$580,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+<span class="h-1.5 w-1.5 rounded-full bg-yellow-500"></span>
+                                    Escrituración
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDtq9Vl6CUtG3cZUdtdCg_pH0FuXJWDWIV3og5cXSw4YEJBg1dLcZoLOjXaScDhjyv_DzTFF0HHnaNVpriFSeQ-VBgkakKtVnnJfAkgB4_RhB-t4frsVYQ4wFUbw-bVzulA_GjJ2yaJBtaTc7C0FCrToGuaT6rRPdwKHYpxXWdw5zh2AKw_XWR2t9qRFt5vz1VDaEX9wkI7Jm7A1TvX7_0tHx5e5Ouw7Sh5_ioADXfnW_lNPBi7Ynwde3gGB8NunbuwSA9dzDVh7eQ')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Carlos Ruiz</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+<!-- Unit Row: Vendida -->
+<tr class="transition-colors">
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-white">A-405</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">Torre Norte</td>
+<td class="px-6 py-4 text-sm text-center text-slate-600 dark:text-slate-400">4</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400 font-medium">85 m²</td>
+<td class="px-6 py-4 text-sm font-bold text-primary">$455,000,000</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+<span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                                    Vendida
+                                </span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="h-6 w-6 rounded-full bg-slate-200" data-alt="Agent profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDP7SwHfnrxBufPO2joksGdkO92qTom1ietZR2GPxaT70zNcqAlViLVMqrD-l4Fa4_ECiC1wz_vLzdIlzSp6WyJzTWCOrgnhn0x7EYZTlaaj1LuenAtiIeeAFAP-VdmDxhrgqjO_QpSxdiH9HG0cSmiCdAwBZX1H0bJ_JTVccf2QtlxHacMwm8vorbta51t2ahR_0SKSacQ9JRYbxiI9b6--zaPc9rTNnMJHPHBVeM2ElSDP5xTarAAqzSpM5Au8bh1qzdl4uuJfaM')"></div>
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Elena Pardo</span>
+</div>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/30">
+<div class="text-sm text-slate-500">
+                    Mostrando <span class="font-bold text-slate-900 dark:text-white">1</span> a <span class="font-bold text-slate-900 dark:text-white">6</span> de <span class="font-bold text-slate-900 dark:text-white">142</span> unidades
+                </div>
+<div class="flex items-center gap-2">
+<button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">1</button>
+<button class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">2</button>
+<button class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">3</button>
+<button class="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+</main>
+<!-- Project Quick Stats (Optional bottom bar) -->
+<footer class="mt-auto border-t border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
+<div class="mx-auto flex max-w-7xl items-center justify-between gap-6 overflow-x-auto whitespace-nowrap">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold uppercase tracking-widest text-slate-400">Resumen:</span>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1.5">
+<span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+<span class="text-sm font-bold">42</span>
+<span class="text-sm text-slate-500">Disponibles</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="h-2 w-2 rounded-full bg-orange-500"></span>
+<span class="text-sm font-bold">18</span>
+<span class="text-sm text-slate-500">En proceso</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="h-2 w-2 rounded-full bg-red-500"></span>
+<span class="text-sm font-bold">82</span>
+<span class="text-sm text-slate-500">Vendidas</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-4 text-sm font-medium">
+<span class="text-slate-400">Ventas totales:</span>
+<span class="text-lg font-black text-primary">$45.280.000.000</span>
+</div>
+</div>
+</footer>
+</div>
+</body></html>
