@@ -14,7 +14,7 @@ const LoginPage: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -26,6 +26,10 @@ const LoginPage: React.FC = () => {
 
       if (response.ok) {
         localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('user_role', data.role ?? '');
+        if (data.id) localStorage.setItem('user_id', data.id);
+        if (data.name) localStorage.setItem('user_name', data.name);
+        if (data.email) localStorage.setItem('user_email', data.email);
         navigate('/crm');
       } else {
         setError(data.message || 'Error al iniciar sesión');

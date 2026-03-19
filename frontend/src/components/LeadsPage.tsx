@@ -17,6 +17,11 @@ interface Lead {
   last_activity?: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
 const statusMap: Record<string, { label: string; color: string }> = {
   'new': { label: 'Nuevo', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800/30' },
   'contacted': { label: 'Contactado', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800/30' },
@@ -27,46 +32,143 @@ const statusMap: Record<string, { label: string; color: string }> = {
   'negotiation': { label: 'Negociación', color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800/30' }
 };
 
+interface User {
+  id: string;
+  name: string;
+  role: string;
+}
+
 const LeadsPage: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [agents, setAgents] = useState<User[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [newLead, setNewLead] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    project_id: '',
+    source: 'web',
+    assigned_agent_id: ''
+  });
 
   useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        const headers = {
+    const role = localStorage.getItem('user_role');
+    setUserRole(role);
+    
+    fetchLeads();
+    fetchProjects();
+    if (role === 'admin' || role === 'super_admin') {
+      fetchAgents();
+    }
+  }, []);
+
+  const fetchAgents = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      // Assuming there is an endpoint to get users/agents. If not, we might need to adjust.
+      // Usually GET /api/users with role filter
+      const response = await fetch('/api/users?role=agent', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    }
+  };
+
+  const fetchLeads = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch('/api/leads', { headers });
+      if (response.ok) {
+        const data = await response.json();
+        // Enrich data with mock fields if missing from backend for UI demo
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const enrichedData = data.map((lead: any) => ({
+          ...lead,
+          email: lead.email || 'correo@ejemplo.com',
+          source: lead.source || 'Sitio Web',
+          agent: lead.assigned_agent?.name || 'Sin Asignar',
+          ai_score: lead.ai_score || Math.floor(Math.random() * 100),
+          sale_value: lead.sale_value || Math.floor(Math.random() * 1000000) + 100000,
+          last_activity: 'Hace 2 horas'
+        }));
+        setLeads(enrichedData);
+      }
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('/api/projects', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
+        if (data.length > 0) {
+          setNewLead(prev => ({ ...prev, project_id: data[0].id }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const handleCreateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('access_token');
+      const userId = localStorage.getItem('user_id');
+      
+      // If user is agent, auto-assign. If admin and no agent selected, might remain unassigned or assigned to admin depending on backend logic.
+      // Here we explicitly handle the agent logic if needed, but backend should handle creation logic too.
+      // If user is 'agent', we force assigned_agent_id to be themselves if not set (though UI hides the field).
+      
+      const leadPayload = { ...newLead, status: 'new' };
+      
+      if (userRole === 'agent' && userId) {
+          leadPayload.assigned_agent_id = userId;
+      }
+
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        };
+        },
+        body: JSON.stringify(leadPayload)
+      });
 
-        const response = await fetch('http://localhost:3000/api/leads', { headers });
-        if (response.ok) {
-          const data = await response.json();
-          // Enrich data with mock fields if missing from backend for UI demo
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const enrichedData = data.map((lead: any) => ({
-            ...lead,
-            email: lead.email || 'correo@ejemplo.com',
-            source: lead.source || 'Sitio Web',
-            agent: lead.assigned_agent?.name || 'Sin Asignar',
-            ai_score: lead.ai_score || Math.floor(Math.random() * 100),
-            sale_value: lead.sale_value || Math.floor(Math.random() * 1000000) + 100000,
-            last_activity: 'Hace 2 horas'
-          }));
-          setLeads(enrichedData);
-        }
-      } catch (error) {
-        console.error('Error fetching leads:', error);
-      } finally {
-        setLoading(false);
+      if (response.ok) {
+        setShowCreateModal(false);
+        fetchLeads(); // Refresh list
+        setNewLead({ name: '', email: '', phone: '', project_id: projects[0]?.id || '', source: 'web', assigned_agent_id: '' });
+      } else {
+        alert('Error al crear el lead');
       }
-    };
-
-    fetchLeads();
-  }, []);
+    } catch (error) {
+      console.error('Error creating lead:', error);
+    }
+  };
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -92,7 +194,7 @@ const LeadsPage: React.FC = () => {
       </button>
       <button 
         className="bg-crm-primary hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-lg shadow-crm-primary/30 transition-all flex items-center gap-2"
-        onClick={() => alert("Crear nuevo prospecto próximamente")}
+        onClick={() => setShowCreateModal(true)}
       >
         <span className="material-symbols-outlined text-[18px]">add</span>
         <span>Nuevo Prospecto</span>
@@ -106,6 +208,114 @@ const LeadsPage: React.FC = () => {
       subtitle="Puntaje y distribución de prospectos con IA"
       actions={pageActions}
     >
+      {/* Create Lead Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nuevo Prospecto</h3>
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleCreateLead} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre Completo</label>
+                <input 
+                  type="text" 
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                  value={newLead.name}
+                  onChange={e => setNewLead({...newLead, name: e.target.value})}
+                  placeholder="Ej. Juan Pérez"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                  value={newLead.email}
+                  onChange={e => setNewLead({...newLead, email: e.target.value})}
+                  placeholder="juan@ejemplo.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono</label>
+                <input 
+                  type="tel" 
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                  value={newLead.phone}
+                  onChange={e => setNewLead({...newLead, phone: e.target.value})}
+                  placeholder="+52 55 1234 5678"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Proyecto de Interés</label>
+                <select 
+                  required
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                  value={newLead.project_id}
+                  onChange={e => setNewLead({...newLead, project_id: e.target.value})}
+                >
+                  <option value="" disabled>Seleccionar proyecto</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fuente</label>
+                <select 
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                  value={newLead.source}
+                  onChange={e => setNewLead({...newLead, source: e.target.value})}
+                >
+                  <option value="web">Sitio Web</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="referral">Referido</option>
+                  <option value="ads">Publicidad</option>
+                  <option value="event">Evento</option>
+                </select>
+              </div>
+              
+              {(userRole === 'admin' || userRole === 'super_admin') && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Asignar Agente</label>
+                  <select 
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary focus:border-transparent outline-none transition-all"
+                    value={newLead.assigned_agent_id}
+                    onChange={e => setNewLead({...newLead, assigned_agent_id: e.target.value})}
+                  >
+                    <option value="">Sin Asignar</option>
+                    {agents.map(agent => (
+                      <option key={agent.id} value={agent.id}>{agent.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="pt-4 flex gap-3 justify-end">
+                <button 
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="px-6 py-2 text-sm font-bold text-white bg-crm-primary hover:bg-blue-700 rounded-lg shadow-lg shadow-crm-primary/20 transition-all"
+                >
+                  Guardar Prospecto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-6">
               
               {/* Metric Cards */}

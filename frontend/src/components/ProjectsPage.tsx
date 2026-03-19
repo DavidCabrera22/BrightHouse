@@ -15,78 +15,99 @@ interface Project {
   units_sold?: number;
   units_available?: number;
   units_process?: number;
+  assigned_agents?: string[];
 }
 
-// Mock User Role and Assigned Project (Simulating Agent Context)
-// In a real app, this would come from a Context or Redux store after login
-const currentUser = {
-  role: 'admin', // Change to 'agent' to test agent view
-  assignedProjectId: '1' // Example: Agent assigned to "Torre Vista Marina"
-};
+
 
 const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [userRole] = useState<string>(() => localStorage.getItem('user_role') || 'admin');
+  const [userId] = useState<string>(() => localStorage.getItem('user_id') || '');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newProject, setNewProject] = useState({
+    name: '',
+    location: '',
+    status: 'active',
+    total_units: 0,
+    image: null as File | null // Changed to File type
+  });
 
   useEffect(() => {
-    // Using Mock Data to match the design request
-    const mockProjects: Project[] = [
-      {
-        id: '1',
-        name: 'Torre Vista Marina',
-        location: 'Polanco, CDMX',
-        status: 'active',
-        total_units: 120,
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAUibHONR7itDO9jGZD0D55f0kuWDTJOS40LLDJfOF9xrBTe0oEbA1Ibb6kGEVjIovD05lnEpUXi4hVPKhv-3KMPclfO948p6ulwITCgOXK19cSt2KOJZMKgr-hNgGit-4dRUXXtvmV58tW_T1Ao2j7zsHOoWPY5Am5oCeKJ8nJydsPTQCsLubryQkoZpTEPhfNxMS6afMKrr_XxyS56mXHLEopvCTPQXmzx-iLNF7O5hkaqTfJFk-fswllx34vYhYvIQ_EyDr0-rs',
-        sales_progress: 75,
-        units_sold: 75,
-        units_available: 30,
-        units_process: 15
-      },
-      {
-        id: '2',
-        name: 'Altos de Valle',
-        location: 'San Pedro, Monterrey',
-        status: 'preventa',
-        total_units: 45,
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCS-kTFiHC0X8GT8ZXxMmRUphDP5OWk4mnk6Z-XCWdrwvyiCa68UOds2jcCx9IcSDqNQ0UjRZjnTNxClfuSZDL11_n4A1khaMSKQElbLsls_-pUTofvxxkBTDbsJZYGgOoOKY2ykHALBRaXC0dCucmqlxBVsT6ffpnqbrB1fC590fyUSeh8rED7r6T1j7EiQzUZwluw7ZysgZutiTij3mryLMuZYN3cdAbkMSbOOyqiTF5V0Hvi6HOO-B7HA_6Fqzr18-KwGFFrv1Y',
-        sales_progress: 22,
-        units_sold: 5,
-        units_available: 35,
-        units_process: 5
-      },
-      {
-        id: '3',
-        name: 'Azul Residencial',
-        location: 'Zona Hotelera, Cancún',
-        status: 'active',
-        total_units: 88,
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBUU5qHjC25TPu85iekYeKkyotrNqzOUfMpaq7K_3lCLgqZSdO8jJ1PfmPpWiGNKljml_re9MCG1Xbay0fzmZHAelAnFuNxodywZtm9lhblTF0MY-vSOEMTns2CQLHcFkAb1qY4skgVTQoHGG1SNCap96bTasKazqS9iQ8l0scNhG1fCq-tWdg8-Y0uVBkDgnGbRLwB0X-XUjfilMR8nuhPyp4i7yTQiMEDtyQxdebO6PAPOYTbE3WqYijxK6dr_RuLuwzVpphDFFU',
-        sales_progress: 92,
-        units_sold: 81,
-        units_available: 4,
-        units_process: 3
-      }
-    ];
-    
-    // Simulate API call
-    const timer = setTimeout(() => {
-        // Filter projects for Agents
-        if (userRole === 'agent') {
-            // Mock: Agent is assigned to project ID '1'
-            const agentProjects = mockProjects.filter(p => p.id === currentUser.assignedProjectId);
-            setProjects(agentProjects);
-        } else {
-            setProjects(mockProjects);
-        }
-        
-        setLoading(false);
-    }, 500);
+    fetchProjects();
+  }, [userRole, userId]);
 
-    return () => clearTimeout(timer);
-  }, [userRole]);
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('access_token');
+      
+      const formData = new FormData();
+      formData.append('name', newProject.name);
+      formData.append('location', newProject.location);
+      formData.append('status', newProject.status);
+      formData.append('total_units', String(newProject.total_units));
+      if (newProject.image) {
+          formData.append('image', newProject.image);
+      }
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // 'Content-Type': 'multipart/form-data' // DO NOT SET THIS MANUALLY, browser sets it with boundary
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        setShowCreateModal(false);
+        fetchProjects(); // Refresh list
+        setNewProject({ name: '', location: '', status: 'active', total_units: 0, image: null });
+      } else {
+        alert('Error al crear el proyecto');
+      }
+    } catch (error) {
+      console.error('Error creating project:', error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('access_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+      
+      const res = await fetch('/api/projects', { headers });
+      
+      if (res.ok) {
+        let data: Project[] = await res.json();
+        
+        // Enrich with mock UI fields if backend doesn't provide them yet
+        data = data.map(p => ({
+            ...p,
+            image: p.image || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop',
+            sales_progress: p.sales_progress || Math.floor(Math.random() * 100),
+            units_sold: p.units_sold || Math.floor(Math.random() * 50),
+            units_available: p.units_available || Math.floor(Math.random() * 20),
+            units_process: p.units_process || Math.floor(Math.random() * 10),
+        }));
+
+        // Client-side filtering for Agent role (if backend doesn't handle it)
+        if (userRole === 'agent') {
+            data = data.filter(p => p.assigned_agents?.includes(userId));
+        }
+
+        setProjects(data);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch(status) {
@@ -120,7 +141,10 @@ const ProjectsPage: React.FC = () => {
             <span>Importar Unidades</span>
           </button>
           {userRole !== 'agent' && (
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all">
+            <button 
+                onClick={() => setShowCreateModal(true)}
+                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all"
+            >
               <span className="material-symbols-outlined text-lg">add_business</span>
               <span>Nuevo Proyecto</span>
             </button>
@@ -128,6 +152,118 @@ const ProjectsPage: React.FC = () => {
         </div>
       }
     >
+      {/* Create Project Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nuevo Proyecto</h3>
+                    <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form onSubmit={handleCreateProject} className="p-6 space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Proyecto</label>
+                        <input 
+                            type="text" 
+                            required
+                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                            value={newProject.name}
+                            onChange={e => setNewProject({...newProject, name: e.target.value})}
+                            placeholder="Ej: Torre Vista Marina"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación</label>
+                        <input 
+                            type="text" 
+                            required
+                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                            value={newProject.location}
+                            onChange={e => setNewProject({...newProject, location: e.target.value})}
+                            placeholder="Ej: Polanco, CDMX"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Unidades</label>
+                            <input 
+                                type="number" 
+                                required
+                                min="1"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                                value={newProject.total_units}
+                                onChange={e => setNewProject({...newProject, total_units: Number(e.target.value)})}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                            <select 
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                                value={newProject.status}
+                                onChange={e => setNewProject({...newProject, status: e.target.value})}
+                            >
+                                <option value="active">Activo</option>
+                                <option value="preventa">Preventa</option>
+                                <option value="construction">En Construcción</option>
+                                <option value="finished">Finalizado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Imagen de Portada</label>
+                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-700 border-dashed rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer relative">
+                            <div className="space-y-1 text-center">
+                                <span className="material-symbols-outlined text-4xl text-slate-400">image</span>
+                                <div className="flex text-sm text-slate-600 dark:text-slate-400">
+                                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white dark:bg-transparent rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                        <span>Subir un archivo</span>
+                                        <input 
+                                            id="file-upload" 
+                                            name="file-upload" 
+                                            type="file" 
+                                            className="sr-only" 
+                                            accept="image/*"
+                                            onChange={e => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setNewProject({...newProject, image: e.target.files[0]});
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    <p className="pl-1">o arrastrar y soltar</p>
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-500">PNG, JPG, GIF hasta 10MB</p>
+                                {newProject.image && (
+                                    <p className="text-sm text-emerald-600 font-bold mt-2">
+                                        Seleccionado: {newProject.image.name}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button 
+                            type="button" 
+                            onClick={() => setShowCreateModal(false)}
+                            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transition-all"
+                        >
+                            Crear Proyecto
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
       <div className="flex flex-col gap-6">
         
         {/* Tabs & Filters */}

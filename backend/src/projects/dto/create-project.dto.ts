@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateProjectDto {
   @ApiProperty()
@@ -18,6 +19,7 @@ export class CreateProjectDto {
   location: string;
 
   @ApiProperty()
+  @Type(() => Number)
   @IsInt()
   total_units: number;
 
@@ -29,4 +31,8 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   marketing_plan_type?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  image?: string;
 }

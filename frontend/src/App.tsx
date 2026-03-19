@@ -11,8 +11,9 @@ import ConversationsPage from './components/ConversationsPage';
 import AutomationsPage from './components/AutomationsPage';
 import ProjectDashboardPage from './components/ProjectDashboardPage';
 import ProjectUnitsPage from './components/ProjectUnitsPage';
-import AnalyticsPage from './components/AnalyticsPage';
 import MarketingPage from './components/MarketingPage';
+import AnalyticsPage from './components/AnalyticsPage';
+import CommissionsPage from './components/CommissionsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/crm/projects/:projectId/units" element={<ProjectUnitsPage />} />
           <Route path="/crm/marketing" element={<MarketingPage />} />
           <Route path="/crm/analytics" element={<AnalyticsPage />} />
+          <Route path="/crm/commissions" element={<CommissionsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

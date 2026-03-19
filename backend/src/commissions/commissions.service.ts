@@ -18,13 +18,16 @@ export class CommissionsService {
   }
 
   findAll() {
-    return this.commissionRepository.find({ relations: ['sale'] });
+    return this.commissionRepository.find({
+      relations: ['sale', 'sale.unit', 'sale.client', 'sale.agent'],
+      order: { created_at: 'DESC' },
+    });
   }
 
   async findOne(id: string) {
-    const commission = await this.commissionRepository.findOne({ 
+    const commission = await this.commissionRepository.findOne({
       where: { id },
-      relations: ['sale'] 
+      relations: ['sale', 'sale.unit', 'sale.client', 'sale.agent'],
     });
     if (!commission) {
       throw new NotFoundException(`Commission with ID ${id} not found`);

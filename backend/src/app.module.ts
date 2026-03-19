@@ -16,6 +16,8 @@ import { DigitalSignaturesModule } from './digital-signatures/digital-signatures
 import { LeadsModule } from './leads/leads.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
+import { ConversationsModule } from './conversations/conversations.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
     LeadsModule,
     CampaignsModule,
     AuditLogsModule,
+    ConversationsModule,
+    WebhooksModule,
   ],
 })
 export class AppModule {}

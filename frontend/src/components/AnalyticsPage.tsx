@@ -60,7 +60,7 @@ const AnalyticsPage: React.FC = () => {
       };
       
       // Fetch leads as the primary data source
-      const res = await fetch('http://localhost:3000/api/leads', { headers });
+      const res = await fetch('/api/leads', { headers });
       
       if (res.ok) {
         const leads: Lead[] = await res.json();

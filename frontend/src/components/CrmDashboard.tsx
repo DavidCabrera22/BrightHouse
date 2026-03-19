@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CrmLayout from './CrmLayout';
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface Lead {
   id: string;
@@ -44,7 +44,7 @@ const CrmDashboard: React.FC = () => {
         };
 
         // Fetch Leads
-        const leadsRes = await fetch('http://localhost:3000/api/leads', { headers });
+        const leadsRes = await fetch('/api/leads', { headers });
         if (leadsRes.ok) {
           const leadsData = await leadsRes.json();
           // Sort by created_at desc
@@ -53,7 +53,7 @@ const CrmDashboard: React.FC = () => {
         }
 
         // Fetch Sales
-        const salesRes = await fetch('http://localhost:3000/api/sales', { headers });
+        const salesRes = await fetch('/api/sales', { headers });
         if (salesRes.ok) {
           const salesData = await salesRes.json();
           // Sort by sale_date desc
@@ -90,7 +90,7 @@ const CrmDashboard: React.FC = () => {
     const currentYear = new Date().getFullYear();
     
     // Initialize last 6 months
-    const chartData = [];
+    const chartData: { name: string; leads: number; sales: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);

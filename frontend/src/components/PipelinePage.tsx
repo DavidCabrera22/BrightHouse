@@ -41,6 +41,7 @@ const colorMap: Record<string, { bg: string, border: string, bar: string }> = {
 const PipelinePage: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState('All Projects');
   const [selectedAdvisor, setSelectedAdvisor] = useState('All Advisors');
 
@@ -55,7 +56,7 @@ const PipelinePage: React.FC = () => {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       };
-      const res = await fetch('http://localhost:3000/api/leads', { headers });
+      const res = await fetch('/api/leads', { headers });
       if (res.ok) {
         const data = await res.json();
         setLeads(data);
@@ -64,6 +65,55 @@ const PipelinePage: React.FC = () => {
       console.error('Error fetching leads:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, leadId: string) => {
+    e.dataTransfer.setData('leadId', leadId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    const leadId = e.dataTransfer.getData('leadId');
+    if (!leadId) return;
+
+    // Optimistic update
+    const leadToUpdate = leads.find(l => l.id === leadId);
+    if (leadToUpdate && leadToUpdate.status !== newStatus) {
+      const originalStatus = leadToUpdate.status;
+      
+      // Update local state immediately
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+      setUpdatingId(leadId);
+
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch(`/api/leads/${leadId}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to update status');
+        }
+      } catch (error) {
+        console.error('Error updating lead status:', error);
+        // Revert on error
+        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: originalStatus } : l));
+        alert('No se pudo actualizar el estado del lead');
+      } finally {
+        setUpdatingId(null);
+      }
     }
   };
 
@@ -237,7 +287,12 @@ const PipelinePage: React.FC = () => {
               const colors = colorMap[col.color];
               
               return (
-                <div key={col.id} className="w-80 flex flex-col shrink-0">
+                <div 
+                  key={col.id} 
+                  className="w-80 flex flex-col shrink-0"
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, col.id)}
+                >
                   {/* Column Header */}
                   <div className="flex items-center justify-between mb-3 px-1">
                     <div className="flex items-center gap-2">
@@ -263,9 +318,14 @@ const PipelinePage: React.FC = () => {
                   </div>
 
                   {/* Cards Container */}
-                  <div className="bg-slate-50/50 dark:bg-slate-800/30 rounded-b-lg border-x border-b border-slate-100 dark:border-slate-700 p-2 flex-1 overflow-y-auto space-y-3 min-h-[200px]">
+                  <div className={`bg-slate-50/50 dark:bg-slate-800/30 rounded-b-lg border-x border-b border-slate-100 dark:border-slate-700 p-2 flex-1 overflow-y-auto space-y-3 min-h-[200px] transition-colors ${colLeads.length === 0 ? 'border-dashed' : ''}`}>
                     {colLeads.map(lead => (
-                      <div key={lead.id} className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md cursor-pointer group transition-all relative overflow-hidden">
+                      <div 
+                        key={lead.id} 
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, lead.id)}
+                        className={`bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md cursor-grab active:cursor-grabbing group transition-all relative overflow-hidden ${updatingId === lead.id ? 'opacity-50 ring-2 ring-blue-500' : ''}`}
+                      >
                         
                         {/* Tags */}
                         <div className="flex justify-between items-start mb-2">

@@ -20,6 +20,17 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
     if (path !== '/crm' && location.pathname.startsWith(path)) return true;
     return false;
   };
+  
+  const userRole = localStorage.getItem('user_role');
+  const userName = localStorage.getItem('user_name') || 'Usuario';
+  const userEmail = localStorage.getItem('user_email') || '';
+  const roleLabel: Record<string, string> = {
+    admin: 'Administrador',
+    super_admin: 'Super Admin',
+    agent: 'Agente',
+    Agent: 'Agente',
+    Admin: 'Administrador',
+  };
 
   return (
     <>
@@ -71,6 +82,12 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
               <span className={`material-symbols-outlined ${isActive('/crm/analytics') ? 'filled' : ''}`}>analytics</span>
               <span className="text-sm font-medium">Analítica</span>
             </Link>
+            {(userRole === 'admin' || userRole === 'super_admin') && (
+              <Link to="/crm/commissions" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/commissions') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                <span className={`material-symbols-outlined ${isActive('/crm/commissions') ? 'filled' : ''}`}>payments</span>
+                <span className="text-sm font-medium">Comisiones</span>
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -81,11 +98,13 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
             <span className="text-sm font-medium">Configuración</span>
           </Link>
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-cover bg-center border-2 border-slate-700" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBF1pX4ocxu3wzLBvCeb3eQh5VIEe5IS0yL1swdbSvyUl5y6_h3Ec3qFCuNek2BJ0wCagwnI3iB1fZPFPrhBFkyisP457G9_fivYPfju3Nq6RosPpCblTaLGKUwfge2JzwjqXLJNMsCuWjJSglXxKxa-G7XHzx4snDUwIKP2rFYJ3SbRKu0rwF2A88THmJFgy_lV-Uts5ONH_sUnjBzv-Z67kbjMFYx-fcZry2AsTj16aACLYH_1TwyOT84N7MxYIWgiAQkZcYQk2E')" }}></div>
-              <div className="flex flex-col">
-                <p className="text-white text-sm font-medium">David Miller</p>
-                <p className="text-slate-400 text-xs">Agente Senior</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <p className="text-white text-sm font-medium truncate">{userName}</p>
+                <p className="text-slate-400 text-xs truncate">{roleLabel[userRole || ''] || userRole || 'Usuario'}</p>
               </div>
             </div>
             <button 

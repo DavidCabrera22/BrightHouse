@@ -50,7 +50,7 @@ const MarketingPage: React.FC = () => {
     try {
       const token = localStorage.getItem('access_token');
       const headers = { 'Authorization': `Bearer ${token}` };
-      const res = await fetch('http://localhost:3000/api/leads', { headers });
+      const res = await fetch('/api/leads', { headers });
       
       if (res.ok) {
         const leads: Lead[] = await res.json();
