@@ -58,6 +58,9 @@ export class Conversation {
   @Column({ nullable: true })
   whatsapp_waid: string; // WhatsApp Account ID / phone number ID
 
+  @Column({ default: false })
+  nova_paused: boolean; // When true, Nova will not auto-respond
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -73,4 +73,18 @@ export class ConversationsController {
   close(@Param('id') id: string) {
     return this.conversationsService.updateConversation(id, { status: 'closed' });
   }
+
+  @Patch(':id/pause-nova')
+  @Roles('Admin', 'Agent')
+  @ApiOperation({ summary: 'Pause Nova for this conversation (agent takes control)' })
+  pauseNova(@Param('id') id: string) {
+    return this.conversationsService.updateConversation(id, { nova_paused: true });
+  }
+
+  @Patch(':id/resume-nova')
+  @Roles('Admin', 'Agent')
+  @ApiOperation({ summary: 'Resume Nova for this conversation' })
+  resumeNova(@Param('id') id: string) {
+    return this.conversationsService.updateConversation(id, { nova_paused: false });
+  }
 }

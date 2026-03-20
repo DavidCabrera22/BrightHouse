@@ -23,6 +23,7 @@ interface Conversation {
   last_message_at?: string;
   unread_count: number;
   whatsapp_waid?: string;
+  nova_paused: boolean;
   created_at: string;
   lead?: { name: string; status: string; project?: { name: string } };
   assigned_agent?: { name: string };
@@ -307,8 +308,24 @@ const ConversationsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                    <span className="material-symbols-outlined">info</span>
+                  {/* Nova pause/resume toggle */}
+                  <button
+                    onClick={() => {
+                      const endpoint = selected.nova_paused ? 'resume-nova' : 'pause-nova';
+                      fetch(`/api/conversations/${selected.id}/${endpoint}`, { method: 'PATCH', headers })
+                        .then(() => fetchConversations());
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      selected.nova_paused
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400'
+                    }`}
+                    title={selected.nova_paused ? 'Devolver a Nova' : 'Tomar control'}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {selected.nova_paused ? 'smart_toy' : 'person'}
+                    </span>
+                    {selected.nova_paused ? 'Devolver a Nova' : 'Tomar control'}
                   </button>
                   <button
                     onClick={() => {

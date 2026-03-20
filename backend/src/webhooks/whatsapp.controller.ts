@@ -88,7 +88,7 @@ export class WhatsAppController {
           timestamp: String(Date.now()),
         });
 
-        // 4. Get conversation history for Nova context
+        // 4. Get conversation history
         const allMessages = await this.conversationsService.getMessages(conv.id);
         const history: ChatMessage[] = allMessages
           .slice(-21, -1)
@@ -97,22 +97,29 @@ export class WhatsAppController {
             content: m.content,
           }));
 
-        // 5. Generate Nova response
+        // 5. Skip Nova if paused (agent has taken control)
+        const freshConv = await this.conversationsService.findConversationById(conv.id);
+        if (freshConv.nova_paused) {
+          this.logger.log(`Nova pausada para ${from} — asesor tiene el control`);
+          continue;
+        }
+
+        // 6. Generate Nova response
         const novaReply = await this.novaService.generateResponse(text, history);
 
-        // 6. Save Nova's response
+        // 7. Save Nova's response
         await this.conversationsService.addMessage(conv.id, {
           content: novaReply,
           sender_type: 'bot',
           sender_name: 'Nova',
         });
 
-        // 7. Send via Whapi
+        // 8. Send via Whapi
         await this.whapiService.sendText(from, novaReply);
 
         this.logger.log(`Nova replied to ${from}: "${novaReply.substring(0, 80)}..."`);
 
-        // 8. Extract lead info after a few exchanges (every 4 messages)
+        // 9. Extract lead info every 4 exchanges
         if (allMessages.length >= 4 && allMessages.length % 4 === 0) {
           this.enrichLeadAsync(conv.id, from, [...history, { role: 'user', content: text }]);
         }
