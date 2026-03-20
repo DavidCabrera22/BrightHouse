@@ -14,6 +14,7 @@ import ProjectUnitsPage from './components/ProjectUnitsPage';
 import MarketingPage from './components/MarketingPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CommissionsPage from './components/CommissionsPage';
+import OasisParkPage from './components/OasisParkPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path="/proyectos" element={<ProjectsPage />} />
         <Route path="/nosotros" element={<AboutUsPage />} />
         <Route path="/soluciones" element={<SolutionsPage />} />
+        <Route path="/proyectos/oasis-park" element={<OasisParkPage />} />
         
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
