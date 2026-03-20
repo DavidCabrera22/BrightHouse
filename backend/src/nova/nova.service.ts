@@ -23,7 +23,7 @@ export class NovaService {
   }
 
   private loadKnowledgeBase(): string {
-    const novaDir = path.join(process.cwd(), '..', 'nova-agent');
+    const novaDir = path.join(process.cwd(), 'nova-knowledge');
     const files = [
       'proyecto_oasis_park.md',
       'faq_oasis_park.md',
