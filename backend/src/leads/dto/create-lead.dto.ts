@@ -15,9 +15,10 @@ export class CreateLeadDto {
   @IsString()
   phone: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @ApiProperty()
   @IsString()

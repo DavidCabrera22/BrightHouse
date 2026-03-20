@@ -20,7 +20,7 @@ export class Lead {
   @Column()
   phone: string;
 
-  @Column()
+  @Column({ nullable: true })
   email: string;
 
   @Column()

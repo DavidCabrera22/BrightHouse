@@ -124,6 +124,14 @@ Fuera de ese horario, si el cliente quiere hablar con un asesor responde:
 const FALLBACK_MESSAGE = 'Disculpa, no entendí bien tu mensaje. ¿Me puedes contar un poco más sobre lo que buscas? Con gusto te ayudo 😊';
 const ERROR_MESSAGE = 'Ups, tuve un pequeño problema técnico. ¿Puedes repetir tu mensaje? Estoy aquí para ayudarte.';
 
+export interface LeadExtraction {
+  name?: string;           // Nombre real del prospecto si lo mencionó
+  interested_in?: string;  // para vivir | para invertir | no claro
+  financing?: string;      // FNA | subsidio | recursos propios | combinación | no claro
+  priority?: string;       // high | medium | low
+  ai_score?: number;       // 1-100 según nivel de interés
+}
+
 @Injectable()
 export class NovaService {
   private readonly logger = new Logger(NovaService.name);
@@ -172,6 +180,35 @@ export class NovaService {
     } catch (err) {
       this.logger.error('Error calling Anthropic API', err);
       return ERROR_MESSAGE;
+    }
+  }
+
+  async extractLeadInfo(conversationHistory: ChatMessage[]): Promise<LeadExtraction> {
+    if (conversationHistory.length < 2) return {};
+
+    const transcript = conversationHistory
+      .map((m) => `${m.role === 'user' ? 'Prospecto' : 'Nova'}: ${m.content}`)
+      .join('\n');
+
+    try {
+      const response = await this.client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: `Eres un extractor de datos. Analiza la conversación y responde SOLO con un JSON válido sin texto adicional.
+Extrae: nombre real del prospecto (si lo mencionó), propósito (para vivir/invertir), financiamiento (FNA/subsidio/recursos propios/combinación), nivel de interés (ai_score 1-100), prioridad (high/medium/low).
+Si un campo no está claro, omítelo del JSON.
+Ejemplo: {"name":"Carlos","interested_in":"para vivir","financing":"FNA","ai_score":70,"priority":"medium"}`,
+        messages: [{ role: 'user', content: `Conversación:\n${transcript}` }],
+      });
+
+      const raw = response.content
+        .filter((b) => b.type === 'text')
+        .map((b) => (b as Anthropic.TextBlock).text)
+        .join('');
+
+      return JSON.parse(raw) as LeadExtraction;
+    } catch {
+      return {};
     }
   }
 }
