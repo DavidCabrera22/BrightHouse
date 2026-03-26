@@ -11,10 +11,13 @@ import ConversationsPage from './components/ConversationsPage';
 import AutomationsPage from './components/AutomationsPage';
 import ProjectDashboardPage from './components/ProjectDashboardPage';
 import ProjectUnitsPage from './components/ProjectUnitsPage';
+import ProjectDocumentsPage from './components/ProjectDocumentsPage';
+import ProjectAnalyticsPage from './components/ProjectAnalyticsPage';
 import MarketingPage from './components/MarketingPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CommissionsPage from './components/CommissionsPage';
 import OasisParkPage from './components/OasisParkPage';
+import PublicProjectsPage from './components/PublicProjectsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -23,7 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/proyectos" element={<ProjectsPage />} />
+        <Route path="/proyectos" element={<PublicProjectsPage />} />
         <Route path="/nosotros" element={<AboutUsPage />} />
         <Route path="/soluciones" element={<SolutionsPage />} />
         <Route path="/proyectos/oasis-park" element={<OasisParkPage />} />
@@ -38,6 +41,8 @@ function App() {
           <Route path="/crm/projects" element={<ProjectsPage />} />
           <Route path="/crm/projects/:projectId" element={<ProjectDashboardPage />} />
           <Route path="/crm/projects/:projectId/units" element={<ProjectUnitsPage />} />
+          <Route path="/crm/projects/:projectId/documents" element={<ProjectDocumentsPage />} />
+          <Route path="/crm/projects/:projectId/analytics" element={<ProjectAnalyticsPage />} />
           <Route path="/crm/marketing" element={<MarketingPage />} />
           <Route path="/crm/analytics" element={<AnalyticsPage />} />
           <Route path="/crm/commissions" element={<CommissionsPage />} />

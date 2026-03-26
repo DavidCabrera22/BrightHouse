@@ -24,7 +24,7 @@ const LoginPage: React.FC = () => {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && data.access_token) {
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('user_role', data.role ?? '');
         if (data.id) localStorage.setItem('user_id', data.id);
@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
         if (data.email) localStorage.setItem('user_email', data.email);
         navigate('/crm');
       } else {
-        setError(data.message || 'Error al iniciar sesión');
+        setError('Correo o contraseña incorrectos');
       }
     } catch (err) {
       setError('Error de conexión con el servidor');

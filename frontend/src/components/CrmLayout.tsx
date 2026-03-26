@@ -7,9 +7,10 @@ interface CrmLayoutProps {
   title?: string;
   subtitle?: string;
   actions?: React.ReactNode;
+  fullBleed?: boolean;
 }
 
-const CrmLayout: React.FC<CrmLayoutProps> = ({ children, title, subtitle, actions }) => {
+const CrmLayout: React.FC<CrmLayoutProps> = ({ children, title, subtitle, actions, fullBleed }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -19,7 +20,7 @@ const CrmLayout: React.FC<CrmLayoutProps> = ({ children, title, subtitle, action
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         {/* Header */}
-        <header className="h-20 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 shrink-0 z-10 transition-colors duration-300">
+        <header className="h-16 md:h-20 bg-white dark:bg-[#0F172A] border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 shrink-0 z-10 transition-colors duration-300">
           
           {/* Mobile Menu & Title */}
           <div className="flex items-center gap-4">
@@ -32,7 +33,7 @@ const CrmLayout: React.FC<CrmLayoutProps> = ({ children, title, subtitle, action
             
             <div className="flex flex-col">
               {title && (
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-white">{title}</h2>
+                <h2 className="text-lg md:text-2xl font-bold text-slate-800 dark:text-white">{title}</h2>
               )}
               {subtitle && (
                 <p className="text-xs text-slate-500 dark:text-slate-400 hidden lg:block">{subtitle}</p>
@@ -74,7 +75,7 @@ const CrmLayout: React.FC<CrmLayoutProps> = ({ children, title, subtitle, action
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 overflow-auto bg-[#f6f6f8] dark:bg-[#0B1120] p-8 transition-colors duration-300">
+        <div className={`flex-1 bg-[#f6f6f8] dark:bg-[#0B1120] transition-colors duration-300 ${fullBleed ? 'overflow-hidden flex flex-col' : 'overflow-auto p-6 md:p-8'}`}>
           {children}
         </div>
       </main>

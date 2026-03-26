@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { LeadsService } from './leads.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -42,5 +42,20 @@ export class LeadsController {
   @Roles('Admin')
   remove(@Param('id') id: string) {
     return this.leadsService.remove(id);
+  }
+
+  @Post(':id/suggest')
+  @Roles('Admin', 'Agent')
+  @ApiOperation({ summary: 'Get AI-powered next action suggestion for a lead' })
+  getSuggestion(@Param('id') id: string) {
+    return this.leadsService.getSuggestion(id);
+  }
+
+  @Post('admin/recalculate-scores')
+  @Roles('Admin')
+  @ApiOperation({ summary: 'Recalculate AI scores for all leads' })
+  async recalculateScores() {
+    const count = await this.leadsService.recalculateAllScores();
+    return { updated: count };
   }
 }

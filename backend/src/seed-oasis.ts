@@ -112,6 +112,7 @@ async function seed() {
     { name: 'Vendido',    color_hex: '#ef4444', triggers_commission: true,  triggers_signature: true,  order_sequence: 4 },
   ];
 
+  const spanishNames = new Set(statusDefs.map(d => d.name));
   const statusMap: Record<string, string> = {};
 
   for (const def of statusDefs) {
@@ -136,6 +137,48 @@ async function seed() {
     process.exit(1);
   }
 
+  // ── 2b. Limpiar estados en inglés (legacy) ──────────────────────────────────
+  const legacyStatuses = existingStatuses.filter((s: any) => !spanishNames.has(s.name));
+  if (legacyStatuses.length > 0) {
+    console.log(`\n🧹  Limpiando ${legacyStatuses.length} estado(s) legado(s) en inglés...`);
+
+    // Mapeo inglés → español (para migrar unidades)
+    const englishToSpanish: Record<string, string> = {
+      'available':   'Disponible', 'Available':   'Disponible',
+      'reserved':    'Separado',   'Reserved':    'Separado',
+      'in process':  'En Proceso', 'In Process':  'En Proceso', 'In Progress': 'En Proceso',
+      'sold':        'Vendido',    'Sold':        'Vendido',
+    };
+
+    for (const legacy of legacyStatuses) {
+      const spanishName = englishToSpanish[legacy.name] ?? 'Disponible';
+      const targetId = statusMap[spanishName];
+
+      if (!targetId) continue;
+
+      // Migrar unidades que usen este estado legado
+      const unitsRes = await request('GET', `/units?status_id=${legacy.id}`, undefined, token);
+      // La ruta GET /units no filtra por status_id, así que buscamos todas y filtramos
+      const allUnitsRes = await request('GET', '/units', undefined, token);
+      const unitsToMigrate = (allUnitsRes.data || []).filter(
+        (u: any) => u.current_status_id === legacy.id,
+      );
+
+      for (const u of unitsToMigrate) {
+        await request('PATCH', `/units/${u.id}/status`, { new_status_id: targetId }, token);
+        console.log(`   🔄  Unidad ${u.code}: ${legacy.name} → ${spanishName}`);
+      }
+
+      // Eliminar el estado legado
+      const delRes = await request('DELETE', `/unit-statuses/${legacy.id}`, undefined, token);
+      if (delRes.status === 200 || delRes.status === 204) {
+        console.log(`   🗑   Estado eliminado: "${legacy.name}"`);
+      } else {
+        console.warn(`   ⚠️  No se pudo eliminar "${legacy.name}":`, delRes.data);
+      }
+    }
+  }
+
   // ── 3. Proyecto ─────────────────────────────────────────────────────────────
   console.log('\n🏢  Verificando proyecto Oasis Park...');
   const projectsRes = await request('GET', '/projects', undefined, token);
@@ -146,6 +189,13 @@ async function seed() {
   if (found) {
     projectId = found.id;
     console.log(`   ↩  Proyecto ya existe: Oasis Park (${projectId})`);
+    const patch: Record<string, string> = {};
+    if (!found.slug) patch.slug = 'oasis-park';
+    if (!found.image) patch.image = '/uploads/oasis-park.jpg';
+    if (Object.keys(patch).length > 0) {
+      await request('PATCH', `/projects/${projectId}`, patch, token);
+      console.log('   ✎  Campos actualizados:', Object.keys(patch).join(', '));
+    }
   } else {
     const res = await request('POST', '/projects', {
       name: 'Oasis Park',
@@ -157,6 +207,8 @@ async function seed() {
       location: 'Barrio Providencia, Cartagena de Indias — Diagonal 32A #71-355',
       total_units: 127,
       status: 'active',
+      slug: 'oasis-park',
+      image: '/uploads/oasis-park.jpg',
       marketing_plan_type: 'figital',
     }, token);
 

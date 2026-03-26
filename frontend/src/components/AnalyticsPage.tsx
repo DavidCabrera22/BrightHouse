@@ -1,471 +1,451 @@
-import React, { useState, useEffect } from 'react';
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import CrmLayout from './CrmLayout';
 
+// ── Types ──────────────────────────────────────────────────────────────────
 interface Lead {
   id: string;
-  name: string;
-  project_id: string;
   status: string;
   source: string;
   created_at: string;
-  potential_value?: number;
   ai_score?: number;
-  priority?: string;
-  assigned_agent?: { name: string; avatar?: string };
+  assigned_agent?: { name: string };
+  potential_value?: number;
 }
 
-interface AnalyticsMetrics {
-  totalForecast: number;
-  highProbLeads: number;
-  atRiskCount: number;
-  monthlyData: { name: string; value: number; projection: number }[];
-  advisorStats: {
-    name: string;
-    leads: number;
-    sales: number;
-    conversion: number;
-    value: number;
-    commission: number;
-    avatar: string;
-  }[];
-  marketingStats: {
-    physical: number;
-    digital: number;
-    total: number;
-  };
+interface Unit {
+  id: string;
+  current_status?: { name: string; color_hex: string };
+  price: number;
 }
 
+interface AiInsight {
+  tipo: 'oportunidad' | 'alerta' | 'tendencia';
+  titulo: string;
+  descripcion: string;
+  accion: string;
+}
+
+interface AiResponse {
+  resumen: string;
+  insights: AiInsight[];
+  recomendacion_principal: string;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+const STATUS_COLORS: Record<string, string> = {
+  new: '#94a3b8', contacted: '#3b82f6', qualified: '#10b981',
+  negotiation: '#f59e0b', won: '#8b5cf6', lost: '#ef4444',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  new: 'Nuevo', contacted: 'Contactado', qualified: 'Calificado',
+  negotiation: 'Negociación', won: 'Ganado', lost: 'Perdido',
+};
+
+const INSIGHT_STYLES: Record<string, { bg: string; icon: string; color: string }> = {
+  oportunidad: { bg: 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-500/20', icon: 'trending_up', color: 'text-emerald-600' },
+  alerta:      { bg: 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-500/20',          icon: 'warning',      color: 'text-red-500' },
+  tendencia:   { bg: 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-500/20',      icon: 'insights',     color: 'text-blue-600' },
+};
+
+function fmt(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}k`;
+  return `$${n}`;
+}
+
+function pct(a: number, b: number) {
+  if (b === 0) return a > 0 ? 100 : 0;
+  return Math.round(((a - b) / b) * 100);
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 const AnalyticsPage: React.FC = () => {
+  const token = localStorage.getItem('access_token');
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const [leads, setLeads]   = useState<Lead[]>([]);
+  const [units, setUnits]   = useState<Unit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState<AnalyticsMetrics>({
-    totalForecast: 0,
-    highProbLeads: 0,
-    atRiskCount: 0,
-    monthlyData: [],
-    advisorStats: [],
-    marketingStats: { physical: 0, digital: 0, total: 0 }
-  });
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
+  // AI state
+  const [aiResult, setAiResult]     = useState<AiResponse | null>(null);
+  const [aiLoading, setAiLoading]   = useState(false);
+  const [aiError, setAiError]       = useState('');
 
-  const fetchAnalyticsData = async () => {
+  // ── Fetch data ────────────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    setLoading(true);
     try {
-      const token = localStorage.getItem('access_token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-      
-      // Fetch leads as the primary data source
-      const res = await fetch('/api/leads', { headers });
-      
-      if (res.ok) {
-        const leads: Lead[] = await res.json();
-        processLeadsData(leads);
-      }
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
+      const [leadsRes, unitsRes] = await Promise.all([
+        fetch('/api/leads',  { headers }),
+        fetch('/api/units',  { headers }),
+      ]);
+      if (leadsRes.ok) setLeads(await leadsRes.json());
+      if (unitsRes.ok) setUnits(await unitsRes.json());
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const processLeadsData = (leads: Lead[]) => {
-    // 1. Forecasted Sales (Sum of potential value of active leads)
-    const activeLeads = leads.filter(l => l.status !== 'lost' && l.status !== 'won');
-    const totalForecast = activeLeads.reduce((sum, lead) => sum + (Number(lead.potential_value) || 0), 0);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-    // 2. High Probability Leads (AI Score > 80 or Status = Negotiation/Qualified)
-    const highProbLeads = leads.filter(l => 
-      (l.ai_score && l.ai_score > 80) || 
-      ['negotiation', 'qualified'].includes(l.status)
-    ).length;
+  // ── Derived metrics ───────────────────────────────────────────────────
+  const now   = new Date();
+  const month = now.getMonth();
+  const year  = now.getFullYear();
 
-    // 3. At Risk (Lost leads or Stalled - simplified to 'lost' for now)
-    const atRiskCount = leads.filter(l => l.status === 'lost').length;
+  const newThisMonth  = leads.filter(l => { const d = new Date(l.created_at); return d.getMonth() === month && d.getFullYear() === year; }).length;
+  const lastMonthStart = new Date(year, month - 1, 1);
+  const lastMonthEnd   = new Date(year, month, 1);
+  const newLastMonth   = leads.filter(l => { const d = new Date(l.created_at); return d >= lastMonthStart && d < lastMonthEnd; }).length;
+  const leadsGrowth    = pct(newThisMonth, newLastMonth);
 
-    // 4. Monthly Data for Chart (Group by created_at month)
-    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const currentMonth = new Date().getMonth();
-    
-    // Initialize last 6 months
-    const monthlyData = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date();
-      d.setMonth(currentMonth - 5 + i);
-      return {
-        name: months[d.getMonth()],
-        value: 0,
-        projection: 0 // Will calculate based on growth
+  const won   = leads.filter(l => l.status === 'won').length;
+  const lost  = leads.filter(l => l.status === 'lost').length;
+  const total = leads.length;
+  const conversionRate = total > 0 ? (won / total) * 100 : 0;
+
+  const highScore = leads.filter(l => l.ai_score && l.ai_score >= 70).length;
+
+  // Units by status
+  const unitsByStatus: Record<string, number> = {};
+  units.forEach(u => {
+    const name = u.current_status?.name ?? 'Sin estado';
+    unitsByStatus[name] = (unitsByStatus[name] || 0) + 1;
+  });
+
+  // Leads by status (for donut-style bar)
+  const leadsByStatus: Record<string, number> = {};
+  leads.forEach(l => { leadsByStatus[l.status] = (leadsByStatus[l.status] || 0) + 1; });
+
+  const statusBarData = Object.entries(leadsByStatus).map(([key, val]) => ({
+    name: STATUS_LABELS[key] ?? key,
+    value: val,
+    color: STATUS_COLORS[key] ?? '#94a3b8',
+  })).sort((a, b) => b.value - a.value);
+
+  // Leads by source
+  const leadsBySource: Record<string, number> = {};
+  leads.forEach(l => { if (l.source) leadsBySource[l.source] = (leadsBySource[l.source] || 0) + 1; });
+  const topSources = Object.entries(leadsBySource).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  // Monthly leads trend (last 6 months)
+  const monthlyData = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(year, month - 5 + i, 1);
+    const next = new Date(year, month - 5 + i + 1, 1);
+    const count = leads.filter(l => { const ld = new Date(l.created_at); return ld >= d && ld < next; }).length;
+    return { name: MONTHS[d.getMonth()], leads: count };
+  });
+
+  // Agent leaderboard
+  const agentMap: Record<string, { leads: number; won: number }> = {};
+  leads.forEach(l => {
+    const name = l.assigned_agent?.name ?? 'Sin asignar';
+    if (!agentMap[name]) agentMap[name] = { leads: 0, won: 0 };
+    agentMap[name].leads++;
+    if (l.status === 'won') agentMap[name].won++;
+  });
+  const agentStats = Object.entries(agentMap)
+    .map(([name, s]) => ({ name, ...s, conv: s.leads > 0 ? (s.won / s.leads) * 100 : 0 }))
+    .sort((a, b) => b.won - a.won).slice(0, 5);
+
+  // ── AI analysis ───────────────────────────────────────────────────────
+  const handleGenerateAI = async () => {
+    setAiLoading(true);
+    setAiError('');
+    setAiResult(null);
+    try {
+      const summary = {
+        totalLeads: total,
+        newLeadsThisMonth: newThisMonth,
+        leadsByStatus,
+        leadsBySource,
+        totalUnits: units.length,
+        unitsByStatus,
+        conversionRate,
+        topSources: topSources.map(([s]) => s),
       };
-    });
-
-    leads.forEach(lead => {
-      const date = new Date(lead.created_at);
-      const monthIndex = date.getMonth();
-      // Find matching month in our display array
-      const displayMonth = monthlyData.find(m => m.name === months[monthIndex]);
-      if (displayMonth) {
-        displayMonth.value += (Number(lead.potential_value) || 0);
-      }
-    });
-
-    // Add projections (simple +10% growth logic for demo)
-    monthlyData.forEach(m => {
-      m.projection = m.value * 1.15; // 15% projected growth
-    });
-
-    // 5. Advisor Stats
-    const advisorMap = new Map<string, { leads: number; sales: number; value: number; avatar: string }>();
-    
-    leads.forEach(lead => {
-      const agentName = lead.assigned_agent?.name || 'Sin Asignar';
-      const agentAvatar = lead.assigned_agent?.avatar || '';
-      
-      if (!advisorMap.has(agentName)) {
-        advisorMap.set(agentName, { leads: 0, sales: 0, value: 0, avatar: agentAvatar });
-      }
-      
-      const stats = advisorMap.get(agentName)!;
-      stats.leads += 1;
-      if (lead.status === 'won') {
-        stats.sales += 1;
-        stats.value += (Number(lead.potential_value) || 0);
-      }
-    });
-
-    const advisorStats = Array.from(advisorMap.entries()).map(([name, stats]) => ({
-      name,
-      leads: stats.leads,
-      sales: stats.sales,
-      conversion: stats.leads > 0 ? (stats.sales / stats.leads) * 100 : 0,
-      value: stats.value,
-      commission: stats.value * 0.03, // 3% commission
-      avatar: stats.avatar
-    })).sort((a, b) => b.value - a.value).slice(0, 5); // Top 5
-
-    // 6. Marketing Stats (Physical vs Digital)
-    // Assuming 'source' can be 'instagram', 'website', 'referral', 'event', 'walk-in'
-    const digitalSources = ['instagram', 'website', 'facebook', 'linkedin', 'email'];
-    
-    let physical = 0;
-    let digital = 0;
-
-    leads.forEach(lead => {
-      const source = lead.source?.toLowerCase() || '';
-      if (digitalSources.some(ds => source.includes(ds))) {
-        digital++;
+      const res = await fetch('/api/analytics/insights', {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(summary),
+      });
+      if (res.ok) {
+        setAiResult(await res.json());
       } else {
-        physical++; // Default to physical if unknown or matches physical
+        setAiError('Error al generar el análisis. Intenta de nuevo.');
       }
-    });
-
-    setMetrics({
-      totalForecast,
-      highProbLeads,
-      atRiskCount,
-      monthlyData,
-      advisorStats,
-      marketingStats: {
-        physical,
-        digital,
-        total: leads.length
-      }
-    });
+    } catch {
+      setAiError('No se pudo conectar con el servidor.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
-  const formatCurrency = (value: number) => {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-    return `$${value}`;
-  };
-
+  // ── Render ────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <CrmLayout title="Analítica" subtitle="Cargando datos...">
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-600" />
         </div>
       </CrmLayout>
     );
   }
 
   return (
-    <CrmLayout 
-      title="Analítica Predictiva Avanzada"
-      subtitle="Utiliza IA para optimizar tu embudo de ventas y el rendimiento de los asesores."
+    <CrmLayout
+      title="Analítica"
+      subtitle="Métricas reales del negocio con análisis de inteligencia artificial"
       actions={
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-bold hover:bg-slate-50 transition-colors text-slate-700 dark:text-slate-200">
-            <span className="material-symbols-outlined text-sm">download</span> Exportar Datos
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all" onClick={fetchAnalyticsData}>
-            <span className="material-symbols-outlined text-sm">refresh</span> Actualizar Modelos
-          </button>
-        </div>
+        <button
+          onClick={fetchData}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-200"
+        >
+          <span className="material-symbols-outlined text-sm">refresh</span>
+          Actualizar
+        </button>
       }
     >
-      <div className="flex-1 max-w-7xl mx-auto w-full">
-        {/* Breadcrumbs */}
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-6">
-          <span>Analítica</span>
-          <span className="material-symbols-outlined text-xs">chevron_right</span>
-          <span className="text-indigo-600">Módulo Predictivo</span>
+      <div className="space-y-6 max-w-7xl mx-auto">
+
+        {/* ── KPI Row ──────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Leads', value: total, sub: `+${newThisMonth} este mes`, icon: 'group', color: 'text-blue-600', badge: leadsGrowth !== 0 ? `${leadsGrowth > 0 ? '+' : ''}${leadsGrowth}%` : null, badgeOk: leadsGrowth >= 0 },
+            { label: 'Tasa de Conv.', value: `${conversionRate.toFixed(1)}%`, sub: `${won} ganados`, icon: 'check_circle', color: 'text-emerald-600', badge: null, badgeOk: true },
+            { label: 'Alta Puntuación', value: highScore, sub: 'Score IA ≥ 70', icon: 'auto_awesome', color: 'text-violet-600', badge: null, badgeOk: true },
+            { label: 'Unidades Disp.', value: unitsByStatus['Disponible'] ?? 0, sub: `de ${units.length} totales`, icon: 'apartment', color: 'text-amber-600', badge: null, badgeOk: true },
+          ].map((kpi, i) => (
+            <div key={i} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+              <div className="flex items-start justify-between mb-3">
+                <span className={`material-symbols-outlined text-2xl ${kpi.color}`}>{kpi.icon}</span>
+                {kpi.badge && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${kpi.badgeOk ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {kpi.badge}
+                  </span>
+                )}
+              </div>
+              <p className="text-2xl font-black text-slate-900 dark:text-white">{kpi.value}</p>
+              <p className="text-xs text-slate-400 mt-1 font-medium">{kpi.label}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{kpi.sub}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: AI Insights & Trends */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
-            
-            {/* Predictive Intelligence Block */}
-            <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-6 relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <span className="material-symbols-outlined text-8xl text-indigo-600">psychology</span>
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-tighter">AI Driven</span>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Predicción Inteligente</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-white/60 dark:bg-slate-900/60 p-4 rounded-lg backdrop-blur-sm border border-white/20 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase mb-1">Ventas Pronosticadas</p>
-                    <p className="text-2xl font-black text-indigo-600">{formatCurrency(metrics.totalForecast)}</p>
-                    <p className="text-xs text-emerald-500 flex items-center gap-1 mt-1 font-bold">
-                      <span className="material-symbols-outlined text-xs">trending_up</span> +12.4% vs mes anterior
-                    </p>
-                  </div>
-                  
-                  <div className="bg-white/60 dark:bg-slate-900/60 p-4 rounded-lg backdrop-blur-sm border border-white/20 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase mb-1">Leads Alta Probabilidad</p>
-                    <p className="text-2xl font-black text-slate-800 dark:text-white">{metrics.highProbLeads}</p>
-                    <p className="text-xs text-slate-500 mt-1">Score &gt; 85% probabilidad</p>
-                  </div>
-                  
-                  <div className="bg-white/60 dark:bg-slate-900/60 p-4 rounded-lg backdrop-blur-sm border border-white/20 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-500 font-medium uppercase mb-1">Proyectos en Riesgo</p>
-                    <p className="text-2xl font-black text-red-500">{metrics.atRiskCount}</p>
-                    <p className="text-xs text-slate-500 mt-1">Acción inmediata requerida</p>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                <div className="bg-indigo-100/50 dark:bg-white/5 p-4 rounded-lg border border-indigo-200 dark:border-indigo-500/10">
-                  <div className="flex items-start gap-3">
-                    <span className="material-symbols-outlined text-indigo-600 mt-1">lightbulb</span>
-                    <div>
-                      <p className="font-bold text-sm text-slate-800 dark:text-slate-200">Recomendación Estratégica</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Re-conectar con leads de la fase 'Valle Esmeralda' inmediatamente. Nuestros modelos muestran un incremento del 35% en conversión para leads fríos reactivados durante esta ventana de mercado.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          {/* ── Left (2 cols) ─────────────────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-6">
 
-            {/* Trends and Projections Chart */}
-            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">Crecimiento de Mercado & Pronóstico</h3>
-                  <p className="text-xs text-slate-500 uppercase tracking-widest font-bold">Tendencias de Volumen 2024</p>
-                </div>
-                <div className="flex items-center gap-4 text-xs">
-                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                    <span className="w-3 h-3 rounded-full bg-indigo-600"></span> Histórico
-                  </div>
-                  <div className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
-                    <span className="w-3 h-3 rounded-full bg-indigo-300"></span> Proyecciones
-                  </div>
-                </div>
-              </div>
-              
-              <div className="h-64 w-full">
+            {/* Monthly trend */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1">Tendencia de Leads</h3>
+              <p className="text-xs text-slate-400 mb-5">Últimos 6 meses</p>
+              <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={metrics.monthlyData}>
+                  <AreaChart data={monthlyData}>
                     <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                      <linearGradient id="leadGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748B'}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748B'}} tickFormatter={(value) => `$${value/1000}k`} />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number | undefined) => [value ? `$${value.toLocaleString()}` : '$0', 'Valor'] as [string, string]}
-                    />
-                    <Area type="monotone" dataKey="value" stroke="#4F46E5" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-                    <Area type="monotone" dataKey="projection" stroke="#A5B4FC" strokeWidth={2} strokeDasharray="5 5" fill="none" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', fontSize: 12 }} />
+                    <Area type="monotone" dataKey="leads" name="Leads" stroke="#3b82f6" strokeWidth={2.5} fill="url(#leadGrad)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Advisor Performance Table */}
-            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Rendimiento de Asesores</h3>
-                <button className="text-indigo-600 text-xs font-bold hover:underline">Ver Todos</button>
+            {/* Status breakdown */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-5">Leads por Estado</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={statusBarData} layout="vertical">
+                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} width={90} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', fontSize: 12 }} />
+                    <Bar dataKey="value" name="Leads" radius={[0, 6, 6, 0]}>
+                      {statusBarData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 uppercase text-[10px] font-black tracking-widest">
-                      <th className="px-6 py-4">Asesor</th>
-                      <th className="px-6 py-4">Leads</th>
-                      <th className="px-6 py-4">Ventas Cerradas</th>
-                      <th className="px-6 py-4">Tasa Conv.</th>
-                      <th className="px-6 py-4">Valor Generado</th>
-                      <th className="px-6 py-4">Comisión Proy.</th>
+            </div>
+
+            {/* Agent leaderboard */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="font-bold text-slate-900 dark:text-white">Rendimiento por Asesor</h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <tr>
+                    <th className="px-6 py-3 text-left">Asesor</th>
+                    <th className="px-6 py-3 text-center">Leads</th>
+                    <th className="px-6 py-3 text-center">Ganados</th>
+                    <th className="px-6 py-3 text-left">Conversión</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {agentStats.length === 0 ? (
+                    <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400 text-xs">Sin datos aún</td></tr>
+                  ) : agentStats.map((a, i) => (
+                    <tr key={i} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                            {a.name.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{a.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-3 text-center text-slate-600 dark:text-slate-400">{a.leads}</td>
+                      <td className="px-6 py-3 text-center font-bold text-emerald-600">{a.won}</td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(a.conv, 100)}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-600 dark:text-slate-400 w-10 text-right">{a.conv.toFixed(0)}%</span>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {metrics.advisorStats.map((advisor, index) => (
-                      <tr key={index} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                        <td className="px-6 py-4 flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
-                            {advisor.avatar ? <img src={advisor.avatar} alt={advisor.name} className="h-full w-full rounded-full object-cover"/> : advisor.name.charAt(0)}
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-slate-200">{advisor.name}</span>
-                        </td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{advisor.leads}</td>
-                        <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{advisor.sales}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-900 dark:text-slate-200">{advisor.conversion.toFixed(1)}%</span>
-                            <div className="w-16 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${advisor.conversion > 10 ? 'bg-emerald-500' : 'bg-orange-400'}`} 
-                                style={{ width: `${Math.min(advisor.conversion * 5, 100)}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-200">{formatCurrency(advisor.value)}</td>
-                        <td className="px-6 py-4 text-indigo-600 font-bold">{formatCurrency(advisor.commission)}</td>
-                      </tr>
-                    ))}
-                    {metrics.advisorStats.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                          No hay datos de rendimiento disponibles aún.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Right Column: Marketing Analytics & Extras */}
-          <div className="lg:col-span-4 flex flex-col gap-6">
-            
-            {/* Marketing Figital Analytics Section */}
-            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6">
-                <span className="material-symbols-outlined text-indigo-600">hub</span>
-                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Marketing Figital</h3>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Físico vs Digital Leads</span>
-                    <span className="text-xs font-bold text-slate-400">Total {metrics.marketingStats.total}</span>
-                  </div>
-                  <div className="flex h-4 rounded-full overflow-hidden w-full bg-slate-100 dark:bg-slate-800">
-                    <div 
-                      className="bg-indigo-600 h-full relative group transition-all duration-500" 
-                      style={{ width: `${metrics.marketingStats.total > 0 ? (metrics.marketingStats.physical / metrics.marketingStats.total) * 100 : 0}%` }}
-                    ></div>
-                    <div 
-                      className="bg-emerald-500 h-full relative group transition-all duration-500" 
-                      style={{ width: `${metrics.marketingStats.total > 0 ? (metrics.marketingStats.digital / metrics.marketingStats.total) * 100 : 0}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex gap-4 mt-2">
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-indigo-600"></span> Físico ({metrics.marketingStats.physical})
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Digital ({metrics.marketingStats.digital})
-                    </div>
-                  </div>
-                </div>
+          {/* ── Right (1 col) ─────────────────────────────────────────── */}
+          <div className="space-y-6">
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">ROI Eventos</p>
-                    <p className="text-xl font-black text-slate-800 dark:text-white">4.2x</p>
-                    <span className="text-[10px] text-emerald-500 font-bold">+0.8 vs prev.</span>
-                  </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-800">
-                    <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Conv. por Evento</p>
-                    <p className="text-xl font-black text-slate-800 dark:text-white">8.4%</p>
-                    <span className="text-[10px] text-indigo-600 font-bold">Top: VIP</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Activaciones Recientes</p>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                        <span>Luxury Expo NY</span>
+            {/* Units by status */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-4">Inventario de Unidades</h3>
+              <div className="space-y-3">
+                {[
+                  { label: 'Disponibles',  key: 'Disponible',  color: '#22c55e' },
+                  { label: 'Separadas',    key: 'Separado',    color: '#3b82f6' },
+                  { label: 'En Proceso',   key: 'En Proceso',  color: '#f59e0b' },
+                  { label: 'Vendidas',     key: 'Vendido',     color: '#ef4444' },
+                ].map(({ label, key, color }) => {
+                  const count = unitsByStatus[key] ?? 0;
+                  const pctVal = units.length > 0 ? (count / units.length) * 100 : 0;
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-slate-600 dark:text-slate-400 font-medium">{label}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{count}</span>
                       </div>
-                      <span className="font-bold text-slate-900 dark:text-white">42 Leads</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                        <span>Golf Club Soirée</span>
+                      <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pctVal}%`, backgroundColor: color }} />
                       </div>
-                      <span className="font-bold text-slate-900 dark:text-white">28 Leads</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span>Instagram Ads Q3</span>
-                      </div>
-                      <span className="font-bold text-slate-900 dark:text-white">814 Leads</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Urgent Actions */}
-            <div className="bg-white dark:bg-[#111827] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg mb-4 text-slate-900 dark:text-white">Acciones Urgentes</h3>
-              <div className="space-y-4">
-                <div className="flex gap-4 p-3 rounded-lg border border-red-100 bg-red-50 dark:bg-red-900/10 dark:border-red-900/20">
-                  <span className="material-symbols-outlined text-red-500">warning</span>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Riesgo de Retraso Fase 2</p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">3 propiedades tienen 15 días de retraso. Pérdida proyectada: $45k.</p>
-                  </div>
+            {/* Top sources */}
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-4">Fuentes de Leads</h3>
+              {topSources.length === 0 ? (
+                <p className="text-xs text-slate-400">Sin datos de fuente aún</p>
+              ) : (
+                <div className="space-y-3">
+                  {topSources.map(([source, count], i) => {
+                    const pctVal = total > 0 ? (count / total) * 100 : 0;
+                    const colors = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444'];
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-slate-600 dark:text-slate-400 capitalize">{source}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">{count} <span className="text-slate-400 font-normal text-xs">({pctVal.toFixed(0)}%)</span></span>
+                        </div>
+                        <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pctVal}%`, backgroundColor: colors[i] }} />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex gap-4 p-3 rounded-lg border border-blue-100 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-900/20">
-                  <span className="material-symbols-outlined text-blue-500">campaign</span>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Oportunidad Upsell</p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">12 leads de 'Park Residence' muestran alto interés en 'Grand Towers'.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-3 rounded-lg border border-emerald-100 bg-emerald-50 dark:bg-emerald-900/10 dark:border-emerald-900/20">
-                  <span className="material-symbols-outlined text-emerald-500">verified</span>
-                  <div>
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">Confianza del Modelo</p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400">Precisión predictiva al 94.2%. Recomendado: Aumentar presupuesto.</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
+
+            {/* ── AI Insights ──────────────────────────────────────────── */}
+            <div className="bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-900/10 dark:to-indigo-900/10 border border-violet-200 dark:border-violet-500/20 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="material-symbols-outlined text-violet-600">auto_awesome</span>
+                <h3 className="font-bold text-slate-900 dark:text-white">Análisis con IA</h3>
+              </div>
+
+              {!aiResult && !aiLoading && (
+                <>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                    Claude analiza tus datos reales y genera recomendaciones accionables para esta semana.
+                  </p>
+                  <button
+                    onClick={handleGenerateAI}
+                    className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm py-2.5 rounded-xl transition-all shadow-lg shadow-violet-600/20"
+                  >
+                    <span className="material-symbols-outlined text-sm">psychology</span>
+                    Generar análisis
+                  </button>
+                  {aiError && <p className="text-xs text-red-500 mt-2">{aiError}</p>}
+                </>
+              )}
+
+              {aiLoading && (
+                <div className="flex flex-col items-center gap-3 py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-violet-600" />
+                  <p className="text-xs text-slate-400">Claude está analizando los datos...</p>
+                </div>
+              )}
+
+              {aiResult && (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-700 dark:text-slate-300">{aiResult.resumen}</p>
+
+                  {aiResult.insights.map((ins, i) => {
+                    const style = INSIGHT_STYLES[ins.tipo] ?? INSIGHT_STYLES.tendencia;
+                    return (
+                      <div key={i} className={`p-3 rounded-lg border ${style.bg}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`material-symbols-outlined text-[16px] ${style.color}`}>{style.icon}</span>
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{ins.titulo}</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-400">{ins.descripcion}</p>
+                        <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 mt-1">→ {ins.accion}</p>
+                      </div>
+                    );
+                  })}
+
+                  <div className="bg-violet-100/60 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-500/20 p-3 rounded-lg">
+                    <p className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1">Recomendación Principal</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">{aiResult.recomendacion_principal}</p>
+                  </div>
+
+                  <button
+                    onClick={handleGenerateAI}
+                    className="w-full text-xs text-violet-600 hover:text-violet-700 font-bold flex items-center justify-center gap-1 py-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">refresh</span>
+                    Regenerar
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

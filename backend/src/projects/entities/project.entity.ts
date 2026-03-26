@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('projects')
 export class Project {
@@ -19,6 +19,12 @@ export class Project {
 
   @Column({ default: 'active' })
   status: string;
+
+  @Column({ nullable: true })
+  image: string;
+
+  @Column({ nullable: true, unique: true })
+  slug: string;
 
   @Column({ nullable: true })
   marketing_plan_type: string;

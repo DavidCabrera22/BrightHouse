@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { UnitsService } from './units.service';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
@@ -19,8 +19,8 @@ export class UnitsController {
   }
 
   @Get()
-  findAll() {
-    return this.unitsService.findAll();
+  findAll(@Query('project_id') projectId?: string) {
+    return this.unitsService.findAll(projectId);
   }
 
   @Get(':id')

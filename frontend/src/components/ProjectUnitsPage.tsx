@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import CrmLayout from './CrmLayout';
 import { useParams, Link } from 'react-router-dom';
 
@@ -6,6 +6,7 @@ interface UnitStatus {
   id: string;
   name: string;
   color_hex: string;
+  order_sequence: number;
 }
 
 interface Unit {
@@ -32,7 +33,7 @@ interface User {
 const ProjectUnitsPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   
-  const [userRole] = useState<string>(() => localStorage.getItem('user_role') || 'admin');
+  const [userRole] = useState<string>(() => (localStorage.getItem('user_role') || 'admin').toLowerCase());
   const [userId] = useState<string>(() => localStorage.getItem('user_id') || '');
   const [units, setUnits] = useState<Unit[]>([]);
   const [statuses, setStatuses] = useState<UnitStatus[]>([]);
@@ -41,6 +42,81 @@ const ProjectUnitsPage: React.FC = () => {
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [agents, setAgents] = useState<User[]>([]);
+  const [openStatusFor, setOpenStatusFor] = useState<string | null>(null);
+  const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
+  const [changingStatus, setChangingStatus] = useState<string | null>(null);
+  const [showManageStatuses, setShowManageStatuses] = useState(false);
+  const [showTowerModal, setShowTowerModal] = useState(false);
+  const [extraTowers, setExtraTowers] = useState<string[]>([]); // torres creadas pero sin unidades aún
+  const [renamingTower, setRenamingTower] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [newTowerName, setNewTowerName] = useState('');
+  const [renamingInProgress, setRenamingInProgress] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 25;
+
+  // ── Filters ──
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [filterTower, setFilterTower]   = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterAgent, setFilterAgent]   = useState('');
+  const [filterPrice, setFilterPrice]   = useState('');
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setFilterTower('');
+    setFilterStatus('');
+    setFilterAgent('');
+    setFilterPrice('');
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = searchQuery || filterTower || filterStatus || filterAgent || filterPrice;
+
+  // Unique towers: from units + manually created ones
+  const towers = useMemo(() => {
+    const fromUnits = units.map(u => u.tower).filter(Boolean) as string[];
+    return [...new Set([...fromUnits, ...extraTowers])].sort();
+  }, [units, extraTowers]);
+
+  // Dynamic price ranges (3 equal buckets from min to max)
+  const priceRanges = useMemo(() => {
+    const prices = units.map(u => u.price).filter(Boolean);
+    if (prices.length < 2) return [];
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    if (min === max) return [];
+    const step = (max - min) / 3;
+    return [
+      { value: '1', label: `Hasta ${formatCurrencyShort(min + step)}`, max: min + step },
+      { value: '2', label: `${formatCurrencyShort(min + step)} – ${formatCurrencyShort(min + 2 * step)}`, min: min + step, max: min + 2 * step },
+      { value: '3', label: `Más de ${formatCurrencyShort(min + 2 * step)}`, min: min + 2 * step },
+    ];
+  }, [units]);
+
+  // Filtered + searched units
+  const filteredUnits = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return units.filter(u => {
+      if (q) {
+        const haystack = [u.code, u.tower, u.assigned_agent?.name, String(u.floor)]
+          .join(' ').toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      if (filterTower && u.tower !== filterTower) return false;
+      if (filterStatus && u.current_status_id !== filterStatus) return false;
+      if (filterAgent === '__none__' && u.assigned_agent_id) return false;
+      if (filterAgent && filterAgent !== '__none__' && u.assigned_agent_id !== filterAgent) return false;
+      if (filterPrice) {
+        const range = priceRanges.find(r => r.value === filterPrice);
+        if (range) {
+          if (range.min !== undefined && u.price < range.min) return false;
+          if (range.max !== undefined && u.price >= range.max) return false;
+        }
+      }
+      return true;
+    });
+  }, [units, searchQuery, filterTower, filterStatus, filterAgent, filterPrice, priceRanges]);
 
   // Bulk Create State
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
@@ -169,17 +245,12 @@ const ProjectUnitsPage: React.FC = () => {
       try {
         const token = localStorage.getItem('access_token');
         
-        // Construct payload matching UpdateUnitDto
         const payload: any = {
-            price: Number(editingUnit.price), // Ensure it's a number
+            price: Number(editingUnit.price),
             current_status_id: editingUnit.current_status_id,
+            tower: editingUnit.tower || null,
+            assigned_agent_id: editingUnit.assigned_agent_id || null,
         };
-
-        if (editingUnit.assigned_agent_id) {
-            payload.assigned_agent_id = editingUnit.assigned_agent_id;
-        }
- 
-        console.log('Sending payload:', payload); // Debug payload
 
         const res = await fetch(`/api/units/${editingUnit.id}`, {
             method: 'PATCH',
@@ -221,18 +292,18 @@ const ProjectUnitsPage: React.FC = () => {
       }
   }, [projectId]);
 
-  const fetchUnits = useCallback(async () => {
+  const fetchUnits = useCallback(async (silent = false) => {
     try {
-      setUnits([]); // Clear previous units immediately
+      if (!silent) setUnits([]);
       const token = localStorage.getItem('access_token');
-      const res = await fetch(`/api/units?project_id=${projectId}`, { 
+      const res = await fetch(`/api/units?project_id=${projectId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
       });
-      
       if (res.ok) {
           const data = await res.json();
           setUnits(data);
-      } else {
+          if (!silent) setCurrentPage(1);
+      } else if (!silent) {
           setUnits([]);
       }
     } catch (error) {
@@ -292,6 +363,121 @@ const ProjectUnitsPage: React.FC = () => {
       }
   };
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = () => {
+      setOpenStatusFor(null);
+      setOpenMenuFor(null);
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
+  const handleStatusChange = async (unitId: string, newStatusId: string) => {
+    if (changingStatus === unitId) return;
+    const previousUnits = units;
+    // Optimistic update
+    const newStatus = statuses.find(s => s.id === newStatusId);
+    setUnits(prev => prev.map(u =>
+      u.id === unitId
+        ? { ...u, current_status_id: newStatusId, current_status: newStatus }
+        : u
+    ));
+    setOpenStatusFor(null);
+    setChangingStatus(unitId);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`/api/units/${unitId}/status`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_status_id: newStatusId }),
+      });
+      if (!res.ok) {
+        setUnits(previousUnits); // rollback
+      } else {
+        fetchUnits(true); // silent refresh to confirm DB state
+      }
+    } catch {
+      setUnits(previousUnits); // rollback
+    } finally {
+      setChangingStatus(null);
+    }
+  };
+
+  const handleDeleteStatus = async (statusId: string, statusName: string) => {
+    const inUse = units.some(u => u.current_status_id === statusId);
+    if (inUse) {
+      alert(`No se puede eliminar "${statusName}" porque hay unidades con ese estado. Cambia su estado primero.`);
+      return;
+    }
+    if (!confirm(`¿Eliminar el estado "${statusName}"? Esta acción no se puede deshacer.`)) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`/api/unit-statuses/${statusId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setStatuses(prev => prev.filter(s => s.id !== statusId));
+      } else {
+        alert('Error al eliminar el estado');
+      }
+    } catch {
+      alert('Error al eliminar el estado');
+    }
+  };
+
+  const handleDeleteUnit = async (unitId: string, unitCode: string) => {
+    if (!confirm(`¿Eliminar la unidad ${unitCode}? Esta acción no se puede deshacer.`)) return;
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(`/api/units/${unitId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setUnits(prev => prev.filter(u => u.id !== unitId));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+    setOpenMenuFor(null);
+  };
+
+  const handleRenameTower = async (oldName: string, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) { setRenamingTower(null); return; }
+    const affected = units.filter(u => u.tower === oldName);
+    if (affected.length === 0) {
+      // No units — just rename in extraTowers list
+      setExtraTowers(prev => prev.map(t => t === oldName ? trimmed : t));
+      setRenamingTower(null);
+      return;
+    }
+    if (!confirm(`¿Renombrar "${oldName}" → "${trimmed}"? Se actualizarán ${affected.length} unidades.`)) {
+      setRenamingTower(null);
+      return;
+    }
+    setRenamingInProgress(true);
+    const token = localStorage.getItem('access_token');
+    try {
+      await Promise.all(affected.map(u =>
+        fetch(`/api/units/${u.id}`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tower: trimmed }),
+        })
+      ));
+      setUnits(prev => prev.map(u => u.tower === oldName ? { ...u, tower: trimmed } : u));
+      setExtraTowers(prev => prev.filter(t => t !== oldName));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRenamingInProgress(false);
+      setRenamingTower(null);
+    }
+  };
+
   const getStatusBadge = (unit: Unit) => {
     if (unit.current_status) {
         return (
@@ -314,8 +500,14 @@ const ProjectUnitsPage: React.FC = () => {
     return <span className="text-slate-500 text-xs">Sin Estado</span>;
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+
+  const formatCurrencyShort = (value: number) => {
+    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+    if (value >= 1_000_000)     return `$${Math.round(value / 1_000_000)}M`;
+    if (value >= 1_000)         return `$${Math.round(value / 1_000)}K`;
+    return `$${value}`;
   };
 
   return (
@@ -323,12 +515,22 @@ const ProjectUnitsPage: React.FC = () => {
       title="Unidades (Apartamentos)" 
       subtitle="Inventario en tiempo real y gestión comercial por torre."
       actions={
-        <div className="flex items-center gap-3">
-           <button className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
-            <span className="material-symbols-outlined text-lg">download</span>
-            Exportar
-          </button>
-          <button 
+        <div className="flex items-center gap-2">
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowTowerModal(true)}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              <span className="material-symbols-outlined text-lg">apartment</span>
+              Torres
+              {towers.length > 0 && (
+                <span className="h-5 min-w-5 px-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-bold flex items-center justify-center">
+                  {towers.length}
+                </span>
+              )}
+            </button>
+          )}
+          <button
             onClick={() => setShowBulkCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all"
           >
@@ -339,6 +541,175 @@ const ProjectUnitsPage: React.FC = () => {
       }
     >
       {/* Bulk Create Modal */}
+      {/* ── Tower Manager Modal ── */}
+      {showTowerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Gestionar Torres</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{towers.length} torre{towers.length !== 1 ? 's' : ''} · {units.length} unidades en total</p>
+              </div>
+              <button onClick={() => { setShowTowerModal(false); setRenamingTower(null); setNewTowerName(''); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
+              {towers.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-6">No hay torres definidas aún.</p>
+              )}
+
+              {towers.map(tower => {
+                const count = units.filter(u => u.tower === tower).length;
+                const isRenaming = renamingTower === tower;
+                return (
+                  <div key={tower} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 shrink-0">
+                      <span className="material-symbols-outlined text-[18px]">apartment</span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {isRenaming ? (
+                        <input
+                          autoFocus
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleRenameTower(tower, renameValue);
+                            if (e.key === 'Escape') setRenamingTower(null);
+                          }}
+                          className="w-full px-2 py-1 text-sm font-semibold border border-blue-400 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                      ) : (
+                        <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">{tower}</p>
+                      )}
+                      <p className="text-xs text-slate-500 mt-0.5">{count} unidad{count !== 1 ? 'es' : ''}</p>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isRenaming ? (
+                        <>
+                          <button
+                            onClick={() => handleRenameTower(tower, renameValue)}
+                            disabled={renamingInProgress}
+                            className="p-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">check</span>
+                          </button>
+                          <button
+                            onClick={() => setRenamingTower(null)}
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { setRenamingTower(tower); setRenameValue(tower); }}
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-blue-600 transition-colors"
+                            title="Renombrar"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                          </button>
+                          <button
+                            onClick={() => { setShowTowerModal(false); setFilterTower(tower); setCurrentPage(1); }}
+                            className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                            title="Ver unidades de esta torre"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">filter_list</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Nueva torre */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nueva Torre</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ej: Torre A, Bloque 1, Edificio Norte..."
+                    value={newTowerName}
+                    onChange={e => setNewTowerName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const t = newTowerName.trim();
+                        if (t && !towers.includes(t)) { setExtraTowers(prev => [...prev, t]); setNewTowerName(''); }
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <button
+                    onClick={() => {
+                      const t = newTowerName.trim();
+                      if (t && !towers.includes(t)) { setExtraTowers(prev => [...prev, t]); setNewTowerName(''); }
+                    }}
+                    disabled={!newTowerName.trim() || towers.includes(newTowerName.trim())}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    Agregar
+                  </button>
+                </div>
+                <p className="text-xs text-slate-400 mt-1.5">La torre quedará disponible en los dropdowns para asignar unidades.</p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+              <p className="text-xs text-slate-400 flex items-start gap-1.5">
+                <span className="material-symbols-outlined text-[14px] mt-0.5 shrink-0">info</span>
+                Renombrar una torre actualiza automáticamente todas sus unidades. Para asignar unidades a una torre, usa la edición masiva o edita cada unidad individualmente.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Manage Statuses Modal ── */}
+      {showManageStatuses && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h2 className="font-bold text-slate-900 dark:text-white">Gestionar estados</h2>
+              <button onClick={() => setShowManageStatuses(false)} className="text-slate-400 hover:text-slate-600">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              {statuses.map(s => {
+                const inUse = units.some(u => u.current_status_id === s.id);
+                return (
+                  <div key={s.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color_hex }} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{s.name}</span>
+                      {inUse && (
+                        <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full">
+                          {units.filter(u => u.current_status_id === s.id).length} uds.
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteStatus(s.id, s.name)}
+                      disabled={inUse}
+                      title={inUse ? 'En uso por unidades' : 'Eliminar'}
+                      className="text-slate-300 hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="px-5 pb-4 text-xs text-slate-400">Los estados en uso no se pueden eliminar hasta que cambies todas sus unidades.</p>
+          </div>
+        </div>
+      )}
+
       {showBulkCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
               <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
@@ -606,43 +977,83 @@ const ProjectUnitsPage: React.FC = () => {
                     </button>
                 </div>
                 <form onSubmit={handleSaveEdit} className="p-6 space-y-4">
+                    {/* Info de solo lectura */}
+                    <div className="flex gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-600 dark:text-slate-400">
+                        <span><span className="font-semibold text-slate-900 dark:text-white">Piso:</span> {editingUnit.floor}</span>
+                        <span className="text-slate-300 dark:text-slate-600">|</span>
+                        <span><span className="font-semibold text-slate-900 dark:text-white">Área:</span> {editingUnit.area} m²</span>
+                        {editingUnit.current_status && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">|</span>
+                            <span className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: editingUnit.current_status.color_hex }} />
+                              {editingUnit.current_status.name}
+                            </span>
+                          </>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
+                        {/* Torre */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio</label>
-                            <input 
-                                type="number" 
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                value={editingUnit.price}
-                                onChange={e => setEditingUnit({...editingUnit, price: Number(e.target.value)})}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
-                            <select 
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                value={editingUnit.current_status_id || ''}
-                                onChange={e => setEditingUnit({...editingUnit, current_status_id: e.target.value})}
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Torre / Bloque</label>
+                            <select
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                value={editingUnit.tower || ''}
+                                onChange={e => setEditingUnit({ ...editingUnit, tower: e.target.value })}
                             >
-                                <option value="" disabled>Seleccionar Estado</option>
-                                {statuses.map(status => (
-                                    <option key={status.id} value={status.id}>{status.name}</option>
-                                ))}
+                                <option value="">Sin torre</option>
+                                {towers.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
+                        {/* Precio */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio</label>
+                            <input
+                                type="number"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                value={editingUnit.price}
+                                onChange={e => setEditingUnit({ ...editingUnit, price: Number(e.target.value) })}
+                            />
+                        </div>
                     </div>
-                    {/* Add Agent Assignment Logic Here */}
+
+                    {/* Estado */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                        <div className="grid grid-cols-2 gap-2">
+                            {statuses.map(s => (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    onClick={() => setEditingUnit({ ...editingUnit, current_status_id: s.id, current_status: s })}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                                        editingUnit.current_status_id === s.id
+                                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                    }`}
+                                >
+                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color_hex }} />
+                                    {s.name}
+                                    {editingUnit.current_status_id === s.id && (
+                                        <span className="material-symbols-outlined text-[14px] ml-auto">check</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Agente */}
                     {agents.length > 0 && (
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Reasignar Agente</label>
-                            <select 
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Agente asignado</label>
+                            <select
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none"
                                 value={editingUnit.assigned_agent_id || ''}
-                                onChange={e => setEditingUnit({...editingUnit, assigned_agent_id: e.target.value})}
+                                onChange={e => setEditingUnit({ ...editingUnit, assigned_agent_id: e.target.value })}
                             >
-                                <option value="">Sin Agente Asignado</option>
-                                {agents.map(agent => (
-                                    <option key={agent.id} value={agent.id}>{agent.name}</option>
-                                ))}
+                                <option value="">Sin agente asignado</option>
+                                {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                             </select>
                         </div>
                     )}
@@ -677,49 +1088,155 @@ const ProjectUnitsPage: React.FC = () => {
            <span className="text-slate-900 dark:text-white font-medium">Unidades</span>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 items-center">
-            <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Torre</label>
-                <select className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-blue-600 text-slate-700 dark:text-slate-200 min-w-[150px]">
-                    <option>Todas las Torres</option>
-                    <option>Torre Norte</option>
-                    <option>Torre Sur</option>
-                    <option>Torre Este</option>
-                </select>
-            </div>
-            <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                <select className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-blue-600 text-slate-700 dark:text-slate-200 min-w-[150px]">
-                    <option>Todos los Estados</option>
-                    <option>Disponible</option>
-                    <option>En proceso</option>
-                    <option>Separada</option>
-                    <option>Vendida</option>
-                </select>
-            </div>
-            <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Agente</label>
-                <select className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-blue-600 text-slate-700 dark:text-slate-200 min-w-[150px]">
-                    <option>Cualquier Agente</option>
-                    <option>Carlos Ruiz</option>
-                    <option>Ana Milena</option>
-                </select>
-            </div>
-             <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rango de Precio</label>
-                <select className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-blue-600 text-slate-700 dark:text-slate-200 min-w-[150px]">
-                    <option>Cualquier precio</option>
-                    <option>Menos de $400M</option>
-                    <option>$400M - $600M</option>
-                    <option>Más de $600M</option>
-                </select>
-            </div>
-            <div className="ml-auto pt-5">
-                <button className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                    Limpiar Filtros
+        {/* Search + Filters */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+          {/* Search bar */}
+          <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-[18px] pointer-events-none">search</span>
+              <input
+                type="text"
+                placeholder="Buscar por código, torre, piso o agente..."
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
+              )}
             </div>
+          </div>
+
+          {/* Filter selects */}
+          <div className="px-3 py-2.5 flex flex-wrap gap-3 items-end">
+            {/* Torre */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Torre</label>
+              <select
+                value={filterTower}
+                onChange={e => { setFilterTower(e.target.value); setCurrentPage(1); }}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[140px]"
+              >
+                <option value="">Todas las torres</option>
+                {towers.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Estado */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado</label>
+                {userRole === 'admin' && (
+                  <button
+                    onClick={() => setShowManageStatuses(true)}
+                    title="Gestionar estados"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">settings</span>
+                  </button>
+                )}
+              </div>
+              <select
+                value={filterStatus}
+                onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[150px]"
+              >
+                <option value="">Todos los estados</option>
+                {statuses.filter(s => s.order_sequence > 0).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+
+            {/* Agente */}
+            {agents.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Agente</label>
+                <select
+                  value={filterAgent}
+                  onChange={e => { setFilterAgent(e.target.value); setCurrentPage(1); }}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[150px]"
+                >
+                  <option value="">Cualquier agente</option>
+                  <option value="__none__">Sin asignar</option>
+                  {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Precio */}
+            {priceRanges.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Precio</label>
+                <select
+                  value={filterPrice}
+                  onChange={e => { setFilterPrice(e.target.value); setCurrentPage(1); }}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[180px]"
+                >
+                  <option value="">Cualquier precio</option>
+                  {priceRanges.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Clear */}
+            <div className="ml-auto flex items-end">
+              {hasActiveFilters ? (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
+                  Limpiar filtros
+                </button>
+              ) : (
+                <span className="text-xs text-slate-400 py-1.5">
+                  {filteredUnits.length} de {units.length} unidades
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Active filter chips */}
+          {hasActiveFilters && (
+            <div className="px-3 pb-2.5 flex flex-wrap gap-2">
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-semibold">
+                  <span className="material-symbols-outlined text-[12px]">search</span>
+                  "{searchQuery}"
+                  <button onClick={() => { setSearchQuery(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
+              {filterTower && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                  Torre: {filterTower}
+                  <button onClick={() => { setFilterTower(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
+              {filterStatus && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                  {statuses.find(s => s.id === filterStatus)?.name ?? filterStatus}
+                  <button onClick={() => { setFilterStatus(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
+              {filterAgent && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                  {filterAgent === '__none__' ? 'Sin asignar' : agents.find(a => a.id === filterAgent)?.name ?? filterAgent}
+                  <button onClick={() => { setFilterAgent(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
+              {filterPrice && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
+                  {priceRanges.find(r => r.value === filterPrice)?.label}
+                  <button onClick={() => { setFilterPrice(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
+              <span className="text-xs text-slate-400 self-center">{filteredUnits.length} resultado{filteredUnits.length !== 1 ? 's' : ''}</span>
+            </div>
+          )}
         </div>
 
         {/* Units Table */}
@@ -739,63 +1256,162 @@ const ProjectUnitsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {units.map((unit) => (
-                    <tr key={unit.id} className={`transition-colors ${selectedUnitIds.has(unit.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50'}`}>
-                        <td className="px-6 py-4">
-                            <input 
-                                type="checkbox" 
-                                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                checked={selectedUnitIds.has(unit.id)}
-                                onChange={() => toggleSelection(unit.id)}
-                            />
-                        </td>
+                {filteredUnits.length === 0 ? (
+                  <tr><td colSpan={8} className="px-6 py-16 text-center text-slate-400">
+                    <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>
+                    No hay unidades que coincidan con los filtros
+                  </td></tr>
+                ) : null}
+                {filteredUnits.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((unit) => (
+                    <tr key={unit.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">{unit.code}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{unit.tower}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-center">{unit.floor}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-center">{unit.area} m²</td>
                         <td className="px-6 py-4 font-bold text-blue-600">{formatCurrency(unit.price)}</td>
+                        {/* ── Status — inline dropdown ── */}
                         <td className="px-6 py-4">
-                            {getStatusBadge(unit)}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setOpenMenuFor(null); setOpenStatusFor(openStatusFor === unit.id ? null : unit.id); }}
+                              disabled={userRole !== 'admin'}
+                              className={[
+                                'px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 w-fit transition-all',
+                                userRole === 'admin' ? 'hover:ring-2 hover:ring-offset-1 cursor-pointer' : 'cursor-default',
+                                changingStatus === unit.id ? 'opacity-50' : '',
+                              ].join(' ')}
+                              style={{
+                                backgroundColor: `${unit.current_status?.color_hex}18`,
+                                color: unit.current_status?.color_hex,
+                                // @ts-ignore
+                                '--tw-ring-color': unit.current_status?.color_hex + '60',
+                              }}
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: unit.current_status?.color_hex }} />
+                              {unit.current_status?.name ?? 'Sin estado'}
+                              {userRole === 'admin' && (
+                                <span className="material-symbols-outlined text-[13px] opacity-60">
+                                  {openStatusFor === unit.id ? 'expand_less' : 'expand_more'}
+                                </span>
+                              )}
+                            </button>
+
+                            {openStatusFor === unit.id && (
+                              <div onClick={e => e.stopPropagation()} className="absolute left-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-100">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 pt-1 pb-2">Cambiar estado</p>
+                                {statuses.filter(s => s.order_sequence > 0).map(s => (
+                                  <button
+                                    key={s.id}
+                                    onClick={(e) => { e.stopPropagation(); handleStatusChange(unit.id, s.id); }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-left"
+                                  >
+                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color_hex }} />
+                                    <span className="flex-1 font-medium text-slate-700 dark:text-slate-200">{s.name}</span>
+                                    {unit.current_status_id === s.id && (
+                                      <span className="material-symbols-outlined text-[16px] text-blue-600">check</span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </td>
+
+                        {/* ── Assigned agent ── */}
                         <td className="px-6 py-4">
-                             <div className="flex items-center gap-2">
-                                {unit.assigned_agent ? (
-                                    <>
-                                        <div className="size-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">
-                                            {unit.assigned_agent.name?.substring(0,2).toUpperCase() || 'AG'}
-                                        </div>
-                                        <span className="text-sm text-slate-600 dark:text-slate-300">{unit.assigned_agent.name || 'Agente'}</span>
-                                    </>
-                                ) : (
-                                    <span className="text-sm text-slate-400 italic">Sin asignar</span>
-                                )}
-                            </div>
+                          <div className="flex items-center gap-2">
+                            {unit.assigned_agent ? (
+                              <>
+                                <div className="size-7 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-600">
+                                  {unit.assigned_agent.name?.substring(0, 2).toUpperCase() || 'AG'}
+                                </div>
+                                <span className="text-sm text-slate-700 dark:text-slate-300 truncate max-w-[120px]">{unit.assigned_agent.name}</span>
+                              </>
+                            ) : (
+                              <span className="text-sm text-slate-400 italic">Sin asignar</span>
+                            )}
+                          </div>
                         </td>
+
+                        {/* ── Actions ── */}
                         <td className="px-6 py-4 text-right">
-                             {/* Actions Menu - Simplified for now */}
-                             <div className="flex items-center justify-end gap-2">
-                               {userRole === 'admin' && (
-                                 <button 
-                                    className="text-slate-400 hover:text-blue-600 transition-colors" 
-                                    title="Editar"
-                                    onClick={() => handleEditClick(unit)}
-                                >
-                                    <span className="material-symbols-outlined">edit</span>
-                                </button>
-                               )}
-                               {userRole === 'agent' && unit.current_status?.name === 'Disponible' && (
-                                 <button 
-                                    onClick={() => handleReserve(unit.id)}
-                                    className="text-emerald-500 hover:text-emerald-700 transition-colors bg-emerald-50 px-2 py-1 rounded text-xs font-bold" 
-                                    title="Reservar"
-                                 >
-                                    Reservar
-                                </button>
-                               )}
-                               <button className="text-slate-400 hover:text-blue-600 transition-colors">
-                                  <span className="material-symbols-outlined">more_vert</span>
+                          <div className="flex items-center justify-end gap-1">
+                            {/* Agent: quick reserve */}
+                            {userRole === 'agent' && unit.current_status?.name === 'Disponible' && (
+                              <button
+                                onClick={() => handleReserve(unit.id)}
+                                className="text-xs font-bold px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg transition-colors"
+                              >
+                                Reservar
                               </button>
-                             </div>
+                            )}
+
+                            {/* Admin: edit */}
+                            {userRole === 'admin' && (
+                              <button
+                                onClick={() => handleEditClick(unit)}
+                                className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                title="Editar"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                              </button>
+                            )}
+
+                            {/* ⋮ More menu */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setOpenStatusFor(null); setOpenMenuFor(openMenuFor === unit.id ? null : unit.id); }}
+                                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                              </button>
+
+                              {openMenuFor === unit.id && (
+                                <div onClick={e => e.stopPropagation()} className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 w-52 animate-in fade-in zoom-in-95 duration-100">
+                                  <button
+                                    onClick={() => { handleEditClick(unit); setOpenMenuFor(null); }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[17px] text-slate-400">edit</span>
+                                    Editar unidad
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(unit.code);
+                                      setOpenMenuFor(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[17px] text-slate-400">content_copy</span>
+                                    Copiar código
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const url = `${window.location.origin}/crm/projects/${projectId}/units#${unit.id}`;
+                                      navigator.clipboard.writeText(url);
+                                      setOpenMenuFor(null);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[17px] text-slate-400">link</span>
+                                    Copiar enlace
+                                  </button>
+                                  {userRole === 'admin' && (
+                                    <>
+                                      <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+                                      <button
+                                        onClick={() => handleDeleteUnit(unit.id, unit.code)}
+                                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-[17px]">delete</span>
+                                        Eliminar unidad
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                     </tr>
                 ))}
@@ -803,35 +1419,94 @@ const ProjectUnitsPage: React.FC = () => {
             </table>
           </div>
            {/* Pagination */}
-           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
-                <span className="text-sm text-slate-500">Mostrando <span className="font-bold text-slate-900 dark:text-white">1</span> a <span className="font-bold text-slate-900 dark:text-white">6</span> de <span className="font-bold text-slate-900 dark:text-white">142</span> unidades</span>
-                <div className="flex gap-2">
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 transition-colors">
-                        <span className="material-symbols-outlined text-sm">chevron_left</span>
-                    </button>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">1</button>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 transition-colors text-sm font-medium">2</button>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 transition-colors text-sm font-medium">3</button>
-                    <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 transition-colors">
-                        <span className="material-symbols-outlined text-sm">chevron_right</span>
-                    </button>
-                </div>
-           </div>
+           {(() => {
+             const totalPages = Math.ceil(filteredUnits.length / PAGE_SIZE);
+             if (totalPages <= 1) return null;
+             const from = (currentPage - 1) * PAGE_SIZE + 1;
+             const to = Math.min(currentPage * PAGE_SIZE, filteredUnits.length);
+
+             // Build page number list with ellipsis
+             const pages: (number | '...')[] = [];
+             if (totalPages <= 7) {
+               for (let i = 1; i <= totalPages; i++) pages.push(i);
+             } else {
+               pages.push(1);
+               if (currentPage > 3) pages.push('...');
+               for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+               if (currentPage < totalPages - 2) pages.push('...');
+               pages.push(totalPages);
+             }
+
+             return (
+               <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                 <span className="text-sm text-slate-500">
+                   Mostrando <span className="font-bold text-slate-900 dark:text-white">{from}</span> – <span className="font-bold text-slate-900 dark:text-white">{to}</span> de <span className="font-bold text-slate-900 dark:text-white">{filteredUnits.length}</span>{hasActiveFilters ? ` (filtrado de ${units.length})` : ' unidades'}
+                 </span>
+                 <div className="flex gap-1">
+                   <button
+                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                     disabled={currentPage === 1}
+                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                   >
+                     <span className="material-symbols-outlined text-sm">chevron_left</span>
+                   </button>
+                   {pages.map((p, i) =>
+                     p === '...' ? (
+                       <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-slate-400 text-sm">…</span>
+                     ) : (
+                       <button
+                         key={p}
+                         onClick={() => setCurrentPage(p as number)}
+                         className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                           currentPage === p
+                             ? 'bg-blue-600 text-white font-bold shadow-sm'
+                             : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-600 hover:text-blue-600'
+                         }`}
+                       >
+                         {p}
+                       </button>
+                     )
+                   )}
+                   <button
+                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                     disabled={currentPage === totalPages}
+                     className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-600 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                   >
+                     <span className="material-symbols-outlined text-sm">chevron_right</span>
+                   </button>
+                 </div>
+               </div>
+             );
+           })()}
         </div>
 
-        {/* Footer Summary */}
-        <div className="mt-auto border-t border-slate-200 dark:border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-            <div className="flex gap-4">
-                <span className="font-bold text-slate-400 uppercase tracking-wider text-xs">Resumen:</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> 42 Disponibles</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span> 18 En proceso</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500"></span> 82 Vendidas</span>
+        {/* Footer Summary — real data */}
+        {units.length > 0 && (() => {
+          const totalValue = units.reduce((sum, u) => sum + (u.price || 0), 0);
+          const byStatus = statuses.map(s => ({
+            ...s,
+            count: units.filter(u => u.current_status_id === s.id).length,
+          })).filter(s => s.count > 0);
+
+          return (
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm">
+              <div className="flex flex-wrap gap-3">
+                <span className="font-bold text-slate-400 uppercase tracking-wider text-xs self-center">Resumen:</span>
+                {byStatus.map(s => (
+                  <span key={s.id} className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color_hex }} />
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">{s.count}</span>
+                    <span className="text-slate-500">{s.name}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-slate-400">Valor total inventario:</span>
+                <span className="text-lg font-black text-blue-600">{formatCurrency(totalValue)}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-                <span className="text-slate-400">Ventas totales:</span>
-                <span className="text-xl font-black text-blue-600">$45.280.000.000</span>
-            </div>
-        </div>
+          );
+        })()}
 
       </div>
     </CrmLayout>

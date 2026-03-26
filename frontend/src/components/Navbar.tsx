@@ -22,9 +22,9 @@ const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center gap-4">
           <ThemeToggle />
           <Link className="text-slate-900 dark:text-white font-medium text-sm hover:text-primary" to="/login">Iniciar Sesión</Link>
-          <button className="bg-primary hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20">
+          <a href="/#demo" className="bg-primary hover:bg-blue-700 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-all shadow-lg shadow-primary/20">
             Solicitar Demo
-          </button>
+          </a>
         </div>
 
         <div className="md:hidden flex items-center gap-2">
@@ -72,9 +72,9 @@ const Navbar: React.FC = () => {
           >
             Iniciar Sesión
           </Link>
-          <button className="bg-primary hover:bg-blue-700 text-white text-lg font-bold px-5 py-3.5 rounded-lg transition-all shadow-lg shadow-primary/20 w-full mt-2">
+          <a href="/#demo" onClick={() => setIsMenuOpen(false)} className="bg-primary hover:bg-blue-700 text-white text-lg font-bold px-5 py-3.5 rounded-lg transition-all shadow-lg shadow-primary/20 w-full mt-2 block text-center">
             Solicitar Demo
-          </button>
+          </a>
         </div>
       )}
     </nav>

@@ -15,11 +15,11 @@ export class Document {
   @Column()
   project_id: string;
 
-  @ManyToOne(() => Unit)
+  @ManyToOne(() => Unit, { nullable: true })
   @JoinColumn({ name: 'unit_id' })
   unit: Unit;
 
-  @Column()
+  @Column({ nullable: true })
   unit_id: string;
 
   @Column()
@@ -27,6 +27,12 @@ export class Document {
 
   @Column()
   file_url: string;
+
+  @Column({ nullable: true })
+  original_name: string;
+
+  @Column({ nullable: true })
+  file_size: number;
 
   @Column({ default: '1.0' })
   version: string;
@@ -41,7 +47,7 @@ export class Document {
   @Column({ default: false })
   requires_signature: boolean;
 
-  @Column({ default: 'draft' })
+  @Column({ default: 'active' })
   status: string;
 
   @CreateDateColumn()

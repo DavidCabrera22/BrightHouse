@@ -17,6 +17,17 @@ async function bootstrap() {
   // Serve static files from uploads directory
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
+  // Serve compiled frontend (production)
+  const publicDir = join(__dirname, '..', 'public');
+  app.use(express.static(publicDir));
+  app.use((req: any, res: any, next: any) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
+      res.sendFile(join(publicDir, 'index.html'), (err: any) => { if (err) next(); });
+    } else {
+      next();
+    }
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

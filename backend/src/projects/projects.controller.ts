@@ -11,12 +11,17 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @ApiTags('Projects')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @Get('public')
+  findAllPublic() {
+    return this.projectsService.findAll();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @Roles('Admin')
   @UseInterceptors(FileInterceptor('image', {
@@ -56,24 +61,46 @@ export class ProjectsController {
     return this.projectsService.create(createProjectDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   @Roles('Admin', 'Agent')
   findAll() {
     return this.projectsService.findAll();
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   @Roles('Admin', 'Agent')
   findOne(@Param('id') id: string) {
     return this.projectsService.findOne(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @Roles('Admin')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+  @UseInterceptors(FileInterceptor('image', {
+    storage: diskStorage({
+      destination: './uploads/projects',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        const ext = extname(file.originalname);
+        callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+      },
+    }),
+  }))
+  @ApiConsumes('multipart/form-data')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @UploadedFile() file?: Express.Multer.File) {
+    if (file) {
+      updateProjectDto.image = `/uploads/projects/${file.filename}`;
+    }
     return this.projectsService.update(id, updateProjectDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @Roles('Admin')
   remove(@Param('id') id: string) {

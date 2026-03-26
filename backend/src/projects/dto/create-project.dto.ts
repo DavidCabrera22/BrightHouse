@@ -35,4 +35,9 @@ export class CreateProjectDto {
   @ApiProperty({ required: false })
   @IsOptional()
   image?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  slug?: string;
 }

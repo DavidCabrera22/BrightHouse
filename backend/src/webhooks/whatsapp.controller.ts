@@ -119,7 +119,18 @@ export class WhatsAppController {
 
         this.logger.log(`Nova replied to ${from}: "${novaReply.substring(0, 80)}..."`);
 
-        // 9. Extract lead info every 4 exchanges
+        // 9. Auto-advance lead to "contacted" on Nova's first reply
+        const freshConv2 = await this.conversationsService.findConversationById(conv.id);
+        if (freshConv2.lead_id) {
+          const msgCount = allMessages.length;
+          if (msgCount <= 2) {
+            // First exchange — mark as contacted
+            await this.leadsService.updateFromNova(freshConv2.lead_id, { status: 'contacted' });
+            this.logger.log(`Lead ${freshConv2.lead_id} → contacted (primer contacto Nova)`);
+          }
+        }
+
+        // 10. Extract lead info every 4 exchanges and auto-advance status
         if (allMessages.length >= 4 && allMessages.length % 4 === 0) {
           this.enrichLeadAsync(conv.id, from, [...history, { role: 'user', content: text }]);
         }
@@ -131,7 +142,7 @@ export class WhatsAppController {
     return { status: 'ok' };
   }
 
-  /** Fire-and-forget: extract lead info from conversation and update the lead */
+  /** Fire-and-forget: extract lead info and auto-advance pipeline status */
   private async enrichLeadAsync(convId: string, phone: string, history: ChatMessage[]) {
     try {
       const extraction = await this.novaService.extractLeadInfo(history);
@@ -140,16 +151,43 @@ export class WhatsAppController {
       const conv = await this.conversationsService.findOrCreateByPhone(phone, 'whatsapp');
       if (!conv.lead_id) return;
 
+      // ── Determine next status based on extraction ──────────────────────────
+      let nextStatus: string | undefined;
+
+      // Check if a visit was mentioned in the last messages
+      const recentText = history
+        .slice(-6)
+        .map(m => m.content.toLowerCase())
+        .join(' ');
+
+      const visitKeywords = ['visita', 'sala de ventas', 'agendar', 'lunes', 'martes',
+        'miércoles', 'jueves', 'viernes', 'sábado', 'mañana', 'pasado mañana',
+        'esta semana', 'próxima semana', 'te confirmo', 'voy a ir', 'puedo ir'];
+
+      const visitMentioned = visitKeywords.some(kw => recentText.includes(kw));
+
+      if (visitMentioned) {
+        nextStatus = 'pending'; // Visit scheduled
+      } else if (
+        (extraction.ai_score !== undefined && extraction.ai_score >= 60) ||
+        extraction.priority === 'high'
+      ) {
+        nextStatus = 'qualified';
+      }
+
       await this.leadsService.updateFromNova(conv.lead_id, {
         name: extraction.name,
         interested_in: extraction.financing
-          ? `${extraction.interested_in || ''} | financiamiento: ${extraction.financing}`.trim()
+          ? `${extraction.interested_in || ''} | ${extraction.financing}`.replace(/^\s*\|\s*/, '').trim()
           : extraction.interested_in,
         ai_score: extraction.ai_score,
         priority: extraction.priority,
+        status: nextStatus,
       });
 
-      this.logger.log(`Lead ${conv.lead_id} enriquecido con datos de Nova`);
+      this.logger.log(
+        `Lead ${conv.lead_id} enriquecido — score: ${extraction.ai_score ?? '?'}, status: ${nextStatus ?? 'sin cambio'}`,
+      );
     } catch (err) {
       this.logger.warn('Error enriqueciendo lead:', err?.message);
     }

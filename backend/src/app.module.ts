@@ -18,6 +18,7 @@ import { CampaignsModule } from './campaigns/campaigns.module';
 import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     AuditLogsModule,
     ConversationsModule,
     WebhooksModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

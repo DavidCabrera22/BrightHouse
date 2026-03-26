@@ -152,8 +152,8 @@ const ProjectDashboardPage: React.FC = () => {
         <div className="flex gap-6 border-b border-slate-200 dark:border-slate-800">
           <Link to={`/crm/projects/${projectId}`} className="pb-3 border-b-2 border-blue-600 text-blue-600 font-bold text-sm">Resumen</Link>
           <Link to={`/crm/projects/${projectId}/units`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Unidades</Link>
-          <Link to="#" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Documentos</Link>
-          <Link to="#" className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Analítica</Link>
+          <Link to={`/crm/projects/${projectId}/documents`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Documentos</Link>
+          <Link to={`/crm/projects/${projectId}/analytics`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Analítica</Link>
         </div>
 
         {loading ? (
@@ -347,7 +347,7 @@ const ProjectDashboardPage: React.FC = () => {
                   </div>
                 </Link>
                 <Link
-                  to="/crm/analytics"
+                  to={`/crm/projects/${projectId}/analytics`}
                   className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-purple-200 dark:hover:border-purple-900 hover:bg-purple-50/30 dark:hover:bg-purple-900/10 transition-all group"
                 >
                   <div className="h-12 w-12 rounded-xl bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center group-hover:bg-purple-600 transition-colors">

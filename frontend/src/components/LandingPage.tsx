@@ -1,9 +1,39 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
+interface Project {
+  id: string;
+  name: string;
+  location: string;
+  status: string;
+  total_units: number;
+  image?: string;
+  slug?: string;
+}
+
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  active:       { label: 'Activo',            className: 'bg-emerald-500 text-white' },
+  preventa:     { label: 'Preventa',          className: 'bg-amber-500 text-white'   },
+  construction: { label: 'En Construcción',   className: 'bg-blue-600 text-white'    },
+  finished:     { label: 'Entrega Inmediata', className: 'bg-slate-700 text-white'   },
+};
+
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=800&auto=format&fit=crop';
+
 const LandingPage: React.FC = () => {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [comingSoonName, setComingSoonName] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/projects/public')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Project[]) => setProjects(data.slice(0, 3)))
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="bg-background-light dark:bg-slate-900 text-slate-900 dark:text-slate-100 overflow-x-hidden font-display transition-colors duration-300">
       <Navbar />
@@ -28,7 +58,7 @@ const LandingPage: React.FC = () => {
                   Ver proyectos
                   <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
                 </Link>
-                <button className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-base font-bold px-8 py-3.5 rounded-lg transition-all flex items-center gap-2">
+                <button onClick={() => setIsDemoOpen(true)} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-base font-bold px-8 py-3.5 rounded-lg transition-all flex items-center gap-2">
                   Solicitar asesoría
                 </button>
               </div>
@@ -82,6 +112,42 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Portals / Integrations Strip */}
+      <section className="py-10 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700/50 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-8">Conectamos tu inventario con los principales portales</p>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 grayscale opacity-60">
+            {['Inmuebles24', 'Lamudi', 'Metros Cúbicos', 'Vivanuncios', 'Trovit'].map(name => (
+              <span key={name} className="text-lg font-bold text-slate-600 dark:text-slate-300 tracking-tight whitespace-nowrap">{name}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Bar */}
+      <section className="py-12 bg-white dark:bg-slate-800 border-y border-slate-100 dark:border-slate-700 transition-colors duration-300">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <p className="text-4xl font-extrabold text-primary">150+</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Proyectos activos</p>
+            </div>
+            <div>
+              <p className="text-4xl font-extrabold text-primary">48k+</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Leads gestionados</p>
+            </div>
+            <div>
+              <p className="text-4xl font-extrabold text-primary">$2.1B</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">MXN en ventas</p>
+            </div>
+            <div>
+              <p className="text-4xl font-extrabold text-primary">35%</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Reducción en ciclo de venta</p>
             </div>
           </div>
         </div>
@@ -292,97 +358,69 @@ const LandingPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-deep-blue dark:text-white mb-2">Proyectos Destacados</h2>
               <p className="text-slate-500 dark:text-slate-400">Explora desarrollos que ya usan nuestra tecnología.</p>
             </div>
-            <a className="hidden sm:flex items-center text-primary font-bold hover:underline" href="#">
+            <Link className="hidden sm:flex items-center text-primary font-bold hover:underline" to="/proyectos">
               Ver todos los proyectos <span className="material-symbols-outlined ml-1 text-sm">arrow_forward</span>
-            </a>
+            </Link>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Card 1 */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-700 hover:shadow-2xl hover:border-blue-100 transition-all group">
-              <div className="relative h-64 overflow-hidden">
-                <div className="absolute top-4 left-4 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">Preventa</div>
-                <img alt="Modern glass apartment building exterior at sunset" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2oYf2if6SvckVs15ebCiDig16trAPwRCkkSd1XL9m788RSvL0bnUQd8D-0PDgZFMQLv1T4y26SMbWSXT7o03Gkyb6f6P_RpnSYzVRkEqeBGOAMXjObmSRRJ7d41Cqsu1I9_Z1ERUqxT_252dhyIQxTsx8u8JCuqSmmVjm3u05PtmvpVM4e6pf9RgnsvcdMXL5D5o8KoyDnkjkL4bSFNcSc_uHOd6J1kLrFDAKapZUDi6TJDz7NBKApK4QS23J3uYyG3FYeLPagyQ" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-xl font-bold text-deep-blue dark:text-white">Torre Aurora</h3>
+            {projects.map(project => {
+              const badge   = STATUS_BADGE[project.status] ?? { label: project.status, className: 'bg-slate-600 text-white' };
+              const imgSrc  = project.image ?? FALLBACK_IMG;
+              const hasPage = !!project.slug && project.slug === 'oasis-park';
+              const href = `/proyectos/${project.slug}`;
+              return (
+                <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-700 hover:shadow-2xl hover:border-blue-100 transition-all group">
+                  <div className="relative h-64 overflow-hidden">
+                    <span className={`absolute top-4 left-4 text-xs font-bold px-3 py-1 rounded-full z-10 ${badge.className}`}>
+                      {badge.label}
+                    </span>
+                    <img
+                      alt={project.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      src={imgSrc}
+                      onError={e => { (e.target as HTMLImageElement).src = FALLBACK_IMG; }}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-deep-blue dark:text-white">{project.name}</h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1 mt-1">
-                      <span className="material-symbols-outlined text-sm">location_on</span> Ciudad de México
+                      <span className="material-symbols-outlined text-sm">location_on</span>
+                      {project.location}
                     </p>
+                    <div className="my-4 border-t border-slate-100 dark:border-slate-700 pt-4 flex justify-between items-center">
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Unidades</p>
+                        <p className="text-lg font-bold text-deep-blue dark:text-white">{project.total_units} aptos</p>
+                      </div>
+                      {hasPage ? (
+                        <Link
+                          to={href}
+                          className="text-primary font-semibold text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-2 rounded transition-colors"
+                        >
+                          Ver detalles
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => setComingSoonName(project.name)}
+                          className="text-primary font-semibold text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-2 rounded transition-colors"
+                        >
+                          Ver detalles
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="my-4 border-t border-slate-100 dark:border-slate-700 pt-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Desde</p>
-                    <p className="text-lg font-bold text-deep-blue dark:text-white">$4.5M MXN</p>
-                  </div>
-                  <button className="text-primary font-semibold text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-2 rounded transition-colors">
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            </div>
-            {/* Card 2 */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-700 hover:shadow-2xl hover:border-blue-100 transition-all group">
-              <div className="relative h-64 overflow-hidden">
-                <div className="absolute top-4 left-4 bg-deep-blue text-white text-xs font-bold px-3 py-1 rounded-full z-10">Entrega Inmediata</div>
-                <img alt="High rise corporate building facade with blue glass" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9nbSgnPE0ywgfeaYL2DRPA6S08GQQV3f-spXftouwyydxm6BoGKF93ub1YQaLcqdxmpEFBtEhejqkTnpTl5HPf6zVJM5muUsVf7qN2RR4hRlbuiGtD76dd0GDk7XqHBL18MWM9LmBOEv40vLTwnJGDZzU_SSHMXjOTU8_hbt4N-n7VrC3c2COz7MYSx6XMIMxPrsWyLkqoaOMIvHsWrxRfWEQNqLtkpv2rYnoCaQmxISVd1HzD3Wulr1agdKcOe09vhQtNwUif2I" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-xl font-bold text-deep-blue dark:text-white">Residencial Vistas</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1 mt-1">
-                      <span className="material-symbols-outlined text-sm">location_on</span> Guadalajara
-                    </p>
-                  </div>
-                </div>
-                <div className="my-4 border-t border-slate-100 dark:border-slate-700 pt-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Desde</p>
-                    <p className="text-lg font-bold text-deep-blue dark:text-white">$3.2M MXN</p>
-                  </div>
-                  <button className="text-primary font-semibold text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-2 rounded transition-colors">
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            </div>
-            {/* Card 3 */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-700 hover:shadow-2xl hover:border-blue-100 transition-all group">
-              <div className="relative h-64 overflow-hidden">
-                <div className="absolute top-4 left-4 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full z-10">Últimas Unidades</div>
-                <img alt="Modern white residential house with clean lines" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJwIr43tHbkSL3ZxBM15Gk_MXaNpPUoKWGELChqrXRuLaPVL7bU655GoSo6p7Nt8d9_gE7GQCmnjgzckBhRfwsqj8IsoA3pB6pPNNCjOOXjIfTlU4YwLAscfgJ7xMm6LAhWAsF7lKuMrmOnywKCcYmPl36BXGW_Lc2P18nRHu0b2UE_jgpw4hCabAbnc3o7BzGg51rEKnDj5jAwT0Cf3fpV81sc8cNaULUz9g4RHomMkWM4hE1_BowtSzN5JF_Gqp_v7IrbJyJKOw" />
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent"></div>
-              </div>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-xl font-bold text-deep-blue dark:text-white">Altos de San Pedro</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm flex items-center gap-1 mt-1">
-                      <span className="material-symbols-outlined text-sm">location_on</span> Monterrey
-                    </p>
-                  </div>
-                </div>
-                <div className="my-4 border-t border-slate-100 dark:border-slate-700 pt-4 flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-slate-400 mb-1">Desde</p>
-                    <p className="text-lg font-bold text-deep-blue dark:text-white">$5.1M MXN</p>
-                  </div>
-                  <button className="text-primary font-semibold text-sm hover:bg-blue-50 dark:hover:bg-blue-900/30 px-4 py-2 rounded transition-colors">
-                    Ver detalles
-                  </button>
-                </div>
-              </div>
-            </div>
+              );
+            })}
+            {projects.length === 0 && [1, 2, 3].map(i => (
+              <div key={i} className="bg-slate-100 dark:bg-slate-800 rounded-xl h-80 animate-pulse" />
+            ))}
           </div>
           <div className="mt-8 text-center sm:hidden">
-            <a className="inline-flex items-center text-primary font-bold hover:underline" href="#">
+            <Link className="inline-flex items-center text-primary font-bold hover:underline" to="/proyectos">
               Ver todos los proyectos <span className="material-symbols-outlined ml-1 text-sm">arrow_forward</span>
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -455,16 +493,16 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden transition-colors duration-300">
+      <section id="demo" className="py-24 bg-white dark:bg-slate-900 relative overflow-hidden transition-colors duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent dark:from-primary/10"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl lg:text-5xl font-bold text-deep-blue dark:text-white mb-6 tracking-tight">Impulsa tu proyecto inmobiliario con tecnología inteligente</h2>
           <p className="text-lg text-slate-600 dark:text-slate-300 mb-10 max-w-2xl mx-auto">Únete a la plataforma que está redefiniendo cómo se venden y gestionan las propiedades en Latinoamérica.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-primary hover:bg-blue-700 text-white text-lg font-bold px-8 py-4 rounded-lg transition-all shadow-xl shadow-primary/30">
+            <button onClick={() => setIsDemoOpen(true)} className="bg-primary hover:bg-blue-700 text-white text-lg font-bold px-8 py-4 rounded-lg transition-all shadow-xl shadow-primary/30">
               Publicar mi proyecto
             </button>
-            <button className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 text-lg font-bold px-8 py-4 rounded-lg transition-all">
+            <button onClick={() => setIsDemoOpen(true)} className="bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 text-lg font-bold px-8 py-4 rounded-lg transition-all">
               Solicitar demo
             </button>
           </div>
@@ -472,6 +510,122 @@ const LandingPage: React.FC = () => {
       </section>
 
       <Footer />
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/521XXXXXXXXXX?text=Hola,%20me%20interesa%20conocer%20más%20sobre%20BrightHouse"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] hover:bg-[#1ebe5d] text-white rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-110"
+        aria-label="Contactar por WhatsApp"
+      >
+        <svg viewBox="0 0 32 32" className="w-7 h-7 fill-white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0C7.163 0 0 7.163 0 16c0 2.822.737 5.469 2.027 7.769L0 32l8.469-2.001A15.942 15.942 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0zm0 29.333a13.27 13.27 0 01-6.771-1.853l-.485-.287-5.027 1.187 1.24-4.887-.317-.501A13.267 13.267 0 012.667 16C2.667 8.636 8.636 2.667 16 2.667S29.333 8.636 29.333 16 23.364 29.333 16 29.333zm7.307-9.92c-.4-.2-2.365-1.168-2.732-1.301-.367-.133-.634-.2-.9.2-.267.4-1.033 1.301-1.267 1.568-.233.267-.467.3-.867.1-.4-.2-1.689-.623-3.216-1.984-1.189-1.06-1.991-2.369-2.224-2.769-.233-.4-.025-.616.175-.815.18-.18.4-.467.6-.7.2-.233.267-.4.4-.667.133-.267.067-.5-.033-.7-.1-.2-.9-2.168-1.233-2.968-.325-.78-.655-.675-.9-.687l-.767-.013c-.267 0-.7.1-1.067.5-.367.4-1.4 1.368-1.4 3.335s1.433 3.869 1.633 4.136c.2.267 2.82 4.304 6.832 6.035.955.412 1.7.658 2.281.843.958.305 1.831.262 2.52.159.769-.114 2.365-.967 2.699-1.901.333-.933.333-1.733.233-1.901-.1-.167-.367-.267-.767-.467z"/>
+        </svg>
+      </a>
+
+      {/* Coming Soon Modal */}
+      {comingSoonName && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setComingSoonName(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm p-8 border border-slate-200 dark:border-slate-700 text-center"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setComingSoonName(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mx-auto mb-5">
+              <span className="material-symbols-outlined text-primary text-3xl">construction</span>
+            </div>
+            <h3 className="text-xl font-bold text-deep-blue dark:text-white mb-2">{comingSoonName}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
+              Este proyecto está en desarrollo. Muy pronto tendrás acceso a toda la información, planos y disponibilidad.
+            </p>
+            <p className="mt-3 text-xs font-semibold text-primary uppercase tracking-wide">Próximamente disponible</p>
+            <button
+              onClick={() => setComingSoonName(null)}
+              className="mt-6 w-full bg-primary hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Demo Modal */}
+      {isDemoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setIsDemoOpen(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+          <div
+            className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-slate-200 dark:border-slate-700"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setIsDemoOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <span className="material-symbols-outlined text-primary text-2xl">calendar_month</span>
+              </div>
+              <h3 className="text-2xl font-bold text-deep-blue dark:text-white">Solicitar Demo</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Un especialista te contactará en menos de 24 horas.</p>
+            </div>
+            <form
+              onSubmit={e => { e.preventDefault(); setIsDemoOpen(false); }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre completo</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Roberto Sánchez"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Correo electrónico</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="roberto@empresa.com"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Teléfono / WhatsApp</label>
+                <input
+                  type="tel"
+                  placeholder="+52 55 1234 5678"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Empresa / Proyecto</label>
+                <input
+                  type="text"
+                  placeholder="Nombre de tu desarrolladora"
+                  className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-slate-400"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-primary hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-primary/20 text-sm mt-2"
+              >
+                Enviar solicitud
+              </button>
+              <p className="text-center text-xs text-slate-400 dark:text-slate-500">Al enviar aceptas nuestra política de privacidad.</p>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

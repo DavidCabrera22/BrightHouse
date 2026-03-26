@@ -1,33 +1,47 @@
-import { IsString, IsNotEmpty, IsUUID, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsBoolean, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateDocumentDto {
   @ApiProperty()
   @IsUUID()
   project_id: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsUUID()
-  unit_id: string;
+  @IsOptional()
+  unit_id?: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   document_type: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
-  file_url: string;
+  @IsOptional()
+  file_url?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  original_name?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  @Type(() => Number)
+  file_size?: number;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   version?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsUUID()
-  uploaded_by: string;
+  @IsOptional()
+  uploaded_by?: string;
 
   @ApiProperty({ required: false })
   @IsBoolean()
