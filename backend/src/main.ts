@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import { join } from 'path';
+import { existsSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -19,10 +20,14 @@ async function bootstrap() {
 
   // Serve compiled frontend (production)
   const publicDir = join(__dirname, '..', 'public');
+  const indexHtml = join(publicDir, 'index.html');
+  if (!existsSync(indexHtml)) {
+    console.warn(`[WARNING] Frontend not found at ${indexHtml}. Run the build command to populate public/.`);
+  }
   app.use(express.static(publicDir));
   app.use((req: any, res: any, next: any) => {
     if (!req.path.startsWith('/api') && !req.path.startsWith('/uploads')) {
-      res.sendFile(join(publicDir, 'index.html'), (err: any) => { if (err) next(); });
+      res.sendFile(indexHtml, (err: any) => { if (err) next(); });
     } else {
       next();
     }

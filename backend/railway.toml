@@ -1,6 +1,6 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd ../frontend && npm ci && npm run build && cd - && rm -rf public && cp -r ../frontend/dist public && npm run build"
+buildCommand = "npm --prefix ../frontend ci && npm --prefix ../frontend run build && rm -rf public && cp -r ../frontend/dist public && npm run build"
 
 [deploy]
 startCommand = "node dist/main"
