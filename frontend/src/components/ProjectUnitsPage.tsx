@@ -2,6 +2,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import CrmLayout from './CrmLayout';
 import { useParams, Link } from 'react-router-dom';
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
+
+const formatCurrencyShort = (value: number) => {
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000)     return `$${Math.round(value / 1_000_000)}M`;
+  if (value >= 1_000)         return `$${Math.round(value / 1_000)}K`;
+  return `$${value}`;
+};
+
 interface UnitStatus {
   id: string;
   name: string;
@@ -489,16 +499,6 @@ const ProjectUnitsPage: React.FC = () => {
       setRenamingInProgress(false);
       setRenamingTower(null);
     }
-  };
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(value);
-
-  const formatCurrencyShort = (value: number) => {
-    if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
-    if (value >= 1_000_000)     return `$${Math.round(value / 1_000_000)}M`;
-    if (value >= 1_000)         return `$${Math.round(value / 1_000)}K`;
-    return `$${value}`;
   };
 
   return (
