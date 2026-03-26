@@ -51,12 +51,6 @@ const INSIGHT_STYLES: Record<string, { bg: string; icon: string; color: string }
   tendencia:   { bg: 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-500/20',      icon: 'insights',     color: 'text-blue-600' },
 };
 
-function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}k`;
-  return `$${n}`;
-}
-
 function pct(a: number, b: number) {
   if (b === 0) return a > 0 ? 100 : 0;
   return Math.round(((a - b) / b) * 100);
@@ -105,7 +99,6 @@ const AnalyticsPage: React.FC = () => {
   const leadsGrowth    = pct(newThisMonth, newLastMonth);
 
   const won   = leads.filter(l => l.status === 'won').length;
-  const lost  = leads.filter(l => l.status === 'lost').length;
   const total = leads.length;
   const conversionRate = total > 0 ? (won / total) * 100 : 0;
 

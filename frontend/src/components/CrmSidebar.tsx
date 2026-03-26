@@ -23,7 +23,6 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
   
   const userRole = localStorage.getItem('user_role');
   const userName = localStorage.getItem('user_name') || 'Usuario';
-  const userEmail = localStorage.getItem('user_email') || '';
   const roleLabel: Record<string, string> = {
     admin: 'Administrador',
     super_admin: 'Super Admin',

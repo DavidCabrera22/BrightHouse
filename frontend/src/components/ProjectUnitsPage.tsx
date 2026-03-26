@@ -143,29 +143,42 @@ const ProjectUnitsPage: React.FC = () => {
       namingPattern: '' // Optional: Rename selected units with a pattern
   });
 
-  const toggleSelection = (id: string) => {
-      const newSelection = new Set(selectedUnitIds);
-      if (newSelection.has(id)) {
-          newSelection.delete(id);
-      } else {
-          newSelection.add(id);
+  const handleBulkCreate = async (e: React.FormEvent) => {
+      e.preventDefault();
+      const token = localStorage.getItem('access_token');
+      const disponible = statuses.find(s => s.name === 'Disponible');
+      let created = 0;
+      for (let f = 0; f < bulkConfig.floors; f++) {
+          const floor = bulkConfig.startFloor + f;
+          for (let u = 1; u <= bulkConfig.unitsPerFloor; u++) {
+              const code = bulkConfig.namingPattern
+                  .replace('{floor}', String(floor))
+                  .replace('{unit}', String(u));
+              await fetch('/api/units', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({
+                      project_id: projectId,
+                      code,
+                      tower: bulkConfig.tower,
+                      floor: String(floor),
+                      area: bulkConfig.area,
+                      price: bulkConfig.price,
+                      current_status_id: disponible?.id,
+                  }),
+              });
+              created++;
+          }
       }
-      setSelectedUnitIds(newSelection);
-  };
-
-  const toggleSelectAll = () => {
-      if (selectedUnitIds.size === units.length) {
-          setSelectedUnitIds(new Set());
-      } else {
-          setSelectedUnitIds(new Set(units.map(u => u.id)));
-      }
+      alert(`${created} unidades creadas`);
+      setShowBulkCreateModal(false);
+      fetchUnits();
   };
 
   const handleBulkEditSave = async (e: React.FormEvent) => {
       e.preventDefault();
       try {
           const token = localStorage.getItem('access_token');
-          const updates = Array.from(selectedUnitIds);
           
           let updatedCount = 0;
 
@@ -476,28 +489,6 @@ const ProjectUnitsPage: React.FC = () => {
       setRenamingInProgress(false);
       setRenamingTower(null);
     }
-  };
-
-  const getStatusBadge = (unit: Unit) => {
-    if (unit.current_status) {
-        return (
-            <span 
-                className="px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit"
-                style={{ 
-                    backgroundColor: `${unit.current_status.color_hex}20`, 
-                    color: unit.current_status.color_hex 
-                }}
-            >
-                <span 
-                    className="w-1.5 h-1.5 rounded-full" 
-                    style={{ backgroundColor: unit.current_status.color_hex }}
-                ></span> 
-                {unit.current_status.name}
-            </span>
-        );
-    }
-    // Fallback if no status object
-    return <span className="text-slate-500 text-xs">Sin Estado</span>;
   };
 
   const formatCurrency = (value: number) =>

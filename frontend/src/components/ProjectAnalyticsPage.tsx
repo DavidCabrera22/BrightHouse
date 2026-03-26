@@ -128,16 +128,6 @@ const ProjectAnalyticsPage: React.FC = () => {
     .filter(u => ['Separado', 'En Proceso'].includes(u.current_status?.name ?? ''))
     .reduce((s, u) => s + Number(u.price), 0);
 
-  // Price range distribution
-  const priceRanges = [
-    { label: '<200M',     min: 0,           max: 200_000_000 },
-    { label: '200-250M',  min: 200_000_000, max: 250_000_000 },
-    { label: '250-300M',  min: 250_000_000, max: 300_000_000 },
-    { label: '>300M',     min: 300_000_000, max: Infinity     },
-  ].map(r => ({
-    ...r,
-    count: units.filter(u => Number(u.price) >= r.min && Number(u.price) < r.max).length,
-  }));
 
   // Leads metrics
   const totalLeads = leads.length;
