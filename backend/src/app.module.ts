@@ -19,6 +19,7 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ConversationsModule,
     WebhooksModule,
     AnalyticsModule,
+    CloudinaryModule,
   ],
 })
 export class AppModule {}

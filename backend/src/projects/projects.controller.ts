@@ -7,13 +7,16 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @ApiTags('Projects')
 @Controller('projects')
 export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+  constructor(
+    private readonly projectsService: ProjectsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Get('public')
   findAllPublic() {
@@ -24,16 +27,7 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post()
   @Roles('Admin')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/projects',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -43,20 +37,13 @@ export class ProjectsController {
         location: { type: 'string' },
         status: { type: 'string' },
         total_units: { type: 'integer' },
-        image: {
-          type: 'string',
-          format: 'binary',
-        },
+        image: { type: 'string', format: 'binary' },
       },
     },
   })
-  create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file?: Express.Multer.File) {
-    console.log('Received Create Project Request');
-    console.log('Body:', createProjectDto);
-    console.log('File:', file);
-
+  async create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-        createProjectDto.image = `/uploads/projects/${file.filename}`;
+      createProjectDto.image = await this.cloudinaryService.uploadFile(file, 'brighthouse/projects');
     }
     return this.projectsService.create(createProjectDto);
   }
@@ -81,20 +68,11 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Patch(':id')
   @Roles('Admin')
-  @UseInterceptors(FileInterceptor('image', {
-    storage: diskStorage({
-      destination: './uploads/projects',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-      },
-    }),
-  }))
+  @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @UploadedFile() file?: Express.Multer.File) {
+  async update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
-      updateProjectDto.image = `/uploads/projects/${file.filename}`;
+      updateProjectDto.image = await this.cloudinaryService.uploadFile(file, 'brighthouse/projects');
     }
     return this.projectsService.update(id, updateProjectDto);
   }

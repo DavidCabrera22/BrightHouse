@@ -7,28 +7,24 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { memoryStorage } from 'multer';
 import { Response } from 'express';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @ApiTags('Documents')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Post()
   @Roles('Admin', 'Agent')
   @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: './uploads/documents',
-      filename: (req, file, callback) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        const ext = extname(file.originalname);
-        callback(null, `doc-${uniqueSuffix}${ext}`);
-      },
-    }),
+    storage: memoryStorage(),
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
   }))
   @ApiConsumes('multipart/form-data')
@@ -38,7 +34,7 @@ export class DocumentsController {
     @Request() req,
   ) {
     if (file) {
-      createDocumentDto.file_url = `/uploads/documents/${file.filename}`;
+      createDocumentDto.file_url = await this.cloudinaryService.uploadFile(file, 'brighthouse/documents');
       createDocumentDto.original_name = file.originalname;
       createDocumentDto.file_size = file.size;
     }
