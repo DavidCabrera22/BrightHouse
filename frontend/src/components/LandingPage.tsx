@@ -366,8 +366,10 @@ const LandingPage: React.FC = () => {
             {projects.map(project => {
               const badge   = STATUS_BADGE[project.status] ?? { label: project.status, className: 'bg-slate-600 text-white' };
               const imgSrc  = project.image ?? FALLBACK_IMG;
-              const hasPage = !!project.slug && project.slug === 'oasis-park';
-              const href = `/proyectos/${project.slug}`;
+              const NAME_SLUGS: Record<string,string> = { 'Oasis Park': 'oasis-park' };
+              const resolvedSlug = project.slug || NAME_SLUGS[project.name] || null;
+              const hasPage = !!resolvedSlug;
+              const href = `/proyectos/${resolvedSlug}`;
               return (
                 <div key={project.id} className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-lg border border-slate-100 dark:border-slate-700 hover:shadow-2xl hover:border-blue-100 transition-all group">
                   <div className="relative h-64 overflow-hidden">

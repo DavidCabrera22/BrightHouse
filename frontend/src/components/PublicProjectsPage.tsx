@@ -23,6 +23,14 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?q=80&w=1000&auto=format&fit=crop';
 
+// Mapeo de nombres de proyecto a sus slugs de página pública
+const NAME_TO_SLUG: Record<string, string> = {
+  'Oasis Park': 'oasis-park',
+};
+
+const getSlug = (project: Project): string | null =>
+  project.slug || NAME_TO_SLUG[project.name] || null;
+
 const PublicProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -111,9 +119,9 @@ const PublicProjectsPage: React.FC = () => {
                         <span><strong className="text-slate-900 dark:text-white">{project.total_units}</strong> unidades</span>
                       </div>
                       <div className="mt-auto">
-                        {project.slug === 'oasis-park' ? (
+                        {getSlug(project) ? (
                           <Link
-                            to={`/proyectos/${project.slug}`}
+                            to={`/proyectos/${getSlug(project)}`}
                             className="block w-full bg-primary hover:bg-blue-700 text-white font-bold text-sm py-3 rounded-xl transition-colors text-center shadow-lg shadow-primary/20"
                           >
                             Ver proyecto
