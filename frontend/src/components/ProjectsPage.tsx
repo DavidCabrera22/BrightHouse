@@ -30,7 +30,7 @@ const ProjectsPage: React.FC = () => {
   const [uploadingImageFor, setUploadingImageFor] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', location: '', status: 'active', total_units: 0, description: '' });
+  const [editForm, setEditForm] = useState({ name: '', location: '', status: 'active', total_units: 0, description: '', slug: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
@@ -144,6 +144,7 @@ const ProjectsPage: React.FC = () => {
       status: project.status,
       total_units: project.total_units,
       description: (project as any).description || '',
+      slug: (project as any).slug || '',
     });
     setOpenMenuId(null);
   };
@@ -365,6 +366,17 @@ const ProjectsPage: React.FC = () => {
                   onChange={e => setEditForm({ ...editForm, description: e.target.value })}
                   placeholder="Descripción del proyecto..."
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Slug (URL pública)</label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                  value={editForm.slug}
+                  onChange={e => setEditForm({ ...editForm, slug: e.target.value })}
+                  placeholder="ej: oasis-park"
+                />
+                <p className="text-xs text-slate-400 mt-1">Solo letras minúsculas y guiones. Ej: <code>oasis-park</code></p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
