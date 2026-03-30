@@ -16,7 +16,9 @@ import { NovaService, ChatMessage } from '../nova/nova.service';
 import { WhapiService } from './whapi.service';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { Public } from '../auth/public.decorator';
 
+@Public()
 @ApiTags('Webhooks')
 @Controller('webhooks/whatsapp')
 export class WhatsAppController {

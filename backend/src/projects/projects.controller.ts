@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { Public } from '../auth/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -18,6 +19,7 @@ export class ProjectsController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  @Public()
   @Get('public')
   findAllPublic() {
     return this.projectsService.findAll();
