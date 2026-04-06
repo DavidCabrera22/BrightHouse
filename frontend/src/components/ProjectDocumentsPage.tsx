@@ -54,6 +54,12 @@ const FILE_ICONS: Record<string, { icon: string; color: string }> = {
   zip:  { icon: 'folder_zip', color: 'text-amber-500' },
 };
 
+const getCloudinaryDownloadUrl = (fileUrl: string, filename?: string): string => {
+  if (!fileUrl.includes('res.cloudinary.com')) return fileUrl;
+  const attachment = filename ? `fl_attachment:${encodeURIComponent(filename)}` : 'fl_attachment';
+  return fileUrl.replace('/upload/', `/upload/${attachment}/`);
+};
+
 const getFileIcon = (name?: string, url?: string) => {
   const ext = (name || url || '').split('.').pop()?.toLowerCase() || '';
   return FILE_ICONS[ext] || { icon: 'insert_drive_file', color: 'text-slate-400' };
@@ -572,8 +578,9 @@ const ProjectDocumentsPage: React.FC = () => {
                                 <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                               </a>
                               <a
-                                href={doc.file_url}
-                                download={doc.original_name}
+                                href={getCloudinaryDownloadUrl(doc.file_url, doc.original_name)}
+                                target="_blank"
+                                rel="noreferrer"
                                 className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors"
                                 title="Descargar"
                               >
@@ -636,7 +643,7 @@ const ProjectDocumentsPage: React.FC = () => {
                               <td className="px-4 py-3">
                                 <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                   <a href={doc.file_url} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors"><span className="material-symbols-outlined text-[16px]">open_in_new</span></a>
-                                  <a href={doc.file_url} download={doc.original_name} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors"><span className="material-symbols-outlined text-[16px]">download</span></a>
+                                  <a href={getCloudinaryDownloadUrl(doc.file_url, doc.original_name)} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors"><span className="material-symbols-outlined text-[16px]">download</span></a>
                                   <button onClick={() => handleDelete(doc.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-[16px]">delete</span></button>
                                 </div>
                               </td>
