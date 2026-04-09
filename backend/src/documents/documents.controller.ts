@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Request, UseInterceptors, UploadedFile, Res, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
@@ -10,6 +10,20 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import * as https from 'https';
+import * as http from 'http';
+
+const MIME_BY_EXT: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  zip: 'application/zip',
+};
 
 @ApiTags('Documents')
 @ApiBearerAuth()
@@ -53,6 +67,34 @@ export class DocumentsController {
   @Roles('Admin', 'Agent')
   findOne(@Param('id') id: string) {
     return this.documentsService.findOne(id);
+  }
+
+  @Get(':id/file')
+  @Roles('Admin', 'Agent')
+  async serveFile(@Param('id') id: string, @Res() res: Response) {
+    const doc = await this.documentsService.findOne(id);
+    const fileUrl = doc.file_url;
+    if (!fileUrl) throw new NotFoundException('Este documento no tiene archivo adjunto');
+
+    const ext = (doc.original_name || fileUrl).split('.').pop()?.toLowerCase() || '';
+    const mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
+    const filename = doc.original_name || `documento.${ext}`;
+
+    await new Promise<void>((resolve, reject) => {
+      const client = fileUrl.startsWith('https') ? https : http;
+      client.get(fileUrl, (upstream) => {
+        if (upstream.statusCode && upstream.statusCode >= 400) {
+          reject(new NotFoundException(`Archivo no encontrado en el almacenamiento (${upstream.statusCode})`));
+          return;
+        }
+        res.set('Content-Type', mimeType);
+        res.set('Content-Disposition', `inline; filename="${encodeURIComponent(filename)}"`);
+        res.set('Cache-Control', 'private, max-age=3600');
+        upstream.pipe(res);
+        upstream.on('end', resolve);
+        upstream.on('error', reject);
+      }).on('error', (err) => reject(new InternalServerErrorException(err.message)));
+    });
   }
 
   @Patch(':id')

@@ -128,6 +128,37 @@ const ProjectUnitsPage: React.FC = () => {
     });
   }, [units, searchQuery, filterTower, filterStatus, filterAgent, filterPrice, priceRanges]);
 
+  // Single Create State
+  const [showSingleCreateModal, setShowSingleCreateModal] = useState(false);
+  const [singleUnit, setSingleUnit] = useState({ code: '', tower: '', floor: '', area: '', price: '', status_id: '' });
+
+  const handleSingleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem('access_token');
+    const disponible = statuses.find(s => s.name === 'Disponible');
+    const res = await fetch('/api/units', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        project_id: projectId,
+        code: singleUnit.code,
+        tower: singleUnit.tower || undefined,
+        floor: singleUnit.floor || undefined,
+        area: singleUnit.area ? Number(singleUnit.area) : undefined,
+        price: singleUnit.price ? Number(singleUnit.price) : undefined,
+        current_status_id: singleUnit.status_id || disponible?.id,
+      }),
+    });
+    if (res.ok) {
+      setShowSingleCreateModal(false);
+      setSingleUnit({ code: '', tower: '', floor: '', area: '', price: '', status_id: '' });
+      fetchUnits();
+    } else {
+      const err = await res.json();
+      alert('Error: ' + (err.message || 'No se pudo crear la unidad'));
+    }
+  };
+
   // Bulk Create State
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [bulkConfig, setBulkConfig] = useState({
@@ -521,6 +552,15 @@ const ProjectUnitsPage: React.FC = () => {
               )}
             </button>
           )}
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowSingleCreateModal(true)}
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+            >
+              <span className="material-symbols-outlined text-lg">add_home</span>
+              Nueva Unidad
+            </button>
+          )}
           <button
             onClick={() => setShowBulkCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all"
@@ -697,6 +737,117 @@ const ProjectUnitsPage: React.FC = () => {
               })}
             </div>
             <p className="px-5 pb-4 text-xs text-slate-400">Los estados en uso no se pueden eliminar hasta que cambies todas sus unidades.</p>
+          </div>
+        </div>
+      )}
+
+      {showSingleCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Nueva Unidad</h3>
+              <button onClick={() => setShowSingleCreateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <form onSubmit={handleSingleCreate} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Código <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: A-101"
+                  value={singleUnit.code}
+                  onChange={e => setSingleUnit({ ...singleUnit, code: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Torre / Bloque</label>
+                  {towers.length > 0 ? (
+                    <select
+                      value={singleUnit.tower}
+                      onChange={e => setSingleUnit({ ...singleUnit, tower: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                    >
+                      <option value="">Sin torre</option>
+                      {towers.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Ej: Torre A"
+                      value={singleUnit.tower}
+                      onChange={e => setSingleUnit({ ...singleUnit, tower: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                    />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Piso</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: 3"
+                    value={singleUnit.floor}
+                    onChange={e => setSingleUnit({ ...singleUnit, floor: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Área (m²)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Ej: 65"
+                    value={singleUnit.area}
+                    onChange={e => setSingleUnit({ ...singleUnit, area: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Ej: 250000000"
+                    value={singleUnit.price}
+                    onChange={e => setSingleUnit({ ...singleUnit, price: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                <select
+                  value={singleUnit.status_id}
+                  onChange={e => setSingleUnit({ ...singleUnit, status_id: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                >
+                  <option value="">Por defecto (Disponible)</option>
+                  {statuses.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowSingleCreateModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transition-all"
+                >
+                  Crear Unidad
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
