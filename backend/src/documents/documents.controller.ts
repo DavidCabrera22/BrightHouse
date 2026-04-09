@@ -73,12 +73,18 @@ export class DocumentsController {
   @Roles('Admin', 'Agent')
   async serveFile(@Param('id') id: string, @Res() res: Response) {
     const doc = await this.documentsService.findOne(id);
-    const fileUrl = doc.file_url;
+    let fileUrl = doc.file_url;
     if (!fileUrl) throw new NotFoundException('Este documento no tiene archivo adjunto');
 
     const ext = (doc.original_name || fileUrl).split('.').pop()?.toLowerCase() || '';
     const mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
     const filename = doc.original_name || `documento.${ext}`;
+
+    // Old files were uploaded as resource_type 'image'; fix URL for non-image types
+    const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    if (!IMAGE_EXTS.includes(ext) && fileUrl.includes('/image/upload/')) {
+      fileUrl = fileUrl.replace('/image/upload/', '/raw/upload/');
+    }
 
     console.log(`[Documents] Serving file id=${id} url=${fileUrl}`);
 
