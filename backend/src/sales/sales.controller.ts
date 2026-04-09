@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { UpdateSaleDto } from './dto/update-sale.dto';
@@ -22,8 +22,8 @@ export class SalesController {
 
   @Get()
   @Roles('Admin', 'Agent')
-  findAll() {
-    return this.salesService.findAll();
+  findAll(@Request() req) {
+    return this.salesService.findAll(req.user?.tenant_id);
   }
 
   @Get(':id')

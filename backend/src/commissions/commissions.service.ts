@@ -17,11 +17,16 @@ export class CommissionsService {
     return this.commissionRepository.save(commission);
   }
 
-  findAll() {
-    return this.commissionRepository.find({
-      relations: ['sale', 'sale.unit', 'sale.client', 'sale.agent'],
-      order: { created_at: 'DESC' },
-    });
+  findAll(tenantId?: string) {
+    const qb = this.commissionRepository.createQueryBuilder('commission')
+      .leftJoinAndSelect('commission.sale', 'sale')
+      .leftJoinAndSelect('sale.unit', 'unit')
+      .leftJoinAndSelect('unit.project', 'project')
+      .leftJoinAndSelect('sale.client', 'client')
+      .leftJoinAndSelect('sale.agent', 'agent')
+      .orderBy('commission.created_at', 'DESC');
+    if (tenantId) qb.where('project.tenant_id = :tenantId', { tenantId });
+    return qb.getMany();
   }
 
   async findOne(id: string) {

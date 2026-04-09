@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { CommissionsService } from './commissions.service';
 import { CreateCommissionDto } from './dto/create-commission.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
@@ -22,8 +22,8 @@ export class CommissionsController {
 
   @Get()
   @Roles('Admin')
-  findAll() {
-    return this.commissionsService.findAll();
+  findAll(@Request() req) {
+    return this.commissionsService.findAll(req.user?.tenant_id);
   }
 
   @Get(':id')

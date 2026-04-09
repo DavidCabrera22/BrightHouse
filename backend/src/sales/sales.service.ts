@@ -17,8 +17,14 @@ export class SalesService {
     return this.saleRepository.save(sale);
   }
 
-  findAll() {
-    return this.saleRepository.find({ relations: ['unit', 'client', 'agent'] });
+  findAll(tenantId?: string) {
+    const qb = this.saleRepository.createQueryBuilder('sale')
+      .leftJoinAndSelect('sale.unit', 'unit')
+      .leftJoinAndSelect('unit.project', 'project')
+      .leftJoinAndSelect('sale.client', 'client')
+      .leftJoinAndSelect('sale.agent', 'agent');
+    if (tenantId) qb.where('project.tenant_id = :tenantId', { tenantId });
+    return qb.getMany();
   }
 
   async findOne(id: string) {

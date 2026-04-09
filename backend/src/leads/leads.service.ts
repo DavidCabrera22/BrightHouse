@@ -69,8 +69,12 @@ export class LeadsService {
     return this.leadRepository.save(lead);
   }
 
-  findAll() {
-    return this.leadRepository.find({ relations: ['project', 'assigned_agent'] });
+  findAll(tenantId?: string) {
+    const qb = this.leadRepository.createQueryBuilder('lead')
+      .leftJoinAndSelect('lead.project', 'project')
+      .leftJoinAndSelect('lead.assigned_agent', 'agent');
+    if (tenantId) qb.where('project.tenant_id = :tenantId', { tenantId });
+    return qb.getMany();
   }
 
   async findOne(id: string) {
