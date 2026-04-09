@@ -32,10 +32,11 @@ interface Conversation {
 
 const platformIcon = (channel: string) => {
   switch (channel) {
-    case 'whatsapp': return { icon: 'chat', color: 'text-green-500' };
-    case 'email':    return { icon: 'mail', color: 'text-blue-500' };
-    case 'webchat':  return { icon: 'forum', color: 'text-orange-500' };
-    default:         return { icon: 'chat', color: 'text-slate-400' };
+    case 'whatsapp':  return { icon: 'chat', color: 'text-green-500' };
+    case 'instagram': return { icon: 'photo_camera', color: 'text-pink-500' };
+    case 'email':     return { icon: 'mail', color: 'text-blue-500' };
+    case 'webchat':   return { icon: 'forum', color: 'text-orange-500' };
+    default:          return { icon: 'chat', color: 'text-slate-400' };
   }
 };
 

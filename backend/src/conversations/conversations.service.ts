@@ -97,6 +97,29 @@ export class ConversationsService {
     await this.conversationRepo.update(conversationId, { unread_count: 0 });
   }
 
+  async ingestInstagramMessage(payload: {
+    senderId: string;
+    messageId: string;
+    text: string;
+    username?: string;
+    timestamp: string;
+  }): Promise<Message> {
+    const conv = await this.findOrCreateByPhone(payload.senderId, 'instagram', payload.username);
+
+    const existing = await this.messageRepo.findOne({
+      where: { whatsapp_message_id: payload.messageId },
+    });
+    if (existing) return existing;
+
+    return this.addMessage(conv.id, {
+      content: payload.text,
+      sender_type: 'user',
+      sender_name: payload.username || payload.senderId,
+      whatsapp_message_id: payload.messageId,
+      metadata: { timestamp: payload.timestamp, channel: 'instagram' },
+    });
+  }
+
   async ingestWhatsAppMessage(payload: {
     from: string;
     messageId: string;

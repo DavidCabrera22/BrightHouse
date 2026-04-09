@@ -12,7 +12,7 @@ interface Tenant {
   created_at: string;
 }
 
-const emptyForm = { name: '', slug: '', plan: 'basic', whapi_token: '', whapi_api_url: '', default_project_id: '' };
+const emptyForm = { name: '', slug: '', plan: 'basic', whapi_token: '', whapi_api_url: '', instagram_token: '', instagram_account_id: '', default_project_id: '' };
 
 const TenantsPage: React.FC = () => {
   const token = localStorage.getItem('access_token');
@@ -42,7 +42,7 @@ const TenantsPage: React.FC = () => {
 
   const openEdit = (t: Tenant) => {
     setEditing(t);
-    setForm({ name: t.name, slug: t.slug, plan: t.plan, whapi_token: (t as any).whapi_token || '', whapi_api_url: (t as any).whapi_api_url || '', default_project_id: t.default_project_id || '' });
+    setForm({ name: t.name, slug: t.slug, plan: t.plan, whapi_token: (t as any).whapi_token || '', whapi_api_url: (t as any).whapi_api_url || '', instagram_token: (t as any).instagram_token || '', instagram_account_id: (t as any).instagram_account_id || '', default_project_id: t.default_project_id || '' });
     setShowModal(true);
   };
 
@@ -127,12 +127,21 @@ const TenantsPage: React.FC = () => {
       </div>
 
       {/* Webhook info box */}
-      <div className="mx-6 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">URL de Webhook por Tenant</p>
-        <p className="text-xs text-slate-600 dark:text-slate-300 font-mono">
-          {window.location.origin.replace('5173', '3000')}/api/webhooks/whatsapp?tenant=<span className="text-blue-500">slug-del-cliente</span>
-        </p>
-        <p className="text-xs text-slate-400 mt-1">Configura esta URL en Whapi para cada cliente usando su slug correspondiente.</p>
+      <div className="mx-6 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">URLs de Webhook por Tenant</p>
+        <div>
+          <p className="text-[11px] font-semibold text-green-600 dark:text-green-400 mb-0.5">WhatsApp (Whapi)</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-mono break-all">
+            {window.location.origin.replace('5173', '3000')}/api/webhooks/whatsapp?tenant=<span className="text-blue-500">slug</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold text-pink-600 dark:text-pink-400 mb-0.5">Instagram DM (Meta)</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300 font-mono break-all">
+            {window.location.origin.replace('5173', '3000')}/api/webhooks/instagram?tenant=<span className="text-blue-500">slug</span>
+          </p>
+          <p className="text-xs text-slate-400 mt-1">Verify token: variable de entorno <span className="font-mono">INSTAGRAM_VERIFY_TOKEN</span></p>
+        </div>
       </div>
 
       {/* Modal */}
@@ -182,6 +191,24 @@ const TenantsPage: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Whapi API URL <span className="text-slate-400 font-normal">(opcional)</span></label>
                 <input type="text" placeholder="https://gate.whapi.cloud" value={form.whapi_api_url} onChange={e => setForm({ ...form, whapi_api_url: e.target.value })}
                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-xs font-bold text-pink-500 uppercase tracking-wider mb-3 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">photo_camera</span>
+                  Instagram DM
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Access Token</label>
+                    <input type="text" placeholder="Token de página de Meta" value={form.instagram_token} onChange={e => setForm({ ...form, instagram_token: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-pink-500 outline-none" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Page / Account ID</label>
+                    <input type="text" placeholder="ID de la página de Facebook" value={form.instagram_account_id} onChange={e => setForm({ ...form, instagram_account_id: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-pink-500 outline-none" />
+                  </div>
+                </div>
               </div>
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                 <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">Cancelar</button>
