@@ -14,6 +14,7 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { WhapiService } from './whapi.service';
+import { TenantsService } from '../tenants/tenants.service';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../auth/public.decorator';
@@ -29,6 +30,7 @@ export class WhatsAppController {
     private readonly leadsService: LeadsService,
     private readonly novaService: NovaService,
     private readonly whapiService: WhapiService,
+    private readonly tenantsService: TenantsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -49,36 +51,52 @@ export class WhatsAppController {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
-  /** POST — Receive incoming WhatsApp messages */
+  /** POST — Receive incoming WhatsApp messages (?tenant=slug for multi-tenant routing) */
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiExcludeEndpoint()
-  async receive(@Body() body: any) {
+  async receive(@Body() body: any, @Query('tenant') tenantSlug?: string) {
     try {
+      // Resolve tenant: by slug param, or fall back to env defaults
+      let tenantId: string | undefined;
+      let whapiToken: string | undefined;
+      let projectId: string | undefined;
+
+      if (tenantSlug) {
+        const tenant = await this.tenantsService.findBySlug(tenantSlug);
+        if (tenant) {
+          tenantId = tenant.id;
+          whapiToken = tenant.whapi_token;
+          projectId = tenant.default_project_id;
+        } else {
+          this.logger.warn(`Webhook received for unknown tenant slug: ${tenantSlug}`);
+        }
+      }
+
+      // Fallback to env vars for single-tenant / legacy setup
+      if (!whapiToken) whapiToken = this.configService.get<string>('WHAPI_TOKEN');
+      if (!projectId) projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
+
       const messages = this.extractMessages(body);
 
       for (const { from, messageId, text, profileName } of messages) {
-        this.logger.log(`Incoming WhatsApp from ${from}: "${text}"`);
+        this.logger.log(`Incoming WhatsApp from ${from} [tenant:${tenantSlug ?? 'default'}]: "${text}"`);
 
-        // 1. Find or create conversation
-        const conv = await this.conversationsService.findOrCreateByPhone(from, 'whatsapp', profileName);
+        // 1. Find or create conversation (scoped to tenant)
+        const conv = await this.conversationsService.findOrCreateByPhone(from, 'whatsapp', profileName, tenantId);
         const isNewConversation = !conv.lead_id;
 
         // 2. Auto-create lead on first contact
-        if (isNewConversation) {
-          const projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
-          if (projectId) {
-            const { lead, created } = await this.leadsService.findOrCreateByPhone(
-              from,
-              projectId,
-              profileName !== from ? profileName : undefined,
-            );
-            if (created) {
-              this.logger.log(`Lead creado automáticamente: ${lead.id} para ${from}`);
-            }
-            // Link lead to conversation
-            await this.conversationsService.updateConversation(conv.id, { lead_id: lead.id });
+        if (isNewConversation && projectId) {
+          const { lead, created } = await this.leadsService.findOrCreateByPhone(
+            from,
+            projectId,
+            profileName !== from ? profileName : undefined,
+          );
+          if (created) {
+            this.logger.log(`Lead creado automáticamente: ${lead.id} para ${from}`);
           }
+          await this.conversationsService.updateConversation(conv.id, { lead_id: lead.id });
         }
 
         // 3. Save incoming message
@@ -116,25 +134,21 @@ export class WhatsAppController {
           sender_name: 'Nova',
         });
 
-        // 8. Send via Whapi
-        await this.whapiService.sendText(from, novaReply);
+        // 8. Send via Whapi (use tenant token if available)
+        await this.whapiService.sendText(from, novaReply, whapiToken);
 
         this.logger.log(`Nova replied to ${from}: "${novaReply.substring(0, 80)}..."`);
 
         // 9. Auto-advance lead to "contacted" on Nova's first reply
         const freshConv2 = await this.conversationsService.findConversationById(conv.id);
-        if (freshConv2.lead_id) {
-          const msgCount = allMessages.length;
-          if (msgCount <= 2) {
-            // First exchange — mark as contacted
-            await this.leadsService.updateFromNova(freshConv2.lead_id, { status: 'contacted' });
-            this.logger.log(`Lead ${freshConv2.lead_id} → contacted (primer contacto Nova)`);
-          }
+        if (freshConv2.lead_id && allMessages.length <= 2) {
+          await this.leadsService.updateFromNova(freshConv2.lead_id, { status: 'contacted' });
+          this.logger.log(`Lead ${freshConv2.lead_id} → contacted`);
         }
 
         // 10. Extract lead info every 4 exchanges and auto-advance status
         if (allMessages.length >= 4 && allMessages.length % 4 === 0) {
-          this.enrichLeadAsync(conv.id, from, [...history, { role: 'user', content: text }]);
+          this.enrichLeadAsync(conv.id, from, [...history, { role: 'user', content: text }], whapiToken);
         }
       }
     } catch (err) {
@@ -145,7 +159,7 @@ export class WhatsAppController {
   }
 
   /** Fire-and-forget: extract lead info and auto-advance pipeline status */
-  private async enrichLeadAsync(convId: string, phone: string, history: ChatMessage[]) {
+  private async enrichLeadAsync(convId: string, phone: string, history: ChatMessage[], whapiToken?: string) {
     try {
       const extraction = await this.novaService.extractLeadInfo(history);
       if (Object.keys(extraction).length === 0) return;

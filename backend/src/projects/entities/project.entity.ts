@@ -29,6 +29,9 @@ export class Project {
   @Column({ nullable: true })
   marketing_plan_type: string;
 
+  @Column({ nullable: true })
+  tenant_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

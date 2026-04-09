@@ -12,8 +12,9 @@ export class WhapiService {
     this.token = this.configService.get<string>('WHAPI_TOKEN') || '';
   }
 
-  async sendText(to: string, text: string): Promise<boolean> {
-    if (!this.token) {
+  async sendText(to: string, text: string, tokenOverride?: string): Promise<boolean> {
+    const token = tokenOverride || this.token;
+    if (!token) {
       this.logger.warn('WHAPI_TOKEN not set — skipping outbound message');
       return false;
     }
@@ -27,7 +28,7 @@ export class WhapiService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ to: chatId, body: text }),
       });

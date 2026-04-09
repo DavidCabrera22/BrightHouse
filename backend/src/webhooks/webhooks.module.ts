@@ -4,9 +4,10 @@ import { WhapiService } from './whapi.service';
 import { ConversationsModule } from '../conversations/conversations.module';
 import { NovaModule } from '../nova/nova.module';
 import { LeadsModule } from '../leads/leads.module';
+import { TenantsModule } from '../tenants/tenants.module';
 
 @Module({
-  imports: [ConversationsModule, NovaModule, LeadsModule],
+  imports: [ConversationsModule, NovaModule, LeadsModule, TenantsModule],
   controllers: [WhatsAppController],
   providers: [WhapiService],
 })

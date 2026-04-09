@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -43,19 +43,19 @@ export class ProjectsController {
       },
     },
   })
-  async create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file?: Express.Multer.File) {
+  async create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file: Express.Multer.File, @Request() req) {
     if (file) {
       createProjectDto.image = await this.cloudinaryService.uploadFile(file, 'brighthouse/projects');
     }
-    return this.projectsService.create(createProjectDto);
+    return this.projectsService.create(createProjectDto, req.user?.tenant_id);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   @Roles('Admin', 'Agent')
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Request() req) {
+    return this.projectsService.findAll(req.user?.tenant_id);
   }
 
   @ApiBearerAuth()

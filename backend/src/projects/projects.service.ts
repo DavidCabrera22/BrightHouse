@@ -15,13 +15,14 @@ export class ProjectsService {
     private readonly unitRepository: Repository<Unit>,
   ) {}
 
-  create(createProjectDto: CreateProjectDto) {
-    const project = this.projectRepository.create(createProjectDto);
+  create(createProjectDto: CreateProjectDto, tenantId?: string) {
+    const project = this.projectRepository.create({ ...createProjectDto, tenant_id: tenantId ?? null });
     return this.projectRepository.save(project);
   }
 
-  async findAll() {
-    const projects = await this.projectRepository.find();
+  async findAll(tenantId?: string) {
+    const where: any = tenantId ? { tenant_id: tenantId } : {};
+    const projects = await this.projectRepository.find({ where });
 
     // Count units by status name for each project in a single query
     const counts: { project_id: string; status_name: string; count: string }[] =

@@ -33,6 +33,9 @@ export class User {
   @Column({ default: 'active' })
   status: string;
 
+  @Column({ nullable: true })
+  tenant_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

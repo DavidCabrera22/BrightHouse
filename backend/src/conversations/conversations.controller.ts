@@ -8,6 +8,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
@@ -34,8 +35,8 @@ export class ConversationsController {
   @Get()
   @Roles('Admin', 'Agent')
   @ApiOperation({ summary: 'Get all conversations' })
-  findAll() {
-    return this.conversationsService.findAllConversations();
+  findAll(@Request() req) {
+    return this.conversationsService.findAllConversations(req.user?.tenant_id);
   }
 
   @Get(':id')

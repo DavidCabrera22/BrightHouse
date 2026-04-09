@@ -20,8 +20,10 @@ export class ConversationsService {
     return this.conversationRepo.save(conv);
   }
 
-  async findAllConversations(): Promise<Conversation[]> {
+  async findAllConversations(tenantId?: string): Promise<Conversation[]> {
+    const where: any = tenantId ? { tenant_id: tenantId } : {};
     return this.conversationRepo.find({
+      where,
       relations: ['lead', 'assigned_agent'],
       order: { last_message_at: 'DESC', created_at: 'DESC' },
     });
@@ -41,9 +43,12 @@ export class ConversationsService {
     return this.findConversationById(id);
   }
 
-  async findOrCreateByPhone(phone: string, channel = 'whatsapp', contactName?: string): Promise<Conversation> {
+  async findOrCreateByPhone(phone: string, channel = 'whatsapp', contactName?: string, tenantId?: string): Promise<Conversation> {
+    const where: any = { contact_phone: phone, channel };
+    if (tenantId) where.tenant_id = tenantId;
+
     let conv = await this.conversationRepo.findOne({
-      where: { contact_phone: phone, channel },
+      where,
       order: { created_at: 'DESC' },
     });
     if (!conv) {
@@ -53,6 +58,7 @@ export class ConversationsService {
         channel,
         whatsapp_waid: phone,
         status: 'open',
+        tenant_id: tenantId ?? null,
       });
       conv = await this.conversationRepo.save(conv);
     }

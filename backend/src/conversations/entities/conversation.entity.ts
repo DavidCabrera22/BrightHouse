@@ -61,6 +61,9 @@ export class Conversation {
   @Column({ default: false })
   nova_paused: boolean; // When true, Nova will not auto-respond
 
+  @Column({ nullable: true })
+  tenant_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -13,7 +13,7 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto, tenantId?: string): Promise<User> {
     const existingUser = await this.userRepository.findOneBy({ email: createUserDto.email });
     if (existingUser) {
       throw new ConflictException('Email already exists');
@@ -26,13 +26,15 @@ export class UsersService {
     const user = this.userRepository.create({
       ...userData,
       password_hash,
+      tenant_id: tenantId ?? null,
     });
 
     return this.userRepository.save(user);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.userRepository.find({ relations: ['role', 'project'] });
+  async findAll(tenantId?: string): Promise<User[]> {
+    const where: any = tenantId ? { tenant_id: tenantId } : {};
+    return this.userRepository.find({ where, relations: ['role', 'project'] });
   }
 
   async findOne(id: string): Promise<User> {
