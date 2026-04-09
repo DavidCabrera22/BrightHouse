@@ -16,6 +16,7 @@ import ProjectAnalyticsPage from './components/ProjectAnalyticsPage';
 import MarketingPage from './components/MarketingPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CommissionsPage from './components/CommissionsPage';
+import TenantsPage from './components/TenantsPage';
 import OasisParkPage from './components/OasisParkPage';
 import PublicProjectsPage from './components/PublicProjectsPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,6 +47,7 @@ function App() {
           <Route path="/crm/marketing" element={<MarketingPage />} />
           <Route path="/crm/analytics" element={<AnalyticsPage />} />
           <Route path="/crm/commissions" element={<CommissionsPage />} />
+          <Route path="/crm/tenants" element={<TenantsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

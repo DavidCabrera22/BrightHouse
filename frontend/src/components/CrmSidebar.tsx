@@ -24,11 +24,12 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
   const userRole = localStorage.getItem('user_role');
   const userName = localStorage.getItem('user_name') || 'Usuario';
   const roleLabel: Record<string, string> = {
-    admin: 'Administrador',
+    SuperAdmin: 'Super Admin',
     super_admin: 'Super Admin',
-    agent: 'Agente',
-    Agent: 'Agente',
     Admin: 'Administrador',
+    admin: 'Administrador',
+    Agent: 'Agente',
+    agent: 'Agente',
   };
 
   return (
@@ -69,22 +70,32 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
               <span className={`material-symbols-outlined ${isActive('/crm/projects') ? 'filled' : ''}`}>folder_open</span>
               <span className="text-sm font-medium">Proyectos</span>
             </Link>
-            <Link to="/crm/automations" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/automations') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-              <span className={`material-symbols-outlined ${isActive('/crm/automations') ? 'filled' : ''}`}>smart_toy</span>
-              <span className="text-sm font-medium">Automatizaciones</span>
-            </Link>
-            <Link to="/crm/marketing" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/marketing') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
-              <span className={`material-symbols-outlined ${isActive('/crm/marketing') ? 'filled' : ''}`}>campaign</span>
-              <span className="text-sm font-medium">Marketing Figital</span>
-            </Link>
+            {userRole !== 'Agent' && userRole !== 'agent' && (
+              <>
+                <Link to="/crm/automations" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/automations') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                  <span className={`material-symbols-outlined ${isActive('/crm/automations') ? 'filled' : ''}`}>smart_toy</span>
+                  <span className="text-sm font-medium">Automatizaciones</span>
+                </Link>
+                <Link to="/crm/marketing" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/marketing') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                  <span className={`material-symbols-outlined ${isActive('/crm/marketing') ? 'filled' : ''}`}>campaign</span>
+                  <span className="text-sm font-medium">Marketing Figital</span>
+                </Link>
+              </>
+            )}
             <Link to="/crm/analytics" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/analytics') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               <span className={`material-symbols-outlined ${isActive('/crm/analytics') ? 'filled' : ''}`}>analytics</span>
               <span className="text-sm font-medium">Analítica</span>
             </Link>
-            {(userRole === 'admin' || userRole === 'super_admin') && (
+            {(userRole === 'Admin' || userRole === 'admin' || userRole === 'SuperAdmin' || userRole === 'super_admin') && (
               <Link to="/crm/commissions" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/commissions') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
                 <span className={`material-symbols-outlined ${isActive('/crm/commissions') ? 'filled' : ''}`}>payments</span>
                 <span className="text-sm font-medium">Comisiones</span>
+              </Link>
+            )}
+            {(userRole === 'SuperAdmin' || userRole === 'super_admin') && (
+              <Link to="/crm/tenants" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/tenants') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                <span className={`material-symbols-outlined ${isActive('/crm/tenants') ? 'filled' : ''}`}>corporate_fare</span>
+                <span className="text-sm font-medium">Clientes B2B</span>
               </Link>
             )}
           </nav>

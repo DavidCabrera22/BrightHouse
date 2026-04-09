@@ -15,8 +15,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const { user } = context.switchToHttp().getRequest();
-    // Assuming role is a string in user object (from JwtStrategy)
-    // In JwtStrategy we put `role: user.role?.name`
+    // SuperAdmin bypasses all role restrictions
+    if (user?.role === 'SuperAdmin') return true;
     return requiredRoles.some((role) => user.role === role);
   }
 }

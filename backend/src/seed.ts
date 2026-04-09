@@ -33,7 +33,8 @@ async function seed() {
     console.log('Seeding Roles...');
     const roleRepo = dataSource.getRepository(Role);
     const rolesData = [
-      { name: 'Admin', description: 'System Administrator' },
+      { name: 'SuperAdmin', description: 'Platform Super Administrator — sees all tenants' },
+      { name: 'Admin', description: 'Tenant Administrator' },
       { name: 'Agent', description: 'Sales Agent' },
       { name: 'User', description: 'Regular User' },
     ];
