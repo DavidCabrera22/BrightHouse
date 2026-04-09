@@ -80,11 +80,14 @@ export class DocumentsController {
     const mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
     const filename = doc.original_name || `documento.${ext}`;
 
+    console.log(`[Documents] Serving file id=${id} url=${fileUrl}`);
+
     await new Promise<void>((resolve, reject) => {
       const client = fileUrl.startsWith('https') ? https : http;
       client.get(fileUrl, (upstream) => {
+        console.log(`[Documents] Cloudinary response status=${upstream.statusCode} url=${fileUrl}`);
         if (upstream.statusCode && upstream.statusCode >= 400) {
-          reject(new NotFoundException(`Archivo no encontrado en el almacenamiento (${upstream.statusCode})`));
+          reject(new NotFoundException(`Archivo no encontrado en Cloudinary (HTTP ${upstream.statusCode}). URL: ${fileUrl}`));
           return;
         }
         res.set('Content-Type', mimeType);
@@ -93,7 +96,10 @@ export class DocumentsController {
         upstream.pipe(res);
         upstream.on('end', resolve);
         upstream.on('error', reject);
-      }).on('error', (err) => reject(new InternalServerErrorException(err.message)));
+      }).on('error', (err) => {
+        console.error(`[Documents] Network error fetching url=${fileUrl}:`, err.message);
+        reject(new InternalServerErrorException(err.message));
+      });
     });
   }
 

@@ -60,7 +60,8 @@ const openDocFile = async (docId: string, download = false, filename?: string) =
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
-    alert('No se pudo obtener el archivo. Es posible que haya sido eliminado del almacenamiento.');
+    const err = await res.json().catch(() => ({}));
+    alert(`Error ${res.status}: ${err.message || 'No se pudo obtener el archivo.'}`);
     return;
   }
   const blob = await res.blob();
