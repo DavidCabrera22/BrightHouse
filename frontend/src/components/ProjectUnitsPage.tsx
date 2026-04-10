@@ -184,6 +184,14 @@ const ProjectUnitsPage: React.FC = () => {
       namingPattern: '' // Optional: Rename selected units with a pattern
   });
 
+  const applyPattern = (pattern: string, floor: number, unitIndex: number): string => {
+      const letter = String.fromCharCode(64 + unitIndex); // 1→A, 2→B, 3→C...
+      return pattern
+          .replace('{floor}', String(floor))
+          .replace('{unit}', String(unitIndex))
+          .replace('{letter}', letter);
+  };
+
   const handleBulkCreate = async (e: React.FormEvent) => {
       e.preventDefault();
       const token = localStorage.getItem('access_token');
@@ -192,9 +200,7 @@ const ProjectUnitsPage: React.FC = () => {
       for (let f = 0; f < bulkConfig.floors; f++) {
           const floor = bulkConfig.startFloor + f;
           for (let u = 1; u <= bulkConfig.unitsPerFloor; u++) {
-              const code = bulkConfig.namingPattern
-                  .replace('{floor}', String(floor))
-                  .replace('{unit}', String(u));
+              const code = applyPattern(bulkConfig.namingPattern, floor, u);
               await fetch('/api/units', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -884,7 +890,7 @@ const ProjectUnitsPage: React.FC = () => {
                                   onChange={e => setBulkConfig({...bulkConfig, namingPattern: e.target.value})}
                                   placeholder="Ej: A-{floor}0{unit}"
                               />
-                              <p className="text-xs text-slate-400 mt-1">Usa variables: {`{floor}`} para piso, {`{unit}`} para número</p>
+                              <p className="text-xs text-slate-400 mt-1">Variables: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{floor}`}</code> piso · <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{unit}`}</code> número · <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{letter}`}</code> letra (A, B, C…)</p>
                           </div>
                       </div>
 
@@ -952,9 +958,7 @@ const ProjectUnitsPage: React.FC = () => {
                           <div className="flex flex-wrap gap-2">
                               {[...Array(Math.min(5, bulkConfig.unitsPerFloor))].map((_, i) => (
                                   <span key={i} className="bg-white dark:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 font-mono">
-                                      {bulkConfig.namingPattern
-                                          .replace('{floor}', bulkConfig.startFloor.toString())
-                                          .replace('{unit}', (i+1).toString().padStart(2, '0'))}
+                                      {applyPattern(bulkConfig.namingPattern, bulkConfig.startFloor, i + 1)}
                                   </span>
                               ))}
                               {bulkConfig.unitsPerFloor > 5 && <span className="text-xs text-slate-400 self-center">...</span>}
