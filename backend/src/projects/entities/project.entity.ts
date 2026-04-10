@@ -14,7 +14,7 @@ export class Project {
   @Column()
   location: string;
 
-  @Column('int')
+  @Column('int', { default: 0 })
   total_units: number;
 
   @Column({ default: 'active' })
