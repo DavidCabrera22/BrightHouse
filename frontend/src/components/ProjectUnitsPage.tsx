@@ -161,6 +161,7 @@ const ProjectUnitsPage: React.FC = () => {
 
   // Bulk Create State
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+  const [submittingBulk, setSubmittingBulk] = useState(false);
   const [bulkConfig, setBulkConfig] = useState({
       tower: '',
       floors: 1,
@@ -194,32 +195,38 @@ const ProjectUnitsPage: React.FC = () => {
 
   const handleBulkCreate = async (e: React.FormEvent) => {
       e.preventDefault();
-      const token = localStorage.getItem('access_token');
-      const disponible = statuses.find(s => s.name === 'Disponible');
-      let created = 0;
-      for (let f = 0; f < bulkConfig.floors; f++) {
-          const floor = bulkConfig.startFloor + f;
-          for (let u = 1; u <= bulkConfig.unitsPerFloor; u++) {
-              const code = applyPattern(bulkConfig.namingPattern, floor, u);
-              await fetch('/api/units', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                  body: JSON.stringify({
-                      project_id: projectId,
-                      code,
-                      tower: bulkConfig.tower,
-                      floor: String(floor),
-                      area: bulkConfig.area,
-                      price: bulkConfig.price,
-                      current_status_id: disponible?.id,
-                  }),
-              });
-              created++;
+      if (submittingBulk) return;
+      setSubmittingBulk(true);
+      try {
+          const token = localStorage.getItem('access_token');
+          const disponible = statuses.find(s => s.name === 'Disponible');
+          let created = 0;
+          for (let f = 0; f < bulkConfig.floors; f++) {
+              const floor = bulkConfig.startFloor + f;
+              for (let u = 1; u <= bulkConfig.unitsPerFloor; u++) {
+                  const code = applyPattern(bulkConfig.namingPattern, floor, u);
+                  await fetch('/api/units', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify({
+                          project_id: projectId,
+                          code,
+                          tower: bulkConfig.tower,
+                          floor: String(floor),
+                          area: bulkConfig.area,
+                          price: bulkConfig.price,
+                          current_status_id: disponible?.id,
+                      }),
+                  });
+                  created++;
+              }
           }
+          alert(`${created} unidades creadas`);
+          setShowBulkCreateModal(false);
+          fetchUnits();
+      } finally {
+          setSubmittingBulk(false);
       }
-      alert(`${created} unidades creadas`);
-      setShowBulkCreateModal(false);
-      fetchUnits();
   };
 
   const handleBulkEditSave = async (e: React.FormEvent) => {
@@ -976,11 +983,12 @@ const ProjectUnitsPage: React.FC = () => {
                           >
                               Cancelar
                           </button>
-                          <button 
-                              type="submit" 
-                              className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transition-all"
+                          <button
+                              type="submit"
+                              disabled={submittingBulk}
+                              className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg shadow-lg transition-all"
                           >
-                              Generar Unidades
+                              {submittingBulk ? 'Generando...' : 'Generar Unidades'}
                           </button>
                       </div>
                   </form>
