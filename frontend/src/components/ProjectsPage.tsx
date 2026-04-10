@@ -32,11 +32,11 @@ const ProjectsPage: React.FC = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editForm, setEditForm] = useState({ name: '', location: '', status: 'active', total_units: 0, description: '', slug: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [submittingCreate, setSubmittingCreate] = useState(false);
   const [newProject, setNewProject] = useState({
     name: '',
     location: '',
     status: 'active',
-    total_units: 0,
     image: null as File | null
   });
 
@@ -46,36 +46,36 @@ const ProjectsPage: React.FC = () => {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingCreate) return;
+    setSubmittingCreate(true);
     try {
       const token = localStorage.getItem('access_token');
-      
+
       const formData = new FormData();
       formData.append('name', newProject.name);
       formData.append('location', newProject.location);
       formData.append('status', newProject.status);
-      formData.append('total_units', String(newProject.total_units));
       if (newProject.image) {
           formData.append('image', newProject.image);
       }
 
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // 'Content-Type': 'multipart/form-data' // DO NOT SET THIS MANUALLY, browser sets it with boundary
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
       if (response.ok) {
         setShowCreateModal(false);
-        fetchProjects(); // Refresh list
-        setNewProject({ name: '', location: '', status: 'active', total_units: 0, image: null });
+        fetchProjects();
+        setNewProject({ name: '', location: '', status: 'active', image: null });
       } else {
         alert('Error al crear el proyecto');
       }
     } catch (error) {
       console.error('Error creating project:', error);
+    } finally {
+      setSubmittingCreate(false);
     }
   };
 
@@ -249,31 +249,18 @@ const ProjectsPage: React.FC = () => {
                             placeholder="Ej: Polanco, CDMX"
                         />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Total Unidades</label>
-                            <input 
-                                type="number" 
-                                required
-                                min="1"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                value={newProject.total_units}
-                                onChange={e => setNewProject({...newProject, total_units: Number(e.target.value)})}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
-                            <select 
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                value={newProject.status}
-                                onChange={e => setNewProject({...newProject, status: e.target.value})}
-                            >
-                                <option value="active">Activo</option>
-                                <option value="preventa">Preventa</option>
-                                <option value="construction">En Construcción</option>
-                                <option value="finished">Finalizado</option>
-                            </select>
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
+                        <select
+                            className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                            value={newProject.status}
+                            onChange={e => setNewProject({...newProject, status: e.target.value})}
+                        >
+                            <option value="active">Activo</option>
+                            <option value="preventa">Preventa</option>
+                            <option value="construction">En Construcción</option>
+                            <option value="finished">Finalizado</option>
+                        </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Imagen de Portada</label>
@@ -316,11 +303,12 @@ const ProjectsPage: React.FC = () => {
                         >
                             Cancelar
                         </button>
-                        <button 
-                            type="submit" 
-                            className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg transition-all"
+                        <button
+                            type="submit"
+                            disabled={submittingCreate}
+                            className="px-6 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60 rounded-lg shadow-lg transition-all"
                         >
-                            Crear Proyecto
+                            {submittingCreate ? 'Creando...' : 'Crear Proyecto'}
                         </button>
                     </div>
                 </form>

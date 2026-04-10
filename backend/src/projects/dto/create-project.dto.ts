@@ -18,10 +18,11 @@ export class CreateProjectDto {
   @IsNotEmpty()
   location: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, default: 0 })
   @Type(() => Number)
   @IsInt()
-  total_units: number;
+  @IsOptional()
+  total_units?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()
