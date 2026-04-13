@@ -92,9 +92,9 @@ async function seed() {
     console.log('Seeding Unit Statuses...');
     const statusRepo = dataSource.getRepository(UnitStatus);
     const statusesData = [
-      { name: 'Available', color_hex: '#28a745', triggers_commission: false, triggers_signature: false },
-      { name: 'Reserved', color_hex: '#ffc107', triggers_commission: true, triggers_signature: true },
-      { name: 'Sold', color_hex: '#dc3545', triggers_commission: true, triggers_signature: true },
+      { name: 'Disponible', color_hex: '#28a745', triggers_commission: false, triggers_signature: false },
+      { name: 'Separado', color_hex: '#ffc107', triggers_commission: true, triggers_signature: true },
+      { name: 'Vendido', color_hex: '#dc3545', triggers_commission: true, triggers_signature: true },
     ];
 
     for (const statusData of statusesData) {
