@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === '1';
+  const [error, setError] = useState(sessionExpired ? 'Tu sesión expiró. Vuelve a iniciar sesión.' : '');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
