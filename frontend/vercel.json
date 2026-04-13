@@ -9,7 +9,7 @@
       "destination": "https://brighthouse-production.up.railway.app/uploads/:path*"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/|.*\\.(?:js|css|woff2?|ttf|otf|eot|png|jpg|jpeg|gif|svg|webp|ico|map)$).*)",
       "destination": "/index.html"
     }
   ]
