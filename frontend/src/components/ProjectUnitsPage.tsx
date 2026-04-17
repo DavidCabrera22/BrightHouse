@@ -26,12 +26,13 @@ interface Unit {
   floor: number;
   area: number;
   price: number;
+  unit_type?: string;
   current_status_id: string;
   current_status?: UnitStatus;
   assigned_agent?: User;
   assigned_agent_id?: string;
   // Keep legacy status for now if needed, but prefer current_status object
-  status?: string; 
+  status?: string;
 }
 
 interface User {
@@ -71,6 +72,7 @@ const ProjectUnitsPage: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterAgent, setFilterAgent]   = useState('');
   const [filterPrice, setFilterPrice]   = useState('');
+  const [filterType, setFilterType]     = useState('');
 
   const clearFilters = () => {
     setSearchQuery('');
@@ -78,16 +80,22 @@ const ProjectUnitsPage: React.FC = () => {
     setFilterStatus('');
     setFilterAgent('');
     setFilterPrice('');
+    setFilterType('');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchQuery || filterTower || filterStatus || filterAgent || filterPrice;
+  const hasActiveFilters = searchQuery || filterTower || filterStatus || filterAgent || filterPrice || filterType;
 
   // Unique towers: from units + manually created ones
   const towers = useMemo(() => {
     const fromUnits = units.map(u => u.tower).filter(Boolean) as string[];
     return [...new Set([...fromUnits, ...extraTowers])].sort();
   }, [units, extraTowers]);
+
+  // Unique unit types
+  const unitTypes = useMemo(() => {
+    return [...new Set(units.map(u => u.unit_type).filter(Boolean) as string[])].sort();
+  }, [units]);
 
   // Dynamic price ranges (3 equal buckets from min to max)
   const priceRanges = useMemo(() => {
@@ -109,11 +117,12 @@ const ProjectUnitsPage: React.FC = () => {
     const q = searchQuery.toLowerCase().trim();
     return units.filter(u => {
       if (q) {
-        const haystack = [u.code, u.tower, u.assigned_agent?.name, String(u.floor)]
+        const haystack = [u.code, u.tower, u.unit_type, u.assigned_agent?.name, String(u.floor)]
           .join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       if (filterTower && u.tower !== filterTower) return false;
+      if (filterType && (u.unit_type || '') !== filterType) return false;
       if (filterStatus && u.current_status_id !== filterStatus) return false;
       if (filterAgent === '__none__' && u.assigned_agent_id) return false;
       if (filterAgent && filterAgent !== '__none__' && u.assigned_agent_id !== filterAgent) return false;
@@ -126,11 +135,11 @@ const ProjectUnitsPage: React.FC = () => {
       }
       return true;
     });
-  }, [units, searchQuery, filterTower, filterStatus, filterAgent, filterPrice, priceRanges]);
+  }, [units, searchQuery, filterTower, filterType, filterStatus, filterAgent, filterPrice, priceRanges]);
 
   // Single Create State
   const [showSingleCreateModal, setShowSingleCreateModal] = useState(false);
-  const [singleUnit, setSingleUnit] = useState({ code: '', tower: '', floor: '', area: '', price: '', status_id: '' });
+  const [singleUnit, setSingleUnit] = useState({ code: '', tower: '', floor: '', area: '', price: '', unit_type: '', status_id: '' });
 
   const handleSingleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,12 +155,13 @@ const ProjectUnitsPage: React.FC = () => {
         floor: singleUnit.floor || undefined,
         area: singleUnit.area ? Number(singleUnit.area) : undefined,
         price: singleUnit.price ? Number(singleUnit.price) : undefined,
+        unit_type: singleUnit.unit_type || undefined,
         current_status_id: singleUnit.status_id || disponible?.id,
       }),
     });
     if (res.ok) {
       setShowSingleCreateModal(false);
-      setSingleUnit({ code: '', tower: '', floor: '', area: '', price: '', status_id: '' });
+      setSingleUnit({ code: '', tower: '', floor: '', area: '', price: '', unit_type: '', status_id: '' });
       fetchUnits();
     } else {
       const err = await res.json();
@@ -162,15 +172,38 @@ const ProjectUnitsPage: React.FC = () => {
   // Bulk Create State
   const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
   const [submittingBulk, setSubmittingBulk] = useState(false);
+  interface Typology { name: string; area: number; price: number; count: number; }
   const [bulkConfig, setBulkConfig] = useState({
       tower: '',
       floors: 1,
-      unitsPerFloor: 1,
       startFloor: 1,
-      area: 0,
-      price: 0,
-      namingPattern: 'A-{floor}0{unit}' // e.g. A-101, A-102
+      namingPattern: '{floor}0{unit}',
+      typologies: [{ name: 'Tipo A', area: 60, price: 0, count: 1 }] as Typology[],
   });
+
+  const addTypology = () => {
+    setBulkConfig(prev => ({
+      ...prev,
+      typologies: [...prev.typologies, { name: `Tipo ${String.fromCharCode(65 + prev.typologies.length)}`, area: 0, price: 0, count: 1 }],
+    }));
+  };
+
+  const removeTypology = (index: number) => {
+    setBulkConfig(prev => ({
+      ...prev,
+      typologies: prev.typologies.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateTypology = (index: number, field: keyof Typology, value: string | number) => {
+    setBulkConfig(prev => ({
+      ...prev,
+      typologies: prev.typologies.map((t, i) => i === index ? { ...t, [field]: value } : t),
+    }));
+  };
+
+  const totalUnitsPerFloor = bulkConfig.typologies.reduce((sum, t) => sum + t.count, 0);
+  const totalUnitsToCreate = totalUnitsPerFloor * bulkConfig.floors;
 
   // Bulk Edit State
   const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
@@ -180,6 +213,7 @@ const ProjectUnitsPage: React.FC = () => {
       area: '',
       tower: '',
       floor: '',
+      unit_type: '',
       status: '',
       assigned_agent_id: '',
       namingPattern: '' // Optional: Rename selected units with a pattern
@@ -203,22 +237,27 @@ const ProjectUnitsPage: React.FC = () => {
           let created = 0;
           for (let f = 0; f < bulkConfig.floors; f++) {
               const floor = bulkConfig.startFloor + f;
-              for (let u = 1; u <= bulkConfig.unitsPerFloor; u++) {
-                  const code = applyPattern(bulkConfig.namingPattern, floor, u);
-                  await fetch('/api/units', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                      body: JSON.stringify({
-                          project_id: projectId,
-                          code,
-                          tower: bulkConfig.tower,
-                          floor: String(floor),
-                          area: bulkConfig.area,
-                          price: bulkConfig.price,
-                          current_status_id: disponible?.id,
-                      }),
-                  });
-                  created++;
+              let unitIndex = 1;
+              for (const typo of bulkConfig.typologies) {
+                  for (let c = 0; c < typo.count; c++) {
+                      const code = applyPattern(bulkConfig.namingPattern, floor, unitIndex);
+                      await fetch('/api/units', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                          body: JSON.stringify({
+                              project_id: projectId,
+                              code,
+                              tower: bulkConfig.tower,
+                              floor: String(floor),
+                              area: typo.area,
+                              price: typo.price,
+                              unit_type: typo.name || undefined,
+                              current_status_id: disponible?.id,
+                          }),
+                      });
+                      unitIndex++;
+                      created++;
+                  }
               }
           }
           alert(`${created} unidades creadas`);
@@ -246,6 +285,7 @@ const ProjectUnitsPage: React.FC = () => {
               if (bulkEditConfig.area) payload.area = Number(bulkEditConfig.area);
               if (bulkEditConfig.tower) payload.tower = bulkEditConfig.tower;
               if (bulkEditConfig.floor) payload.floor = bulkEditConfig.floor;
+              if (bulkEditConfig.unit_type) payload.unit_type = bulkEditConfig.unit_type;
               if (bulkEditConfig.status) payload.current_status_id = bulkEditConfig.status;
               if (bulkEditConfig.assigned_agent_id) payload.assigned_agent_id = bulkEditConfig.assigned_agent_id;
               
@@ -275,7 +315,7 @@ const ProjectUnitsPage: React.FC = () => {
           alert(`${updatedCount} unidades actualizadas exitosamente`);
           setShowBulkEditModal(false);
           setSelectedUnitIds(new Set()); // Clear selection
-          setBulkEditConfig({ price: '', area: '', tower: '', floor: '', status: '', assigned_agent_id: '', namingPattern: '' });
+          setBulkEditConfig({ price: '', area: '', tower: '', floor: '', unit_type: '', status: '', assigned_agent_id: '', namingPattern: '' });
           fetchUnits();
       } catch (error) {
           console.error('Error bulk updating units:', error);
@@ -314,8 +354,10 @@ const ProjectUnitsPage: React.FC = () => {
         
         const payload: any = {
             price: Number(editingUnit.price),
+            area: Number(editingUnit.area),
             current_status_id: editingUnit.current_status_id,
             tower: editingUnit.tower || null,
+            unit_type: editingUnit.unit_type || null,
             assigned_agent_id: editingUnit.assigned_agent_id || null,
         };
 
@@ -808,6 +850,22 @@ const ProjectUnitsPage: React.FC = () => {
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipología</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Tipo A, Studio, Penthouse"
+                  value={singleUnit.unit_type}
+                  onChange={e => setSingleUnit({ ...singleUnit, unit_type: e.target.value })}
+                  list="unit-types-list"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                />
+                <datalist id="unit-types-list">
+                  {[...new Set(units.map(u => u.unit_type).filter(Boolean))].map(t => (
+                    <option key={t} value={t!} />
+                  ))}
+                </datalist>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Área (m²)</label>
@@ -867,8 +925,8 @@ const ProjectUnitsPage: React.FC = () => {
 
       {showBulkCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-                  <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+                  <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-900 z-10">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">Generar Unidades Masivamente</h3>
                       <button onClick={() => setShowBulkCreateModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                           <span className="material-symbols-outlined">close</span>
@@ -878,8 +936,8 @@ const ProjectUnitsPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-6">
                           <div>
                               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Torre / Bloque</label>
-                              <input 
-                                  type="text" 
+                              <input
+                                  type="text"
                                   required
                                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
                                   value={bulkConfig.tower}
@@ -889,23 +947,23 @@ const ProjectUnitsPage: React.FC = () => {
                           </div>
                           <div>
                               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Patrón de Nombre</label>
-                              <input 
-                                  type="text" 
+                              <input
+                                  type="text"
                                   required
                                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
                                   value={bulkConfig.namingPattern}
                                   onChange={e => setBulkConfig({...bulkConfig, namingPattern: e.target.value})}
-                                  placeholder="Ej: A-{floor}0{unit}"
+                                  placeholder="Ej: {floor}0{unit}"
                               />
                               <p className="text-xs text-slate-400 mt-1">Variables: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{floor}`}</code> piso · <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{unit}`}</code> número · <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{`{letter}`}</code> letra (A, B, C…)</p>
                           </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Piso Inicial</label>
-                              <input 
-                                  type="number" 
+                              <input
+                                  type="number"
                                   min="1"
                                   required
                                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
@@ -915,8 +973,8 @@ const ProjectUnitsPage: React.FC = () => {
                           </div>
                           <div>
                               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cantidad de Pisos</label>
-                              <input 
-                                  type="number" 
+                              <input
+                                  type="number"
                                   min="1"
                                   required
                                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
@@ -924,60 +982,112 @@ const ProjectUnitsPage: React.FC = () => {
                                   onChange={e => setBulkConfig({...bulkConfig, floors: Number(e.target.value)})}
                               />
                           </div>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unidades por Piso</label>
-                              <input 
-                                  type="number" 
-                                  min="1"
-                                  required
-                                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                  value={bulkConfig.unitsPerFloor}
-                                  onChange={e => setBulkConfig({...bulkConfig, unitsPerFloor: Number(e.target.value)})}
-                              />
-                          </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-6">
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Área (m²)</label>
-                              <input 
-                                  type="number" 
-                                  required
-                                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                  value={bulkConfig.area}
-                                  onChange={e => setBulkConfig({...bulkConfig, area: Number(e.target.value)})}
-                              />
+                      {/* Typologies Section */}
+                      <div>
+                          <div className="flex items-center justify-between mb-3">
+                              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tipologías por Piso</label>
+                              <button
+                                  type="button"
+                                  onClick={addTypology}
+                                  className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                              >
+                                  <span className="material-symbols-outlined text-[16px]">add</span>
+                                  Agregar Tipología
+                              </button>
                           </div>
-                          <div>
-                              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio Base</label>
-                              <input 
-                                  type="number" 
-                                  required
-                                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
-                                  value={bulkConfig.price}
-                                  onChange={e => setBulkConfig({...bulkConfig, price: Number(e.target.value)})}
-                              />
+                          <div className="space-y-3">
+                              {bulkConfig.typologies.map((typo, idx) => (
+                                  <div key={idx} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                      <div className="flex items-center justify-between mb-3">
+                                          <input
+                                              type="text"
+                                              value={typo.name}
+                                              onChange={e => updateTypology(idx, 'name', e.target.value)}
+                                              className="text-sm font-semibold bg-transparent text-slate-900 dark:text-white border-none outline-none focus:ring-0 p-0 w-32"
+                                              placeholder="Nombre tipo"
+                                          />
+                                          {bulkConfig.typologies.length > 1 && (
+                                              <button
+                                                  type="button"
+                                                  onClick={() => removeTypology(idx)}
+                                                  className="text-slate-400 hover:text-red-500 transition-colors"
+                                              >
+                                                  <span className="material-symbols-outlined text-[18px]">close</span>
+                                              </button>
+                                          )}
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-3">
+                                          <div>
+                                              <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Área (m²)</label>
+                                              <input
+                                                  type="number"
+                                                  min="0"
+                                                  step="0.01"
+                                                  required
+                                                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-crm-primary outline-none"
+                                                  value={typo.area || ''}
+                                                  onChange={e => updateTypology(idx, 'area', Number(e.target.value))}
+                                                  placeholder="60"
+                                              />
+                                          </div>
+                                          <div>
+                                              <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Precio</label>
+                                              <input
+                                                  type="number"
+                                                  min="0"
+                                                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-crm-primary outline-none"
+                                                  value={typo.price || ''}
+                                                  onChange={e => updateTypology(idx, 'price', Number(e.target.value))}
+                                                  placeholder="250000000"
+                                              />
+                                          </div>
+                                          <div>
+                                              <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">Cant. por piso</label>
+                                              <input
+                                                  type="number"
+                                                  min="1"
+                                                  required
+                                                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-crm-primary outline-none"
+                                                  value={typo.count}
+                                                  onChange={e => updateTypology(idx, 'count', Math.max(1, Number(e.target.value)))}
+                                              />
+                                          </div>
+                                      </div>
+                                  </div>
+                              ))}
                           </div>
                       </div>
 
                       <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Vista Previa:</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Vista Previa (Piso {bulkConfig.startFloor}):</p>
                           <div className="flex flex-wrap gap-2">
-                              {[...Array(Math.min(5, bulkConfig.unitsPerFloor))].map((_, i) => (
-                                  <span key={i} className="bg-white dark:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 font-mono">
-                                      {applyPattern(bulkConfig.namingPattern, bulkConfig.startFloor, i + 1)}
-                                  </span>
-                              ))}
-                              {bulkConfig.unitsPerFloor > 5 && <span className="text-xs text-slate-400 self-center">...</span>}
+                              {(() => {
+                                  const previews: { code: string; type: string }[] = [];
+                                  let idx = 1;
+                                  for (const typo of bulkConfig.typologies) {
+                                      for (let c = 0; c < Math.min(typo.count, 3); c++) {
+                                          previews.push({ code: applyPattern(bulkConfig.namingPattern, bulkConfig.startFloor, idx), type: typo.name });
+                                          idx++;
+                                      }
+                                      if (typo.count > 3) { previews.push({ code: '...', type: typo.name }); idx += typo.count - 3; }
+                                  }
+                                  return previews.map((p, i) => (
+                                      <span key={i} className="bg-white dark:bg-slate-700 px-2 py-1 rounded border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 font-mono">
+                                          {p.code} <span className="text-slate-400 font-sans">({p.type})</span>
+                                      </span>
+                                  ));
+                              })()}
                           </div>
                           <p className="text-xs text-slate-500 mt-2">
-                              Total a generar: <span className="font-bold text-blue-600">{bulkConfig.floors * bulkConfig.unitsPerFloor} unidades</span>
+                              {totalUnitsPerFloor} und/piso × {bulkConfig.floors} pisos = <span className="font-bold text-blue-600">{totalUnitsToCreate} unidades</span>
                           </p>
                       </div>
 
                       <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
-                          <button 
-                              type="button" 
+                          <button
+                              type="button"
                               onClick={() => setShowBulkCreateModal(false)}
                               className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                           >
@@ -1059,10 +1169,27 @@ const ProjectUnitsPage: React.FC = () => {
                           </div>
                       </div>
 
+                      <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipología (Actualizar a)</label>
+                          <input
+                              type="text"
+                              className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
+                              value={bulkEditConfig.unit_type}
+                              onChange={e => setBulkEditConfig({...bulkEditConfig, unit_type: e.target.value})}
+                              placeholder="Sin cambios"
+                              list="bulk-edit-types-list"
+                          />
+                          <datalist id="bulk-edit-types-list">
+                            {[...new Set(units.map(u => u.unit_type).filter(Boolean))].map(t => (
+                              <option key={t} value={t!} />
+                            ))}
+                          </datalist>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Estado</label>
-                              <select 
+                              <select
                                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-crm-primary outline-none"
                                   value={bulkEditConfig.status}
                                   onChange={e => setBulkEditConfig({...bulkEditConfig, status: e.target.value})}
@@ -1134,8 +1261,6 @@ const ProjectUnitsPage: React.FC = () => {
                     {/* Info de solo lectura */}
                     <div className="flex gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-600 dark:text-slate-400">
                         <span><span className="font-semibold text-slate-900 dark:text-white">Piso:</span> {editingUnit.floor}</span>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <span><span className="font-semibold text-slate-900 dark:text-white">Área:</span> {editingUnit.area} m²</span>
                         {editingUnit.current_status && (
                           <>
                             <span className="text-slate-300 dark:text-slate-600">|</span>
@@ -1159,6 +1284,38 @@ const ProjectUnitsPage: React.FC = () => {
                                 <option value="">Sin torre</option>
                                 {towers.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
+                        </div>
+                        {/* Tipología */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipología</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                value={editingUnit.unit_type || ''}
+                                onChange={e => setEditingUnit({ ...editingUnit, unit_type: e.target.value })}
+                                placeholder="Ej: Tipo A"
+                                list="edit-unit-types-list"
+                            />
+                            <datalist id="edit-unit-types-list">
+                              {[...new Set(units.map(u => u.unit_type).filter(Boolean))].map(t => (
+                                <option key={t} value={t!} />
+                              ))}
+                            </datalist>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Área */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Área (m²)</label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500/20 outline-none"
+                                value={editingUnit.area}
+                                onChange={e => setEditingUnit({ ...editingUnit, area: Number(e.target.value) })}
+                            />
                         </div>
                         {/* Precio */}
                         <div>
@@ -1281,6 +1438,21 @@ const ProjectUnitsPage: React.FC = () => {
               </select>
             </div>
 
+            {/* Tipología */}
+            {unitTypes.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tipología</label>
+                <select
+                  value={filterType}
+                  onChange={e => { setFilterType(e.target.value); setCurrentPage(1); }}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 min-w-[140px]"
+                >
+                  <option value="">Todas</option>
+                  {unitTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            )}
+
             {/* Estado */}
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
@@ -1370,6 +1542,12 @@ const ProjectUnitsPage: React.FC = () => {
                   <button onClick={() => { setFilterTower(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
                 </span>
               )}
+              {filterType && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-semibold">
+                  {filterType}
+                  <button onClick={() => { setFilterType(''); setCurrentPage(1); }} className="ml-0.5 opacity-60 hover:opacity-100"><span className="material-symbols-outlined text-[12px]">close</span></button>
+                </span>
+              )}
               {filterStatus && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold">
                   {statuses.find(s => s.id === filterStatus)?.name ?? filterStatus}
@@ -1403,6 +1581,7 @@ const ProjectUnitsPage: React.FC = () => {
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Torre</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Piso</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Área M²</th>
+                  <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Tipología</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Precio</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">Agente Asignado</th>
@@ -1411,7 +1590,7 @@ const ProjectUnitsPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredUnits.length === 0 ? (
-                  <tr><td colSpan={8} className="px-6 py-16 text-center text-slate-400">
+                  <tr><td colSpan={9} className="px-6 py-16 text-center text-slate-400">
                     <span className="material-symbols-outlined text-4xl block mb-2">search_off</span>
                     No hay unidades que coincidan con los filtros
                   </td></tr>
@@ -1422,6 +1601,15 @@ const ProjectUnitsPage: React.FC = () => {
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">{unit.tower}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-center">{unit.floor}</td>
                         <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 text-center">{unit.area} m²</td>
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                          {unit.unit_type ? (
+                            <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-semibold">
+                              {unit.unit_type}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">—</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 font-bold text-blue-600">{formatCurrency(unit.price)}</td>
                         {/* ── Status — inline dropdown ── */}
                         <td className="px-6 py-4">

@@ -32,6 +32,11 @@ export class CreateUnitDto {
   current_status_id: string;
 
   @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  unit_type?: string;
+
+  @ApiProperty({ required: false })
   @IsUUID()
   @IsOptional()
   assigned_agent_id?: string;

@@ -42,6 +42,9 @@ export class Unit {
   assigned_agent: User;
 
   @Column({ nullable: true })
+  unit_type: string;
+
+  @Column({ nullable: true })
   assigned_agent_id: string;
 
   @CreateDateColumn()
