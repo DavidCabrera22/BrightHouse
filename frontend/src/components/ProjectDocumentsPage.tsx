@@ -54,6 +54,7 @@ const FILE_ICONS: Record<string, { icon: string; color: string }> = {
   zip:  { icon: 'folder_zip', color: 'text-amber-500' },
 };
 
+
 const openDocFile = async (docId: string, download = false, filename?: string) => {
   const token = localStorage.getItem('access_token');
   const res = await fetch(`/api/documents/${docId}/file`, {
