@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { assertTransition, isExpired, isEditable } from './quote-status';
+import { assertTransition, isExpired, isEditable, businessToday } from './quote-status';
 
 describe('assertTransition', () => {
   it('permite el camino normal', () => {
@@ -20,6 +20,11 @@ describe('assertTransition', () => {
   it('rechaza un estado inexistente', () => {
     expect(() => assertTransition('draft', 'pagada' as any)).toThrow(BadRequestException);
   });
+
+  it('distingue un estado desconocido de uno ya cerrado', () => {
+    expect(() => assertTransition('pagada' as any, 'sent')).toThrow(/desconocido/i);
+    expect(() => assertTransition('accepted', 'sent')).toThrow(/cerrada/i);
+  });
 });
 
 describe('isExpired', () => {
@@ -38,6 +43,11 @@ describe('isExpired', () => {
   it('no vence cuando no hay fecha de vigencia', () => {
     expect(isExpired('sent', null, '2026-08-26')).toBe(false);
   });
+
+  it('maneja un Date sin dar un resultado silenciosamente falso', () => {
+    expect(isExpired('sent', new Date('2026-08-25T00:00:00Z'), '2026-08-26')).toBe(true);
+    expect(isExpired('sent', new Date('2026-09-25T00:00:00Z'), '2026-08-26')).toBe(false);
+  });
 });
 
 describe('isEditable', () => {
@@ -45,5 +55,17 @@ describe('isEditable', () => {
     expect(isEditable('draft')).toBe(true);
     expect(isEditable('sent')).toBe(false);
     expect(isEditable('accepted')).toBe(false);
+  });
+});
+
+describe('businessToday', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('usa el día de Colombia, no el de UTC', () => {
+    // 21:30 del 26 en Bogotá ya es el 27 en UTC.
+    jest.useFakeTimers().setSystemTime(new Date('2026-08-27T02:30:00Z'));
+
+    expect(businessToday()).toBe('2026-08-26');
+    expect(isExpired('sent', '2026-08-26')).toBe(false);
   });
 });

@@ -94,6 +94,95 @@ describe('calculateQuote', () => {
     );
     expect(() => calculateQuote({ ...base, installments_count: 2.5 })).toThrow(/al menos 1/i);
   });
+
+  it('rechaza valores no numéricos en vez de producir un cronograma de NaN', () => {
+    expect(() => calculateQuote({ ...base, discount: 'abc' as any })).toThrow(
+      QuoteCalculationError,
+    );
+    expect(() => calculateQuote({ ...base, reservation_amount: NaN })).toThrow(
+      QuoteCalculationError,
+    );
+  });
+
+  it('valida la fecha de la cotización antes de copiarla al cronograma', () => {
+    expect(() => calculateQuote({ ...base, quote_date: 'no-es-fecha' })).toThrow(/fecha inválida/i);
+    expect(() => calculateQuote({ ...base, first_installment_date: '' })).toThrow(
+      /fecha inválida/i,
+    );
+  });
+
+  it('el recorte de fin de mes no se pega: cada cuota parte de la fecha original', () => {
+    const { installments } = calculateQuote({
+      ...base,
+      reservation_amount: 0,
+      first_installment_date: '2026-01-31',
+      installments_count: 4,
+    });
+
+    expect(installments.filter((i) => i.concept === 'cuota').map((i) => i.due_date)).toEqual([
+      '2026-01-31',
+      '2026-02-28',
+      '2026-03-31',
+      '2026-04-30',
+    ]);
+  });
+
+  it('lleva los centavos a pesos enteros y mantiene la invariante', () => {
+    const { installments, total_value } = calculateQuote({
+      ...base,
+      unit_price: 8_293_829.23,
+      discount: 58_748.6,
+      reservation_amount: 206_052.36,
+      down_payment_percent: 82.53,
+      installments_count: 28,
+    });
+
+    for (const cuota of installments) {
+      expect(Number.isInteger(cuota.amount)).toBe(true);
+    }
+    expect(installments.reduce((acc, i) => acc + i.amount, 0)).toBe(total_value);
+  });
+
+  it('redondea el porcentaje sin caer un peso por debajo', () => {
+    const { down_payment_value } = calculateQuote({
+      ...base,
+      unit_price: 1_671_542_500,
+      down_payment_percent: 8.7,
+      reservation_amount: 0,
+    });
+
+    expect(down_payment_value).toBe(145_424_198);
+  });
+
+  it('omite el saldo cuando la inicial es el 100%', () => {
+    const { installments, balance_value } = calculateQuote({
+      ...base,
+      down_payment_percent: 100,
+      installments_count: 3,
+    });
+
+    expect(balance_value).toBe(0);
+    expect(installments.some((i) => i.concept === 'saldo')).toBe(false);
+  });
+
+  it('no emite cuotas en cero cuando la separación ya cubre la inicial', () => {
+    const { installments } = calculateQuote({
+      ...base,
+      down_payment_percent: 30,
+      reservation_amount: 96_000_000,
+    });
+
+    expect(installments.some((i) => i.concept === 'cuota')).toBe(false);
+    expect(installments.map((i) => i.concept)).toEqual(['separacion', 'saldo']);
+  });
+
+  it('maneja una sola cuota', () => {
+    const { installments } = calculateQuote({ ...base, installments_count: 1 });
+    const cuotas = installments.filter((i) => i.concept === 'cuota');
+
+    expect(cuotas).toHaveLength(1);
+    expect(cuotas[0].amount).toBe(91_000_000);
+  });
 });
 
 describe('addMonthsClamped', () => {
@@ -109,5 +198,14 @@ describe('addMonthsClamped', () => {
 
   it('cruza el año', () => {
     expect(addMonthsClamped('2026-11-10', 4)).toBe('2027-03-10');
+  });
+
+  it('falla como QuoteCalculationError, no como TypeError, ante algo que no es fecha', () => {
+    expect(() => addMonthsClamped(new Date() as any, 1)).toThrow(QuoteCalculationError);
+    expect(() => addMonthsClamped(null as any, 1)).toThrow(QuoteCalculationError);
+  });
+
+  it('acepta una fecha con hora', () => {
+    expect(addMonthsClamped('2026-09-15T00:00:00Z', 1)).toBe('2026-10-15');
   });
 });

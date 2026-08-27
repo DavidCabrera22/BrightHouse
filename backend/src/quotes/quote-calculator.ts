@@ -37,16 +37,27 @@ export interface QuoteCalculation {
 }
 
 /** El servicio la traduce a BadRequestException; el motor no conoce HTTP. */
-export class QuoteCalculationError extends Error {}
+export class QuoteCalculationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuoteCalculationError';
+  }
+}
 
 /**
  * Suma meses a una fecha 'YYYY-MM-DD' recortando al último día del mes.
  *
  * Se opera sobre las partes de la cadena y no sobre `Date` local para que la
- * zona horaria del servidor no corra los vencimientos un día.
+ * zona horaria del servidor no corra los vencimientos un día. El recorte a 10
+ * caracteres acepta una fecha con hora y hace que un `Date` falle como
+ * QuoteCalculationError (un 400) en vez de como TypeError (un 500).
  */
 export function addMonthsClamped(isoDate: string, months: number): string {
-  const [y, m, d] = (isoDate || '').split('-').map(Number);
+  const [y, m, d] = String(isoDate ?? '')
+    .slice(0, 10)
+    .split('-')
+    .map(Number);
+
   if (!y || !m || !d) {
     throw new QuoteCalculationError(`Fecha inválida: ${isoDate}`);
   }
@@ -63,14 +74,14 @@ export function addMonthsClamped(isoDate: string, months: number): string {
 export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   const unitPrice = Number(input.unit_price);
   const discount = Number(input.discount ?? 0);
-  const reservation = Number(input.reservation_amount ?? 0);
+  const reservationInput = Number(input.reservation_amount ?? 0);
   const percent = Number(input.down_payment_percent);
   const count = Number(input.installments_count);
 
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
     throw new QuoteCalculationError('El precio de la unidad debe ser mayor a cero');
   }
-  if (discount < 0) {
+  if (!Number.isFinite(discount) || discount < 0) {
     throw new QuoteCalculationError('El descuento no puede ser negativo');
   }
   if (discount > unitPrice) {
@@ -82,17 +93,30 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   if (!Number.isInteger(count) || count < 1) {
     throw new QuoteCalculationError('El número de cuotas debe ser al menos 1');
   }
-  if (reservation < 0) {
+  if (!Number.isFinite(reservationInput) || reservationInput < 0) {
     throw new QuoteCalculationError('La separación no puede ser negativa');
   }
 
+  // Todo el dinero se lleva a pesos enteros antes de repartirlo. Las columnas
+  // son numeric(15,2) y con centavos la coma flotante rompe la invariante de
+  // que las filas suman exactamente el total.
   const totalValue = Math.round(unitPrice - discount);
-  const downPaymentValue = Math.round((totalValue * percent) / 100);
+  // `down_payment_percent` es numeric(5,2): escalarlo a entero antes de
+  // dividir evita que un caso como el 8,7% de 1.671.542.500 caiga un peso
+  // por debajo del redondeo exacto.
+  const downPaymentValue = Math.round((totalValue * Math.round(percent * 100)) / 10000);
   const balanceValue = totalValue - downPaymentValue;
+  const reservation = Math.round(reservationInput);
 
   if (reservation > downPaymentValue) {
     throw new QuoteCalculationError('La separación no puede superar la cuota inicial');
   }
+
+  // Se validan y normalizan aquí: sin esto una cadena basura llegaría hasta el
+  // INSERT en vez de salir como 400, y `quote_date` no pasa por ningún otro
+  // control porque se copia tal cual a la fila de separación.
+  const quoteDate = addMonthsClamped(input.quote_date, 0);
+  const firstInstallmentDate = addMonthsClamped(input.first_installment_date, 0);
 
   const financed = downPaymentValue - reservation;
   const installmentAmount = Math.floor(financed / count);
@@ -105,20 +129,24 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
       number: number++,
       concept: 'separacion',
       amount: reservation,
-      due_date: input.quote_date,
+      due_date: quoteDate,
     });
   }
 
-  for (let i = 0; i < count; i++) {
-    // El residuo de la división entera se acumula en la última cuota, nunca en
-    // el saldo a crédito: así la suma de las filas cuadra con el total exacto.
-    const isLast = i === count - 1;
-    installments.push({
-      number: number++,
-      concept: 'cuota',
-      amount: isLast ? financed - installmentAmount * (count - 1) : installmentAmount,
-      due_date: addMonthsClamped(input.first_installment_date, i),
-    });
+  // Cuando la separación ya cubre la inicial (o no hay inicial) no se emiten
+  // doce filas en cero: misma regla que para la separación y el saldo.
+  if (financed > 0) {
+    for (let i = 0; i < count; i++) {
+      // El residuo de la división entera se acumula en la última cuota, nunca
+      // en el saldo a crédito: así la suma de las filas cuadra con el total.
+      const isLast = i === count - 1;
+      installments.push({
+        number: number++,
+        concept: 'cuota',
+        amount: isLast ? financed - installmentAmount * (count - 1) : installmentAmount,
+        due_date: addMonthsClamped(firstInstallmentDate, i),
+      });
+    }
   }
 
   if (balanceValue > 0) {
@@ -126,7 +154,7 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
       number: number++,
       concept: 'saldo',
       amount: balanceValue,
-      due_date: addMonthsClamped(input.first_installment_date, count),
+      due_date: addMonthsClamped(firstInstallmentDate, count),
     });
   }
 
