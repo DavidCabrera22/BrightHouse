@@ -88,6 +88,11 @@ describe('calculateQuote', () => {
     expect(() => calculateQuote({ ...base, installments_count: 0 })).toThrow(/al menos 1/i);
     expect(() => calculateQuote({ ...base, down_payment_percent: 101 })).toThrow(/entre 0 y 100/i);
     expect(() => calculateQuote({ ...base, unit_price: 0 })).toThrow(/mayor a cero/i);
+    expect(() => calculateQuote({ ...base, discount: -1 })).toThrow(/no puede ser negativo/i);
+    expect(() => calculateQuote({ ...base, reservation_amount: -1 })).toThrow(
+      /separación no puede ser negativa/i,
+    );
+    expect(() => calculateQuote({ ...base, installments_count: 2.5 })).toThrow(/al menos 1/i);
   });
 });
 
