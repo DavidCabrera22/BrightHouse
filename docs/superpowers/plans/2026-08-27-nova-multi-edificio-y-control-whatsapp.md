@@ -795,9 +795,13 @@ export class InventorySummaryService {
   private format(units: Unit[]): string | null {
     if (units.length === 0) return null;
 
+    // Hoy `unit_type` está en NULL en toda la tabla, así que agrupar solo por
+    // él dejaría un único bucket "Sin tipología" sin valor para el prospecto.
+    // El área sí distingue las tipologías reales (60 m² vs 65 m²), y sirve de
+    // sustituto hasta que las unidades tengan su tipo asignado.
     const byType = new Map<string, Unit[]>();
     for (const u of units) {
-      const key = u.unit_type || 'Sin tipología';
+      const key = u.unit_type || `${Number(u.area)} m²`;
       const bucket = byType.get(key) ?? [];
       bucket.push(u);
       byType.set(key, bucket);
@@ -809,6 +813,10 @@ export class InventorySummaryService {
       // `area` y `price` son `decimal`: el driver pg los entrega como cadena.
       const areas = group.map((u) => Number(u.area));
       const prices = group.map((u) => Number(u.price));
+      const minArea = Math.min(...areas);
+      const maxArea = Math.max(...areas);
+      const areaText =
+        minArea === maxArea ? `${minArea} m²` : `${minArea}–${maxArea} m²`;
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
       const priceText =
@@ -816,9 +824,11 @@ export class InventorySummaryService {
           ? this.cop(minPrice)
           : `${this.cop(minPrice)} a ${this.cop(maxPrice)}`;
 
-      lines.push(
-        `- ${type}: ${group.length} disponibles, ${Math.min(...areas)}–${Math.max(...areas)} m², ${priceText}.`,
-      );
+      // Si el grupo se armó por área, el tipo ya ES el área: no la repitas.
+      const label =
+        type === areaText ? `Apartamentos de ${areaText}` : `${type}, ${areaText}`;
+
+      lines.push(`- ${label}: ${group.length} disponibles, ${priceText}.`);
     }
 
     const floors = [...new Set(units.map((u) => u.floor))]
