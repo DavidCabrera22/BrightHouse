@@ -1,5 +1,6 @@
 import { buildSystemPrompt } from './prompt-builder';
 import { OASIS_PARK } from './buildings/oasis-park.building';
+import { ALPES_VISTA } from './buildings/alpes-vista.building';
 
 describe('buildSystemPrompt', () => {
   it('incluye el nombre del edificio y la sala de ventas', () => {
@@ -39,5 +40,56 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt(OASIS_PARK, null);
     expect(prompt).toMatch(/dos párrafos/i);
     expect(prompt).toMatch(/escalar/i);
+  });
+});
+
+describe('buildSystemPrompt — prelanzamiento', () => {
+  const prompt = buildSystemPrompt(ALPES_VISTA, null);
+
+  it('deja claro desde el principio que el proyecto está en prelanzamiento', () => {
+    expect(prompt).toMatch(/PRELANZAMIENTO/);
+  });
+
+  it('incluye el nombre y la ubicación', () => {
+    expect(prompt).toContain('Alpes Vista');
+    expect(prompt).toContain('sector Los Alpes, Cartagena');
+  });
+
+  it('lista lo único que Nova puede afirmar', () => {
+    expect(prompt).toContain('Vivienda de Interés Social');
+    expect(prompt).toMatch(/Lo único que puedes afirmar/);
+  });
+
+  it('pide los datos que hay que capturar', () => {
+    expect(prompt).toContain('Nombre completo');
+    expect(prompt).toContain('Correo electrónico');
+  });
+
+  it('prohíbe dar fechas y precios', () => {
+    expect(prompt).toMatch(/NUNCA des una fecha de lanzamiento/);
+    expect(prompt).toMatch(/NUNCA menciones precios/);
+  });
+
+  it('NO habla de inventario: no hay unidades cargadas', () => {
+    expect(prompt).not.toMatch(/Inventario disponible/i);
+  });
+
+  it('NO invita a la sala de ventas: todavía no existe', () => {
+    expect(prompt).not.toMatch(/sala de ventas, queda|visita rápida de 30 minutos/i);
+  });
+
+  it('ignora el inventario aunque se lo pasen', () => {
+    // Un proyecto en prelanzamiento no tiene unidades; si por configuración
+    // llegara un resumen, no debe filtrarse al prompt.
+    const conInventario = buildSystemPrompt(ALPES_VISTA, '40 unidades disponibles');
+    expect(conInventario).not.toContain('40 unidades disponibles');
+  });
+
+  it('no promete que un asesor llame: todavía no hay equipo comercial', () => {
+    expect(prompt).toMatch(/NUNCA digas que un asesor va\s*\na llamar/);
+  });
+
+  it('conserva las reglas globales de formato', () => {
+    expect(prompt).toMatch(/dos párrafos/i);
   });
 });

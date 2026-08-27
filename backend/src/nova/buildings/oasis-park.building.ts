@@ -1,7 +1,8 @@
-import { BuildingProfile } from './building-profile';
+import { SellingBuilding } from './building-profile';
 
-export const OASIS_PARK: BuildingProfile = {
+export const OASIS_PARK: SellingBuilding = {
   slug: 'oasis-park',
+  stage: 'selling',
   building_name: 'Oasis Park',
   structure: '17 pisos · 127 apartamentos · 8 apartamentos por piso',
   location:

@@ -30,6 +30,8 @@ const MAX_TOKENS = 400;
 
 export interface LeadExtraction {
   name?: string;
+  /** Correo que el prospecto dio en el chat. En prelanzamiento es el objetivo. */
+  email?: string;
   interested_in?: string;
   financing?: string;
   priority?: string;
@@ -69,7 +71,12 @@ export class NovaService {
     let systemPrompt: string;
     try {
       const profile = getBuildingProfile(ctx.buildingSlug);
-      const inventory = await this.inventory.getSummary(ctx.projectId);
+      // Un proyecto en prelanzamiento no tiene unidades cargadas: la consulta
+      // sobraría, y el prompt de esa etapa ni siquiera habla de inventario.
+      const inventory =
+        profile.stage === 'prelaunch'
+          ? null
+          : await this.inventory.getSummary(ctx.projectId);
       systemPrompt = buildSystemPrompt(profile, inventory);
     } catch (err) {
       this.logger.error(
@@ -123,12 +130,12 @@ export class NovaService {
 
     try {
       const response = await this.client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-haiku-4-5',
         max_tokens: 200,
         system: `Eres un extractor de datos. Analiza la conversación y responde SOLO con un JSON válido sin texto adicional.
-Extrae: nombre real del prospecto (si lo mencionó), propósito (para vivir/invertir), financiamiento (FNA/subsidio/recursos propios/combinación), nivel de interés (ai_score 1-100), prioridad (high/medium/low), y needs_human (true si el prospecto pregunta por su caso concreto de crédito, intenta negociar el precio, presenta una queja, pide hablar con un asesor, o la conversación lleva dos turnos sin avanzar).
-Si un campo no está claro, omítelo del JSON.
-Ejemplo: {"name":"Carlos","interested_in":"para vivir","financing":"FNA","ai_score":70,"priority":"medium","needs_human":false}`,
+Extrae: nombre real del prospecto (si lo mencionó), correo electrónico (email, si lo dio), propósito (para vivir/invertir), financiamiento (FNA/subsidio/recursos propios/combinación), nivel de interés (ai_score 1-100), prioridad (high/medium/low), y needs_human (true si el prospecto pregunta por su caso concreto de crédito, intenta negociar el precio, presenta una queja, pide hablar con un asesor, o la conversación lleva dos turnos sin avanzar).
+Si un campo no está claro, omítelo del JSON. No inventes un correo: cópialo tal cual lo escribió el prospecto o no lo incluyas.
+Ejemplo: {"name":"Carlos","email":"carlos@gmail.com","interested_in":"para vivir","financing":"FNA","ai_score":70,"priority":"medium","needs_human":false}`,
         messages: [{ role: 'user', content: `Conversación:\n${transcript}` }],
       });
 

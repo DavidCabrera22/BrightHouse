@@ -1,4 +1,8 @@
-import { BuildingProfile, REQUIRED_PROFILE_FIELDS } from './building-profile';
+import {
+  BuildingProfile,
+  REQUIRED_PRELAUNCH_FIELDS,
+  REQUIRED_SELLING_FIELDS,
+} from './building-profile';
 import { OASIS_PARK } from './oasis-park.building';
 import { ALPES_VISTA } from './alpes-vista.building';
 
@@ -25,12 +29,32 @@ const PROFILES: Record<string, BuildingProfile> = {
   [ALPES_VISTA.slug]: ALPES_VISTA,
 };
 
+/**
+ * Qué se le exige a un perfil depende de su etapa: un prelanzamiento no tiene
+ * precio ni sala de ventas y exigírselos lo dejaría permanentemente rechazado.
+ */
 export function assertProfileComplete(profile: BuildingProfile): void {
-  const missing = REQUIRED_PROFILE_FIELDS.filter(
-    (field) => String(profile[field] ?? '').trim() === '',
+  const required: string[] =
+    profile.stage === 'prelaunch'
+      ? (REQUIRED_PRELAUNCH_FIELDS as string[])
+      : (REQUIRED_SELLING_FIELDS as string[]);
+
+  const missing = required.filter(
+    (field) => String((profile as any)[field] ?? '').trim() === '',
   );
   if (missing.length > 0) {
     throw new IncompleteBuildingProfileError(profile.slug, missing);
+  }
+
+  // Un prelanzamiento sin nada confirmado y sin datos que capturar no tendría
+  // de qué hablar ni para qué: es un perfil a medio llenar, no uno válido.
+  if (profile.stage === 'prelaunch') {
+    if (profile.confirmed.length === 0) {
+      throw new IncompleteBuildingProfileError(profile.slug, ['confirmed']);
+    }
+    if (profile.capture.length === 0) {
+      throw new IncompleteBuildingProfileError(profile.slug, ['capture']);
+    }
   }
 }
 

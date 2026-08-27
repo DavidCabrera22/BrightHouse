@@ -322,6 +322,7 @@ export class WhatsAppController {
 
       await this.leadsService.updateFromNova(conv.lead_id, {
         name: extraction.name,
+        email: extraction.email,
         interested_in: extraction.financing
           ? `${extraction.interested_in || ''} | ${extraction.financing}`.replace(/^\s*\|\s*/, '').trim()
           : extraction.interested_in,

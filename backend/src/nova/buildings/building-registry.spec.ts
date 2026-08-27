@@ -4,7 +4,7 @@ import {
   MissingBuildingProfileError,
   assertProfileComplete,
 } from './building-registry';
-import { BuildingProfile } from './building-profile';
+import { BuildingProfile, PrelaunchBuilding } from './building-profile';
 import { OASIS_PARK } from './oasis-park.building';
 
 describe('building-registry', () => {
@@ -42,9 +42,29 @@ describe('building-registry', () => {
     expect(() => assertProfileComplete(OASIS_PARK)).not.toThrow();
   });
 
-  it('el perfil de Alpes Vista todavía está incompleto y por eso se rechaza', () => {
-    expect(() => getBuildingProfile('alpes-vista')).toThrow(
+  it('acepta Alpes Vista, que está en prelanzamiento y no necesita precio ni sala de ventas', () => {
+    const perfil = getBuildingProfile('alpes-vista');
+    expect(perfil.stage).toBe('prelaunch');
+    expect(perfil.building_name).toBe('Alpes Vista');
+  });
+
+  it('rechaza un prelanzamiento sin nada confirmado: no tendría de qué hablar', () => {
+    const alpes = getBuildingProfile('alpes-vista') as PrelaunchBuilding;
+    expect(() =>
+      assertProfileComplete({ ...alpes, confirmed: [] }),
+    ).toThrow(IncompleteBuildingProfileError);
+  });
+
+  it('rechaza un prelanzamiento sin datos que capturar: no tendría objetivo', () => {
+    const alpes = getBuildingProfile('alpes-vista') as PrelaunchBuilding;
+    expect(() => assertProfileComplete({ ...alpes, capture: [] })).toThrow(
       IncompleteBuildingProfileError,
     );
+  });
+
+  it('a un prelanzamiento NO le exige la sala de ventas', () => {
+    // Exigírsela lo dejaría rechazado para siempre: todavía no existe.
+    const alpes = getBuildingProfile('alpes-vista') as PrelaunchBuilding;
+    expect(() => assertProfileComplete(alpes)).not.toThrow();
   });
 });

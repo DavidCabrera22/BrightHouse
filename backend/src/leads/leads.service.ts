@@ -205,7 +205,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
 
   async updateFromNova(
     id: string,
-    data: { name?: string; interested_in?: string; ai_score?: number; priority?: string; status?: string },
+    data: { name?: string; email?: string; interested_in?: string; ai_score?: number; priority?: string; status?: string },
   ): Promise<void> {
     const lead = await this.leadRepository.findOne({ where: { id } });
     if (!lead) return;
@@ -214,6 +214,10 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     if (data.name) updates.name = data.name;
     if (data.interested_in) updates.interested_in = data.interested_in;
     if (data.priority) updates.priority = data.priority;
+
+    // El correo solo se escribe si el lead no tenía uno: lo que el asesor haya
+    // registrado a mano vale más que lo que el modelo leyó del chat.
+    if (data.email && !lead.email) updates.email = data.email;
 
     // Only advance status — never go backwards
     const statusOrder = ['new', 'contacted', 'pending', 'qualified', 'negotiation', 'won', 'lost'];
