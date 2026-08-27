@@ -82,6 +82,11 @@ export class InstagramController {
       if (!instagramPageId) instagramPageId = this.configService.get<string>('INSTAGRAM_PAGE_ID');
       if (!projectId) projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
 
+      // El edificio sale del tenant, igual que en WhatsApp. Con un slug fijo,
+      // un DM de Alpes Vista recibiría la copia y el inventario de Oasis Park.
+      const buildingSlug =
+        tenantSlug || this.configService.get<string>('DEFAULT_BUILDING_SLUG') || 'oasis-park';
+
       const messages = this.extractMessages(body);
 
       for (const { senderId, messageId, text, username } of messages) {
@@ -135,8 +140,8 @@ export class InstagramController {
 
         // 6. Generate Nova response
         const novaReply = await this.novaService.generateResponse(text, history, {
-          buildingSlug: 'oasis-park',
-          projectId: this.configService.get<string>('DEFAULT_PROJECT_ID'),
+          buildingSlug,
+          projectId,
         });
         if (!novaReply) continue;
 

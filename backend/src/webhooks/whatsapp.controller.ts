@@ -16,6 +16,7 @@ import { NovaService, ChatMessage } from '../nova/nova.service';
 import { parseNovaCommand } from '../nova/nova-commands';
 import { shouldAutoResume, DEFAULT_RESUME_HOURS } from '../nova/nova-pause';
 import { WhapiService } from './whapi.service';
+import { extractMessages } from './extract-messages';
 import { TenantsService } from '../tenants/tenants.service';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
@@ -81,6 +82,13 @@ export class WhatsAppController {
       if (!projectId) projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
       if (!buildingSlug) {
         buildingSlug = this.configService.get<string>('DEFAULT_BUILDING_SLUG') ?? 'oasis-park';
+        // Sin `?tenant=` no sabemos de qué edificio se trata y estamos
+        // adivinando. Se conserva por compatibilidad con el montaje de un solo
+        // tenant, pero con un aviso: si aparece en producción con más de un
+        // edificio activo, hay una URL de webhook mal configurada en Whapi.
+        this.logger.warn(
+          `Webhook sin ?tenant= — respondiendo como "${buildingSlug}" por defecto`,
+        );
       }
 
       // Un valor no numérico daría NaN, y `elapsed >= NaN` es siempre falso: la
@@ -93,16 +101,26 @@ export class WhatsAppController {
           ? configuredHours
           : DEFAULT_RESUME_HOURS;
 
-      // ── 2. Extraer mensajes (salientes incluidos) ─────────────────────────
-      const messages = this.extractMessages(body);
+      // ── 2. Extraer mensajes (salientes del asesor incluidos) ──────────────
+      const { messages, outgoingWithoutSource } = extractMessages(body);
 
-      for (const { from, messageId, text, profileName, fromMe } of messages) {
+      if (outgoingWithoutSource > 0) {
+        // Sin `source` no podemos distinguir al asesor del eco de la propia
+        // Nova, así que se descartan. Si esto aparece, el control desde
+        // WhatsApp no está funcionando y hay que revisar la API de Whapi.
+        this.logger.warn(
+          `${outgoingWithoutSource} mensaje(s) saliente(s) sin campo "source": descartados`,
+        );
+      }
+
+      for (const { from, messageId, text, profileName, fromMe, type } of messages) {
         // ── 3. Mensaje del asesor: comando o toma de control ────────────────
         if (fromMe) {
           await this.handleAgentMessage({
             phone: from,
             messageId,
             text,
+            type,
             tenantId,
             whapiToken,
           });
@@ -137,17 +155,14 @@ export class WhatsAppController {
           body: text,
           profileName,
           timestamp: String(Date.now()),
+          // La conversación ya está resuelta con su tenant: sin esto el
+          // servicio la vuelve a buscar solo por teléfono y, con dos tenants,
+          // puede escribir el mensaje en la conversación del otro edificio.
+          conversationId: conv.id,
         });
 
-        const allMessages = await this.conversationsService.getMessages(conv.id);
-        const history: ChatMessage[] = allMessages
-          .slice(-21, -1)
-          .map((m) => ({
-            role: m.sender_type === 'user' ? 'user' : 'assistant',
-            content: m.content,
-          }));
-
         // ── 5. Pausa y ventana de reactivación ──────────────────────────────
+        // Antes de leer el historial: una conversación pausada no lo necesita.
         const freshConv = await this.conversationsService.findConversationById(conv.id);
         if (freshConv.nova_paused) {
           if (shouldAutoResume(freshConv, new Date(), resumeHours)) {
@@ -160,6 +175,14 @@ export class WhatsAppController {
             continue;
           }
         }
+
+        const allMessages = await this.conversationsService.getMessages(conv.id);
+        const history: ChatMessage[] = allMessages
+          .slice(-21, -1)
+          .map((m) => ({
+            role: m.sender_type === 'user' ? 'user' : 'assistant',
+            content: m.content,
+          }));
 
         // ── 6. Responder ────────────────────────────────────────────────────
         const novaReply = await this.novaService.generateResponse(text, history, {
@@ -184,13 +207,18 @@ export class WhatsAppController {
         this.logger.log(`Nova replied to ${from}: "${novaReply.substring(0, 80)}..."`);
 
         // ── 7. Avance del lead ──────────────────────────────────────────────
-        const freshConv2 = await this.conversationsService.findConversationById(conv.id);
-        if (freshConv2.lead_id && allMessages.length <= 2) {
-          await this.leadsService.updateFromNova(freshConv2.lead_id, { status: 'contacted' });
-          this.logger.log(`Lead ${freshConv2.lead_id} → contacted`);
+        // `freshConv` ya trae el lead_id y no pudo cambiar entre medias.
+        if (freshConv.lead_id && allMessages.length <= 2) {
+          await this.leadsService.updateFromNova(freshConv.lead_id, { status: 'contacted' });
+          this.logger.log(`Lead ${freshConv.lead_id} → contacted`);
         }
 
-        if (allMessages.length >= 4 && allMessages.length % 4 === 0) {
+        // Cada dos turnos del cliente. Contar filas totales no sirve: en una
+        // conversación alternada `allMessages` se lee siempre en número impar
+        // —el mensaje del cliente ya guardado, la respuesta de Nova todavía
+        // no— así que un módulo sobre el total nunca se cumpliría.
+        const userTurns = allMessages.filter((m) => m.sender_type === 'user').length;
+        if (userTurns >= 2 && userTurns % 2 === 0) {
           this.enrichLeadAsync(conv.id, [...history, { role: 'user', content: text }]);
         }
       }
@@ -209,16 +237,19 @@ export class WhatsAppController {
     phone: string;
     messageId: string;
     text: string;
+    /** `text`, `voice`, `image`… Solo los de texto pueden ser un comando. */
+    type: string;
     tenantId?: string;
     whapiToken?: string;
   }): Promise<void> {
-    const { phone, messageId, text, tenantId, whapiToken } = params;
+    const { phone, messageId, text, type, tenantId, whapiToken } = params;
 
     const conv = await this.conversationsService.findOrCreateByPhone(
       phone, 'whatsapp', undefined, tenantId,
     );
 
-    const command = parseNovaCommand(text);
+    const isText = type === 'text';
+    const command = isText ? parseNovaCommand(text) : null;
 
     if (command === 'pause') {
       await this.conversationsService.pauseNova(conv.id, 'whatsapp');
@@ -238,14 +269,16 @@ export class WhatsAppController {
     // prospecto. El estado de la conversación se consulta en el CRM.
 
     // No es comando: el asesor está atendiendo. Se guarda y Nova se calla.
+    // Una nota de voz cuenta igual que un texto — en este mercado suele ser la
+    // primera respuesta del asesor, y Nova no puede seguir escribiendo encima.
     await this.conversationsService.addMessage(conv.id, {
-      content: text,
+      content: isText ? text : `[${type || 'adjunto'} del asesor]`,
       sender_type: 'agent',
       sender_name: 'Asesor',
       whatsapp_message_id: messageId,
     });
     await this.conversationsService.pauseNova(conv.id, 'whatsapp');
-    this.logger.log(`Asesor escribió a ${phone} — Nova pausada`);
+    this.logger.log(`Asesor escribió a ${phone} (${type}) — Nova pausada`);
   }
 
   /** Fire-and-forget: extract lead info and auto-advance pipeline status */
@@ -303,65 +336,5 @@ export class WhatsAppController {
     } catch (err) {
       this.logger.warn('Error enriqueciendo lead:', err?.message);
     }
-  }
-
-  private extractMessages(body: any): Array<{
-    from: string;
-    messageId: string;
-    text: string;
-    profileName: string;
-    fromMe: boolean;
-  }> {
-    const result: Array<{
-      from: string;
-      messageId: string;
-      text: string;
-      profileName: string;
-      fromMe: boolean;
-    }> = [];
-
-    // Whapi format
-    if (body?.messages) {
-      const contacts: Record<string, string> = {};
-      for (const c of body?.contacts || []) {
-        contacts[c.id] = c.name || c.id;
-      }
-      for (const msg of body.messages) {
-        if (msg.type !== 'text') continue;
-
-        // En los salientes, `from` es el número del negocio: el interlocutor
-        // está en `chat_id`. Es el teléfono con el que buscamos la conversación.
-        const counterpart = msg.from_me
-          ? String(msg.chat_id ?? '').replace(/@.*$/, '')
-          : msg.from;
-        if (!counterpart) continue;
-
-        result.push({
-          from: counterpart,
-          messageId: msg.id,
-          text: msg.text?.body || '',
-          profileName: contacts[counterpart] || counterpart,
-          fromMe: Boolean(msg.from_me),
-        });
-      }
-      return result;
-    }
-
-    // Meta Cloud API format — no entrega los salientes del agente.
-    const value = body?.entry?.[0]?.changes?.[0]?.value;
-    if (!value?.messages?.length) return result;
-
-    for (const message of value.messages) {
-      if (message.type !== 'text') continue;
-      result.push({
-        from: message.from,
-        messageId: message.id,
-        text: message.text?.body || '',
-        profileName: value.contacts?.[0]?.profile?.name || message.from,
-        fromMe: false,
-      });
-    }
-
-    return result;
   }
 }

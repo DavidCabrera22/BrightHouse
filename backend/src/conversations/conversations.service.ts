@@ -76,11 +76,21 @@ export class ConversationsService {
     const saved = await this.messageRepo.save(msg);
 
     // Update conversation snapshot
-    await this.conversationRepo.update(conversationId, {
+    const snapshot: Partial<Conversation> = {
       last_message: dto.content.substring(0, 200),
       last_message_at: new Date(),
       unread_count: dto.sender_type === 'user' ? conv.unread_count + 1 : conv.unread_count,
-    });
+    };
+
+    // La ventana de reactivación se mide desde la última actividad del asesor,
+    // no desde la pausa. Por WhatsApp cada mensaje suyo pasa por `pauseNova` y
+    // resella; desde el CRM llega por aquí, y sin esto Nova reaparecería 12h
+    // después del botón aunque el asesor siguiera escribiendo.
+    if (dto.sender_type === 'agent' && conv.nova_paused) {
+      snapshot.nova_paused_at = new Date();
+    }
+
+    await this.conversationRepo.update(conversationId, snapshot);
 
     return saved;
   }
@@ -207,8 +217,17 @@ export class ConversationsService {
     body: string;
     profileName?: string;
     timestamp: string;
+    /**
+     * Conversación ya resuelta por el llamador. Sin esto se busca solo por
+     * teléfono y sin tenant: con dos tenants, un prospecto que escribió a
+     * ambos números puede terminar con el mensaje en la conversación del
+     * edificio equivocado.
+     */
+    conversationId?: string;
   }): Promise<Message> {
-    const conv = await this.findOrCreateByPhone(payload.from, 'whatsapp', payload.profileName);
+    const convId =
+      payload.conversationId ??
+      (await this.findOrCreateByPhone(payload.from, 'whatsapp', payload.profileName)).id;
 
     // Avoid duplicate ingestion
     const existing = await this.messageRepo.findOne({
@@ -216,7 +235,7 @@ export class ConversationsService {
     });
     if (existing) return existing;
 
-    return this.addMessage(conv.id, {
+    return this.addMessage(convId, {
       content: payload.body,
       sender_type: 'user',
       sender_name: payload.profileName || payload.from,
