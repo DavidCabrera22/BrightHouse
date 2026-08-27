@@ -74,6 +74,29 @@ el asesor no tiene que aprender nada: abre WhatsApp, escribe, y Nova se calla. U
 comando obligatorio antes de hablar se olvida justo en el momento de apuro en que
 más importa.
 
+**`from_me` no basta: hay que mirar `source`.** Whapi reenvía por ese mismo
+webhook los mensajes que nosotros enviamos **por su API**, también con
+`from_me: true`. Tratar todo `from_me` como "el asesor tomó el control" hace que
+la respuesta de Nova vuelva como si fuera del asesor y **Nova se pause a sí
+misma después de cada respuesta**: toda conversación quedaría muda desde el
+primer turno. El campo `source` es el discriminador —`api` somos nosotros,
+`system` son eventos de la propia WhatsApp, y `mobile`/`web`/`desktop` son una
+persona escribiendo—. La documentación de Whapi lo dice explícitamente: filtrando
+así, "tu bot no reaccionará a sus propias respuestas".
+
+Un saliente sin `source` se descarta y se cuenta en el log. Perder la toma de
+control es molesto; confundir un eco de Nova con el asesor rompe el producto.
+
+**El filtro de tipo va después del `from_me`, no antes.** Un mensaje entrante que
+no es texto no le sirve a Nova y se descarta. Uno saliente sí importa aunque no
+sea texto: en este mercado la primera respuesta del asesor suele ser una nota de
+voz, y Nova no puede seguir escribiendo encima.
+
+**Solo chats 1:1.** El `chat_id` de un grupo termina en `@g.us` y el de un estado
+es `status@broadcast`. Recortar el sufijo a ciegas convierte esos identificadores
+en teléfonos falsos y crea conversaciones basura en el CRM. Se exige
+`@s.whatsapp.net`.
+
 **Los comandos existen igual, para el caso preventivo.** `#pausa` sirve para
 silenciar a Nova sin escribirle todavía al cliente —por ejemplo, mientras el
 asesor busca un dato— y `#nova` es la forma de devolver el control sin entrar al
@@ -228,6 +251,15 @@ La detección la hace el modelo, no una lista de palabras clave. El
 como agendada cuando el cliente dice "mañana te cuento". La señal de escalamiento
 viaja en la extracción estructurada que ya corre cada 4 mensajes, ampliada con un
 campo `needs_human`.
+
+## El disparo del enriquecimiento estaba muerto
+
+`enrichLeadAsync` se lanzaba con `allMessages.length >= 4 && allMessages.length % 4 === 0`.
+`allMessages` se lee después de guardar el mensaje del cliente y antes de la
+respuesta de Nova, así que en una conversación alternada el conteo es siempre
+impar —1, 3, 5, 7…— y el módulo 4 nunca se cumple. El enriquecimiento del lead
+no corría nunca, y con él tampoco el `needs_human` sobre el que se apoya todo el
+escalamiento de este diseño. Ahora se cuentan los turnos del cliente, cada dos.
 
 ## Arreglo puntual incluido
 
