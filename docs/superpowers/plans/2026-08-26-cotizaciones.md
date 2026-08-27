@@ -24,6 +24,7 @@
 | `backend/src/quotes/quote-calculator.spec.ts` | Pruebas del motor de cálculo. |
 | `backend/src/quotes/quote-status.ts` | Estados válidos, transiciones y cálculo de vencimiento. Funciones puras. |
 | `backend/src/quotes/quote-status.spec.ts` | Pruebas de transiciones y vencimiento. |
+| `backend/src/quotes/entities/decimal-transformer.ts` | Convierte los `numeric` que `pg` devuelve como cadena. En su propio archivo: las dos entidades se importan mutuamente y un valor suelto no sobrevive al ciclo. |
 | `backend/src/quotes/entities/quote.entity.ts` | Entidad `quotes`. |
 | `backend/src/quotes/entities/quote-installment.entity.ts` | Entidad `quote_installments`. |
 | `backend/src/quotes/dto/preview-quote.dto.ts` | Parámetros del cálculo (base de create). |
@@ -506,6 +507,15 @@ git commit -m "feat(quotes): estados, transiciones y vigencia"
 ```
 
 ---
+
+> **Tarea 3: ya ejecutada, con una corrección.** El bloque de abajo pone
+> `decimalTransformer` dentro de `quote.entity.ts` y lo importa desde
+> `quote-installment.entity.ts`. Eso es un ciclo, y el transformer queda
+> `undefined` según cuál de los dos archivos se cargue primero — verificado
+> empíricamente: los montos vuelven como cadena. Vive ahora en
+> `entities/decimal-transformer.ts` y las dos entidades lo importan de ahí. Las
+> relaciones sí sobreviven al ciclo porque TypeORM las difiere en una función
+> flecha; un valor suelto no.
 
 ## Task 3: Entidades y registro de tenant
 
