@@ -24,6 +24,9 @@ interface Conversation {
   unread_count: number;
   whatsapp_waid?: string;
   nova_paused: boolean;
+  nova_paused_at?: string | null;
+  nova_paused_by?: 'whatsapp' | 'crm' | 'nova' | null;
+  needs_human?: boolean;
   created_at: string;
   lead?: { name: string; status: string; project?: { name: string } };
   assigned_agent?: { name: string };
@@ -279,10 +282,20 @@ const ConversationsPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      {conv.nova_paused && (
+                      {conv.needs_human && (
+                        <span className="inline-flex items-center gap-0.5 mt-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <span className="material-symbols-outlined text-[11px]">
+                            priority_high
+                          </span>
+                          Necesita asesor
+                        </span>
+                      )}
+                      {conv.nova_paused && !conv.needs_human && (
                         <span className="inline-flex items-center gap-0.5 mt-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400">
                           <span className="material-symbols-outlined text-[11px]">person</span>
-                          Agente activo
+                          {conv.nova_paused_by === 'whatsapp'
+                            ? 'Agente activo (WhatsApp)'
+                            : 'Agente activo'}
                         </span>
                       )}
                     </div>
