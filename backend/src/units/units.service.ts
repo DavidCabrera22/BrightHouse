@@ -1,6 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
+/** `foreign_key_violation` de Postgres. */
+const FOREIGN_KEY_VIOLATION = '23503';
 import { Unit } from './entities/unit.entity';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
@@ -11,6 +14,7 @@ import { CommissionsService } from '../commissions/commissions.service';
 import { DocumentsService } from '../documents/documents.service';
 import { DigitalSignaturesService } from '../digital-signatures/digital-signatures.service';
 import { AuditLogsService } from '../audit-logs/audit-logs.service';
+import { TenantContext, TenantScopeService } from '../common/tenant';
 
 @Injectable()
 export class UnitsService {
@@ -26,38 +30,60 @@ export class UnitsService {
     private readonly documentsService: DocumentsService,
     private readonly digitalSignaturesService: DigitalSignaturesService,
     private readonly auditLogsService: AuditLogsService,
+    private readonly tenantScope: TenantScopeService,
   ) {}
 
-  create(createUnitDto: CreateUnitDto) {
+  async create(createUnitDto: CreateUnitDto, ctx: TenantContext) {
+    await this.tenantScope.assertProjectInTenant(createUnitDto.project_id, ctx);
     const unit = this.unitRepository.create(createUnitDto);
     return this.unitRepository.save(unit);
   }
 
-  findAll(projectId?: string) {
-    return this.unitRepository.find({
-      where: projectId ? { project_id: projectId } : {},
-      relations: ['project', 'current_status', 'assigned_agent'],
-    });
+  findAll(projectId: string | undefined, ctx: TenantContext) {
+    const qb = this.tenantScope
+      .scoped(Unit, 'unit', ctx)
+      .leftJoinAndSelect('unit.project', 'project')
+      .leftJoinAndSelect('unit.current_status', 'current_status')
+      .leftJoinAndSelect('unit.assigned_agent', 'assigned_agent');
+
+    if (projectId) {
+      qb.andWhere('unit.project_id = :projectId', { projectId });
+    }
+
+    return qb.getMany();
   }
 
-  async findOne(id: string) {
-    const unit = await this.unitRepository.findOne({ 
-      where: { id },
-      relations: ['project', 'current_status', 'assigned_agent'] 
-    });
+  async findOne(id: string, ctx: TenantContext) {
+    const unit = await this.tenantScope
+      .scoped(Unit, 'unit', ctx)
+      .leftJoinAndSelect('unit.project', 'project')
+      .leftJoinAndSelect('unit.current_status', 'current_status')
+      .leftJoinAndSelect('unit.assigned_agent', 'assigned_agent')
+      .andWhere('unit.id = :id', { id })
+      .getOne();
+
     if (!unit) {
       throw new NotFoundException(`Unit with ID ${id} not found`);
     }
     return unit;
   }
 
-  async update(id: string, updateUnitDto: UpdateUnitDto) {
+  async update(id: string, updateUnitDto: UpdateUnitDto, ctx: TenantContext) {
+    await this.tenantScope.assertAccess(Unit, id, ctx);
+    // Blocks re-parenting a unit into another tenant's project.
+    await this.tenantScope.assertProjectInTenant((updateUnitDto as any).project_id, ctx);
     await this.unitRepository.update(id, updateUnitDto as any);
-    return this.findOne(id);
+    return this.findOne(id, ctx);
   }
 
-  async changeStatus(id: string, newStatusId: string, userId: string, notes?: string) {
-    const unit = await this.findOne(id);
+  async changeStatus(
+    id: string,
+    newStatusId: string,
+    userId: string,
+    ctx: TenantContext,
+    notes?: string,
+  ) {
+    const unit = await this.findOne(id, ctx);
     const oldStatusId = unit.current_status_id;
 
     if (oldStatusId === newStatusId) {
@@ -65,7 +91,7 @@ export class UnitsService {
     }
 
     const newStatus = await this.unitStatusesService.findOne(newStatusId);
-    
+
     // Update Unit
     unit.current_status = newStatus;
     unit.current_status_id = newStatusId;
@@ -134,8 +160,20 @@ export class UnitsService {
     return updatedUnit;
   }
 
-  async remove(id: string) {
-    const unit = await this.findOne(id);
-    return this.unitRepository.remove(unit);
+  async remove(id: string, ctx: TenantContext) {
+    const unit = await this.findOne(id, ctx);
+    try {
+      return await this.unitRepository.remove(unit);
+    } catch (error: any) {
+      // Una cotización guarda lo que se ofreció sobre esta unidad y sobrevive
+      // a la unidad a propósito, así que su llave foránea no borra en cascada.
+      // Sin este rescate el 23503 de Postgres sale como un 500 sin explicación.
+      if (error?.code === FOREIGN_KEY_VIOLATION) {
+        throw new ConflictException(
+          'No se puede eliminar la unidad porque tiene cotizaciones, ventas u otros registros asociados.',
+        );
+      }
+      throw error;
+    }
   }
 }

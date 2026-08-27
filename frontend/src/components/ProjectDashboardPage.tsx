@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CrmLayout from './CrmLayout';
+import ProjectTabs from './ProjectTabs';
 import { useParams, Link } from 'react-router-dom';
 
 interface Project {
@@ -149,12 +150,7 @@ const ProjectDashboardPage: React.FC = () => {
       <div className="flex flex-col gap-8">
 
         {/* Sub-navigation */}
-        <div className="flex gap-6 border-b border-slate-200 dark:border-slate-800">
-          <Link to={`/crm/projects/${projectId}`} className="pb-3 border-b-2 border-blue-600 text-blue-600 font-bold text-sm">Resumen</Link>
-          <Link to={`/crm/projects/${projectId}/units`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Unidades</Link>
-          <Link to={`/crm/projects/${projectId}/documents`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Documentos</Link>
-          <Link to={`/crm/projects/${projectId}/analytics`} className="pb-3 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium text-sm">Analítica</Link>
-        </div>
+        <ProjectTabs projectId={projectId} />
 
         {loading ? (
           <div className="flex items-center justify-center py-20">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import CrmLayout from './CrmLayout';
+import ProjectTabs from './ProjectTabs';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Unit {
@@ -182,30 +183,6 @@ const ProjectAnalyticsPage: React.FC = () => {
     }
   };
 
-  // ── Sub-nav helper ────────────────────────────────────────────────────
-  const SubNav = () => (
-    <div className="flex gap-6 border-b border-slate-200 dark:border-slate-800 mb-6">
-      {[
-        { label: 'Resumen',     to: `/crm/projects/${projectId}` },
-        { label: 'Unidades',    to: `/crm/projects/${projectId}/units` },
-        { label: 'Documentos',  to: `/crm/projects/${projectId}/documents` },
-        { label: 'Analítica',   to: `/crm/projects/${projectId}/analytics`, active: true },
-      ].map(({ label, to, active }) => (
-        <Link
-          key={label}
-          to={to}
-          className={`pb-3 border-b-2 font-medium text-sm transition-colors ${
-            active
-              ? 'border-blue-600 text-blue-600 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400'
-          }`}
-        >
-          {label}
-        </Link>
-      ))}
-    </div>
-  );
-
   if (loading) {
     return (
       <CrmLayout title="Analítica del Proyecto" subtitle="Cargando...">
@@ -227,7 +204,7 @@ const ProjectAnalyticsPage: React.FC = () => {
         </button>
       }
     >
-      <SubNav />
+      <ProjectTabs projectId={projectId} />
 
       <div className="space-y-6 max-w-7xl">
 

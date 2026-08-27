@@ -11,12 +11,14 @@ import ConversationsPage from './components/ConversationsPage';
 import AutomationsPage from './components/AutomationsPage';
 import ProjectDashboardPage from './components/ProjectDashboardPage';
 import ProjectUnitsPage from './components/ProjectUnitsPage';
+import ProjectQuotesPage from './components/ProjectQuotesPage';
 import ProjectDocumentsPage from './components/ProjectDocumentsPage';
 import ProjectAnalyticsPage from './components/ProjectAnalyticsPage';
 import MarketingPage from './components/MarketingPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CommissionsPage from './components/CommissionsPage';
 import TenantsPage from './components/TenantsPage';
+import UsersPage from './components/UsersPage';
 import OasisParkPage from './components/OasisParkPage';
 import PublicProjectsPage from './components/PublicProjectsPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -42,11 +44,13 @@ function App() {
           <Route path="/crm/projects" element={<ProjectsPage />} />
           <Route path="/crm/projects/:projectId" element={<ProjectDashboardPage />} />
           <Route path="/crm/projects/:projectId/units" element={<ProjectUnitsPage />} />
+          <Route path="/crm/projects/:projectId/quotes" element={<ProjectQuotesPage />} />
           <Route path="/crm/projects/:projectId/documents" element={<ProjectDocumentsPage />} />
           <Route path="/crm/projects/:projectId/analytics" element={<ProjectAnalyticsPage />} />
           <Route path="/crm/marketing" element={<MarketingPage />} />
           <Route path="/crm/analytics" element={<AnalyticsPage />} />
           <Route path="/crm/commissions" element={<CommissionsPage />} />
+          <Route path="/crm/users" element={<UsersPage />} />
           <Route path="/crm/tenants" element={<TenantsPage />} />
         </Route>
       </Routes>
