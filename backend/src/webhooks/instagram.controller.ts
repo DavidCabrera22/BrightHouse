@@ -134,7 +134,11 @@ export class InstagramController {
         }
 
         // 6. Generate Nova response
-        const novaReply = await this.novaService.generateResponse(text, history);
+        const novaReply = await this.novaService.generateResponse(text, history, {
+          buildingSlug: 'oasis-park',
+          projectId: this.configService.get<string>('DEFAULT_PROJECT_ID'),
+        });
+        if (!novaReply) continue;
 
         // 7. Save Nova's response
         await this.conversationsService.addMessage(conv.id, {
