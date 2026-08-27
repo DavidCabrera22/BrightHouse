@@ -64,6 +64,20 @@
 
 ---
 
+> **Tareas 1 y 2: ya ejecutadas, y el código de abajo quedó corto.** La revisión
+> de calidad encontró cinco defectos reales que este plan no anticipó: `discount`
+> y `reservation_amount` sin guarda de finitud (un `NaN` producía un cronograma
+> entero de `NaN`), `quote_date` sin validar, `isExpired` en UTC (una cotización
+> vigente se veía "Vencida" entre las 7pm y medianoche en Bogotá),
+> `reservation_amount` sin redondear al peso (rompía la invariante de la suma el
+> 0,85% de las veces con centavos) y el porcentaje cayendo un peso por debajo en
+> casos como el 8,7%. Todo está corregido en `2d62b78`. **La fuente de verdad
+> del motor son los archivos en `backend/src/quotes/`, no los bloques de código
+> de estas dos tareas**, que se conservan como registro de lo planeado. El spec
+> sí está actualizado. Las tareas 3 en adelante no cambian: las firmas de
+> `calculateQuote`, `assertTransition`, `isEditable` e `isExpired` son las mismas
+> (`isExpired` solo acepta además un `Date` en `validUntil`).
+
 ## Task 1: Motor de cálculo
 
 **Files:**

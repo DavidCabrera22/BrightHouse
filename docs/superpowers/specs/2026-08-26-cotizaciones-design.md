@@ -119,31 +119,50 @@ En `tenant-paths.ts`:
 `quote-calculator.ts`, función pura:
 
 ```
-total_value        = unit_price − discount
-down_payment_value = redondeo(total_value × down_payment_percent / 100)
+total_value        = redondeo(unit_price − discount)
+down_payment_value = redondeo(total_value × escala(down_payment_percent) / 10000)
 balance_value      = total_value − down_payment_value
-a_financiar        = down_payment_value − reservation_amount
+reservation        = redondeo(reservation_amount)
+a_financiar        = down_payment_value − reservation
 installment_amount = piso(a_financiar / installments_count)
 ```
 
 Cronograma generado:
 
-1. Una fila `separacion` con vencimiento en `quote_date` (se omite si
-   `reservation_amount` es 0).
+1. Una fila `separacion` con vencimiento en `quote_date`.
 2. `installments_count` filas `cuota`, mensuales, desde `first_installment_date`.
 3. Una fila `saldo` por `balance_value`, un mes después de la última cuota.
 
 Reglas:
 
+- **Todo el dinero se lleva a pesos enteros al entrar**, incluida la separación.
+  Las columnas son `numeric(15,2)`, y con centavos la aritmética en coma
+  flotante rompe la invariante: 200.000 casos aleatorios con dos decimales la
+  violaban el 0,85% de las veces antes de normalizar.
+- **El porcentaje se escala a entero antes de dividir** (`redondeo(percent ×
+  100)`, luego `/10000`). `down_payment_percent` es `numeric(5,2)`, así que la
+  escala no pierde nada, y evita que un caso como el 8,7% de 1.671.542.500
+  quede un peso por debajo del redondeo exacto.
 - **El redondeo se absorbe en la última fila `cuota`** (no en la de `saldo`, que
-  vale exactamente `balance_value`) y no se reparte entre las demás. Todos los
-  redondeos son al peso. Invariante probada: la suma de las filas es exactamente
-  `total_value`.
+  vale exactamente `balance_value`) y no se reparte entre las demás. Invariante
+  probada: la suma de las filas es exactamente `total_value`.
+- **Las filas en cero se omiten, las tres por igual**: sin separación no hay
+  fila de `separacion`; con la inicial ya cubierta por la separación no hay
+  filas de `cuota`; con inicial del 100% no hay fila de `saldo`. La numeración
+  queda contigua, sin huecos.
 - **Fin de mes**: si la primera cuota cae el 31, los meses de 30 días usan el
-  último día del mes; no se desborda al 1º del siguiente.
-- **Validaciones que devuelven 400**: `discount > unit_price`,
-  `reservation_amount > down_payment_value`, `installments_count < 1`,
-  `down_payment_percent` fuera de 0–100.
+  último día del mes; no se desborda al 1º del siguiente. Cada cuota se calcula
+  desde `first_installment_date`, nunca desde la cuota anterior — encadenarlas
+  haría que un recorte a 28 se quedara pegado en 28 el resto del plan.
+- **Las dos fechas se validan y normalizan al entrar**, aunque el cronograma no
+  llegue a usarlas: `quote_date` se copia tal cual a la fila de separación y sin
+  validarla una cadena basura llegaría hasta el INSERT en vez de salir como 400.
+- **Validaciones que devuelven 400**: `unit_price` no finito o ≤ 0, `discount`
+  no finito o negativo, `discount > unit_price`, `down_payment_percent` fuera de
+  0–100, `installments_count` no entero o < 1, `reservation_amount` no finito o
+  negativo, `reservation_amount > down_payment_value`, y fecha inválida. Las
+  guardas de finitud importan: sin ellas un `NaN` no dispara ninguna comparación
+  y sale un cronograma entero de `NaN`, que además `numeric` acepta en Postgres.
 
 ## API
 
@@ -170,6 +189,10 @@ Transiciones válidas: `draft → sent`, `sent → accepted`, `sent → rejected
 Cualquier otra devuelve 400.
 
 `is_expired` se calcula en la respuesta: `status === 'sent' && valid_until < hoy`.
+
+**"Hoy" es el día en Bogotá, no el del servidor.** Con `toISOString()` (UTC),
+entre las 7 de la noche y medianoche el servidor ya está en el día siguiente y
+una cotización vigente aparecería vencida durante cinco horas cada noche.
 
 PATCH de montos sobre una cotización que no está en `draft` devuelve 400.
 
