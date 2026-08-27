@@ -1907,12 +1907,21 @@ import { shouldAutoResume, DEFAULT_RESUME_HOURS } from '../nova/nova-pause';
 Run: `cd backend && npx tsc --noEmit -p tsconfig.json && npx jest`
 Expected: compilación limpia, todas las pruebas en verde.
 
-- [ ] **Step 7: Lint**
+- [ ] **Step 7: Verificar que no quedaron parámetros muertos**
 
-Run: `cd backend && npm run lint`
-Expected: sin errores. Ojo con el parámetro `whapiToken` que quedó sin usar en
-`enrichLeadAsync` — si el lint lo reporta, es porque quedó en la firma; hay que
-quitarlo también de la llamada.
+**`npm run lint` no funciona en este repo:** no hay ningún `.eslintrc*` ni
+`eslint.config*` en `backend/`, así que ESLint aborta con un error de
+configuración. No inventar una configuración — eso es un trabajo aparte, y no
+este. La comprobación equivalente la hace TypeScript:
+
+Run: `cd backend && npx tsc --noEmit -p tsconfig.json`
+
+Y a mano, confirmar que `enrichLeadAsync` ya no recibe `whapiToken` ni en la
+firma ni en la llamada:
+
+Run: `cd backend && grep -n "enrichLeadAsync" src/webhooks/whatsapp.controller.ts`
+Expected: dos líneas, ambas con exactamente dos argumentos (`convId` e
+`history`).
 
 - [ ] **Step 8: Commit**
 
