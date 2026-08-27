@@ -776,8 +776,11 @@ export class PreviewQuoteDto {
   @Min(0)
   reservation_amount?: number;
 
+  // La columna es numeric(5,2) y el motor escala el porcentaje a dos decimales
+  // antes de calcular: aceptar más decimales guardaría un valor distinto del
+  // que se usó para armar el cronograma.
   @ApiProperty({ example: 30 })
-  @IsNumber()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Max(100)
   down_payment_percent: number;
@@ -887,7 +890,7 @@ import { PreviewQuoteDto } from './dto/preview-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { TenantContext, TenantScopeService } from '../common/tenant';
 import { calculateQuote, QuoteCalculation, QuoteCalculationError } from './quote-calculator';
-import { assertTransition, isEditable, isExpired, QuoteStatus } from './quote-status';
+import { assertTransition, businessToday, isEditable, isExpired, QuoteStatus } from './quote-status';
 
 const DEFAULT_VALID_DAYS = 15;
 const UNIQUE_VIOLATION = '23505';
@@ -924,7 +927,7 @@ export class QuotesService {
       throw new BadRequestException('El cliente no pertenece al proyecto indicado');
     }
 
-    const quoteDate = dto.quote_date ?? today();
+    const quoteDate = dto.quote_date ?? businessToday();
     const calculation = this.calculate({ ...dto, quote_date: quoteDate }, unit.price);
 
     const saved = await this.saveWithCode(dto.project_id, quoteDate, (code, manager) => {
@@ -1082,7 +1085,7 @@ export class QuotesService {
         reservation_amount: params.reservation_amount ?? 0,
         down_payment_percent: params.down_payment_percent,
         installments_count: params.installments_count,
-        quote_date: params.quote_date ?? today(),
+        quote_date: params.quote_date ?? businessToday(),
         first_installment_date: params.first_installment_date,
       });
     } catch (error) {
@@ -1179,10 +1182,6 @@ export class QuotesService {
       is_expired: isExpired(quote.status as QuoteStatus, quote.valid_until),
     };
   }
-}
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
 }
 
 function addDays(isoDate: string, days: number): string {
