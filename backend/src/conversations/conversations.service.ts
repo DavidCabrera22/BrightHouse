@@ -5,6 +5,7 @@ import { Conversation } from './entities/conversation.entity';
 import { Message } from './entities/message.entity';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { TenantContext, TenantScopeService } from '../common/tenant';
 
 @Injectable()
 export class ConversationsService {
@@ -13,6 +14,7 @@ export class ConversationsService {
     private readonly conversationRepo: Repository<Conversation>,
     @InjectRepository(Message)
     private readonly messageRepo: Repository<Message>,
+    private readonly tenantScope: TenantScopeService,
   ) {}
 
   async createConversation(dto: CreateConversationDto): Promise<Conversation> {
@@ -20,13 +22,14 @@ export class ConversationsService {
     return this.conversationRepo.save(conv);
   }
 
-  async findAllConversations(tenantId?: string): Promise<Conversation[]> {
-    const where: any = tenantId ? { tenant_id: tenantId } : {};
-    return this.conversationRepo.find({
-      where,
-      relations: ['lead', 'assigned_agent'],
-      order: { last_message_at: 'DESC', created_at: 'DESC' },
-    });
+  async findAllConversations(ctx: TenantContext): Promise<Conversation[]> {
+    return this.tenantScope
+      .scoped(Conversation, 'conversation', ctx)
+      .leftJoinAndSelect('conversation.lead', 'lead')
+      .leftJoinAndSelect('conversation.assigned_agent', 'assigned_agent')
+      .orderBy('conversation.last_message_at', 'DESC')
+      .addOrderBy('conversation.created_at', 'DESC')
+      .getMany();
   }
 
   async findConversationById(id: string): Promise<Conversation> {
@@ -95,6 +98,84 @@ export class ConversationsService {
       { is_read: true },
     );
     await this.conversationRepo.update(conversationId, { unread_count: 0 });
+  }
+
+  /**
+   * Silencia a Nova en esta conversación y sella quién y cuándo. El sello de
+   * tiempo es la base de la ventana de reactivación automática.
+   */
+  async pauseNova(
+    conversationId: string,
+    by: 'whatsapp' | 'crm' | 'nova',
+  ): Promise<void> {
+    await this.conversationRepo.update(conversationId, {
+      nova_paused: true,
+      nova_paused_at: new Date(),
+      nova_paused_by: by,
+      // Un asesor que entra al chat ya está atendiendo: la señal de escalamiento
+      // deja de aplicar. Salvo cuando es la propia Nova la que escala.
+      needs_human: by === 'nova',
+    });
+  }
+
+  /** Devuelve el control a Nova y limpia el estado de pausa. */
+  async resumeNova(conversationId: string): Promise<void> {
+    await this.conversationRepo.update(conversationId, {
+      nova_paused: false,
+      nova_paused_at: null,
+      nova_paused_by: null,
+      needs_human: false,
+    });
+  }
+
+  // --- Request-facing wrappers -------------------------------------------
+  // The methods above are system-level: the webhook controllers resolve the
+  // tenant from the inbound payload before calling them. Anything reached
+  // from a logged-in CRM request must go through these instead.
+
+  async createConversationForTenant(dto: CreateConversationDto, ctx: TenantContext): Promise<Conversation> {
+    const conv = this.conversationRepo.create({
+      ...dto,
+      tenant_id: ctx.isSuperAdmin ? ((dto as any).tenant_id ?? null) : ctx.tenantId,
+    });
+    return this.conversationRepo.save(conv);
+  }
+
+  async findConversationForTenant(id: string, ctx: TenantContext): Promise<Conversation> {
+    await this.tenantScope.assertAccess(Conversation, id, ctx);
+    return this.findConversationById(id);
+  }
+
+  async getMessagesForTenant(conversationId: string, ctx: TenantContext): Promise<Message[]> {
+    await this.tenantScope.assertAccess(Conversation, conversationId, ctx);
+    return this.getMessages(conversationId);
+  }
+
+  async addMessageForTenant(conversationId: string, dto: CreateMessageDto, ctx: TenantContext): Promise<Message> {
+    await this.tenantScope.assertAccess(Conversation, conversationId, ctx);
+    return this.addMessage(conversationId, dto);
+  }
+
+  async markAsReadForTenant(conversationId: string, ctx: TenantContext): Promise<void> {
+    await this.tenantScope.assertAccess(Conversation, conversationId, ctx);
+    return this.markAsRead(conversationId);
+  }
+
+  async updateConversationForTenant(id: string, updates: Partial<Conversation>, ctx: TenantContext): Promise<Conversation> {
+    await this.tenantScope.assertAccess(Conversation, id, ctx);
+    return this.updateConversation(id, updates);
+  }
+
+  async pauseNovaForTenant(id: string, ctx: TenantContext): Promise<Conversation> {
+    await this.tenantScope.assertAccess(Conversation, id, ctx);
+    await this.pauseNova(id, 'crm');
+    return this.findConversationById(id);
+  }
+
+  async resumeNovaForTenant(id: string, ctx: TenantContext): Promise<Conversation> {
+    await this.tenantScope.assertAccess(Conversation, id, ctx);
+    await this.resumeNova(id);
+    return this.findConversationById(id);
   }
 
   async ingestInstagramMessage(payload: {
