@@ -19,15 +19,27 @@ const BUSINESS_TIME_ZONE = 'America/Bogota';
  *
  * Con `toISOString()` (UTC), entre las 7 de la noche y medianoche en Bogotá el
  * servidor ya está en el día siguiente y una cotización vigente aparecería
- * vencida durante cinco horas cada noche. `en-CA` formatea justo YYYY-MM-DD.
+ * vencida durante cinco horas cada noche.
+ *
+ * Se arma con `formatToParts` y no con `format`: `format` devuelve YYYY-MM-DD
+ * solo porque el locale `en-CA` ordena así. En un Node con small-icu ese locale
+ * cae a `en-US` y devolvería "08/26/2026", que como cadena es menor que
+ * cualquier fecha ISO y dejaría toda cotización enviada como vencida, en
+ * silencio. `formatToParts` da las partes sin depender del locale.
  */
 export function businessToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('en-CA', {
+  const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: BUSINESS_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(now);
+    // Evita además los sistemas de numeración no latinos (ar-EG y similares).
+    numberingSystem: 'latn',
+  }).formatToParts(now);
+
+  const part = (type: string) => parts.find((p) => p.type === type).value;
+
+  return `${part('year')}-${part('month')}-${part('day')}`;
 }
 
 export function assertTransition(from: QuoteStatus, to: QuoteStatus): void {

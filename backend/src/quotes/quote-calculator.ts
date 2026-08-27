@@ -71,6 +71,23 @@ export function addMonthsClamped(isoDate: string, months: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+/**
+ * Valida y normaliza una fecha de entrada.
+ *
+ * `addMonthsClamped` recorta al último día del mes, que es lo correcto para el
+ * resultado de sumar meses pero no para lo que escribió el usuario: un
+ * '2026-02-31' se convertiría en 28 de febrero y arrastraría el recorte al
+ * resto del plan. Si la fecha normalizada no es idéntica a la recibida, la
+ * fecha no existe y es un 400.
+ */
+function normalizeDate(isoDate: string): string {
+  const normalized = addMonthsClamped(isoDate, 0);
+  if (normalized !== String(isoDate ?? '').slice(0, 10)) {
+    throw new QuoteCalculationError(`Fecha inválida: ${isoDate}`);
+  }
+  return normalized;
+}
+
 export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   const unitPrice = Number(input.unit_price);
   const discount = Number(input.discount ?? 0);
@@ -101,6 +118,9 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   // son numeric(15,2) y con centavos la coma flotante rompe la invariante de
   // que las filas suman exactamente el total.
   const totalValue = Math.round(unitPrice - discount);
+  if (totalValue <= 0) {
+    throw new QuoteCalculationError('El valor total de la cotización debe ser mayor a cero');
+  }
   // `down_payment_percent` es numeric(5,2): escalarlo a entero antes de
   // dividir evita que un caso como el 8,7% de 1.671.542.500 caiga un peso
   // por debajo del redondeo exacto.
@@ -115,8 +135,8 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   // Se validan y normalizan aquí: sin esto una cadena basura llegaría hasta el
   // INSERT en vez de salir como 400, y `quote_date` no pasa por ningún otro
   // control porque se copia tal cual a la fila de separación.
-  const quoteDate = addMonthsClamped(input.quote_date, 0);
-  const firstInstallmentDate = addMonthsClamped(input.first_installment_date, 0);
+  const quoteDate = normalizeDate(input.quote_date);
+  const firstInstallmentDate = normalizeDate(input.first_installment_date);
 
   const financed = downPaymentValue - reservation;
   const installmentAmount = Math.floor(financed / count);

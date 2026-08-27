@@ -66,6 +66,7 @@ describe('businessToday', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-08-27T02:30:00Z'));
 
     expect(businessToday()).toBe('2026-08-26');
+    expect(businessToday()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(isExpired('sent', '2026-08-26')).toBe(false);
   });
 });

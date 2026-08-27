@@ -183,6 +183,39 @@ describe('calculateQuote', () => {
     expect(cuotas).toHaveLength(1);
     expect(cuotas[0].amount).toBe(91_000_000);
   });
+
+  it('rechaza un descuento que deja el total en cero', () => {
+    expect(() => calculateQuote({ ...base, discount: 320_000_000 })).toThrow(
+      /valor total.*mayor a cero/i,
+    );
+  });
+
+  it('rechaza un día que no existe en su mes en vez de recortarlo en silencio', () => {
+    expect(() => calculateQuote({ ...base, first_installment_date: '2026-02-31' })).toThrow(
+      /fecha inválida/i,
+    );
+    expect(() => calculateQuote({ ...base, quote_date: '2026-04-31' })).toThrow(/fecha inválida/i);
+  });
+
+  it('acepta una fecha de cotización con hora, normalizándola al día', () => {
+    const { installments } = calculateQuote({ ...base, quote_date: '2026-08-26T00:00:00Z' });
+
+    expect(installments[0].due_date).toBe('2026-08-26');
+  });
+
+  it('trata descuento y separación como cero cuando se omiten', () => {
+    const { down_payment_value, installments } = calculateQuote({
+      unit_price: 320_000_000,
+      down_payment_percent: 30,
+      installments_count: 12,
+      quote_date: '2026-08-26',
+      first_installment_date: '2026-09-01',
+    });
+
+    expect(down_payment_value).toBe(96_000_000);
+    expect(installments.some((i) => i.concept === 'separacion')).toBe(false);
+    expect(installments.filter((i) => i.concept === 'cuota')).toHaveLength(12);
+  });
 });
 
 describe('addMonthsClamped', () => {
