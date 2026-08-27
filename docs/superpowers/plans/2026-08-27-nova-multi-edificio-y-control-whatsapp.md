@@ -1403,7 +1403,7 @@ En `conversations.service.ts`, después de `markAsRead()` y antes del comentario
       nova_paused_by: by,
       // Un asesor que entra al chat ya está atendiendo: la señal de escalamiento
       // deja de aplicar. Salvo cuando es la propia Nova la que escala.
-      ...(by === 'nova' ? { needs_human: true } : { needs_human: false }),
+      needs_human: by === 'nova',
     });
   }
 
@@ -1649,9 +1649,15 @@ el `continue` que descartaba los salientes.
         buildingSlug = this.configService.get<string>('DEFAULT_BUILDING_SLUG') ?? 'oasis-park';
       }
 
-      const resumeHours = Number(
-        this.configService.get<string>('NOVA_RESUME_HOURS') ?? DEFAULT_RESUME_HOURS,
+      // Un valor no numérico daría NaN, y `elapsed >= NaN` es siempre falso: la
+      // reactivación automática dejaría de funcionar sin que nadie se entere.
+      const configuredHours = Number(
+        this.configService.get<string>('NOVA_RESUME_HOURS'),
       );
+      const resumeHours =
+        Number.isFinite(configuredHours) && configuredHours > 0
+          ? configuredHours
+          : DEFAULT_RESUME_HOURS;
 
       // ── 2. Extraer mensajes (salientes incluidos) ─────────────────────────
       const messages = this.extractMessages(body);
