@@ -19,7 +19,10 @@ import { decimalTransformer } from './decimal-transformer';
 @Entity('quotes')
 // El consecutivo es por proyecto y por año; el índice es lo que arbitra dos
 // agentes guardando en el mismo instante.
-@Index(['project_id', 'code'], { unique: true })
+// Con nombre explícito: el reintento del consecutivo tiene que reconocer que
+// el 23505 vino de esta restricción y no de otra, y Postgres la reporta por
+// nombre. Un hash autogenerado además cambia si cambian las columnas.
+@Index('UQ_quotes_project_code', ['project_id', 'code'], { unique: true })
 export class Quote {
   @PrimaryGeneratedColumn('uuid')
   id: string;

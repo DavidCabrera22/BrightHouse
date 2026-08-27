@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Quote } from './quote.entity';
 import { decimalTransformer } from './decimal-transformer';
@@ -14,6 +15,10 @@ import { decimalTransformer } from './decimal-transformer';
  * la cotización siga diciendo lo mismo aunque cambie el precio de la unidad.
  */
 @Entity('quote_installments')
+// Postgres no indexa las claves foráneas solo. Sin este índice, el ON DELETE
+// CASCADE del que depende el borrado de una cotización recorre la tabla entera,
+// que es la más grande de la función: unas catorce filas por cotización.
+@Index('IDX_quote_installments_quote', ['quote_id'])
 export class QuoteInstallment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
