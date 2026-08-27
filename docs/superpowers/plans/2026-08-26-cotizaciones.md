@@ -1361,8 +1361,18 @@ Esperado: crea `src/migrations/<timestamp>-AddQuotes.ts` con los `CREATE TABLE` 
 
 - [ ] **Step 6: Revisar la migración generada**
 
+⚠️ **La migración generada casi con seguridad traerá cosas que no son tuyas.**
+`migration:generate` compara *toda* la metadata de entidades contra el esquema
+vivo, y el árbol de trabajo tiene entidades sin comitear (`Automation`,
+`AutomationRun`, `Tenant`, y los cambios de multi-tenancy). Todo lo que haya
+derivado entre esas entidades y producción va a caer en el mismo archivo.
+
 Abrir el archivo y confirmar tres cosas:
-1. Crea **solo** las dos tablas nuevas y su índice. Si trae `ALTER`/`DROP` de otras tablas, es deriva del esquema contra las entidades: **no la corras**, repórtalo.
+1. **Borrar a mano del archivo todo lo que no sea `quotes` y `quote_installments`.**
+   Deben quedar solo los dos `CREATE TABLE`, sus llaves foráneas y los dos
+   índices — y sus `DROP` correspondientes en el `down()`. Cualquier `ALTER` o
+   `DROP` sobre otra tabla es deriva ajena a esta función: sacarlo. Si no queda
+   claro qué es qué, **no correr la migración** y reportarlo.
 2. La FK de `quote_installments.quote_id` lleva `ON DELETE CASCADE`.
 3. Existe el índice único sobre `(project_id, code)`.
 
