@@ -1,0 +1,16 @@
+# El .env tiene las credenciales de la base de producción. Sin esta línea, el
+# COPY . . del Dockerfile lo hornearía dentro de la imagen y quedaría legible
+# para cualquiera que la descargue. Las variables se configuran en Coolify.
+.env
+.env.*
+
+node_modules
+dist
+coverage
+
+# Contratos de clientes subidos en su momento al disco local.
+uploads
+
+.git
+.gitignore
+*.log
