@@ -5,6 +5,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CurrentTenant, TenantContext } from '../common/tenant';
 
 @ApiTags('Unit Status History')
 @ApiBearerAuth()
@@ -15,19 +16,22 @@ export class UnitStatusHistoryController {
 
   @Post()
   @Roles('Admin')
-  create(@Body() createDto: CreateUnitStatusHistoryDto) {
-    return this.historyService.create(createDto);
+  create(
+    @Body() createDto: CreateUnitStatusHistoryDto,
+    @CurrentTenant() tenant: TenantContext,
+  ) {
+    return this.historyService.createForTenant(createDto, tenant);
   }
 
   @Get()
   @Roles('Admin')
-  findAll() {
-    return this.historyService.findAll();
+  findAll(@CurrentTenant() tenant: TenantContext) {
+    return this.historyService.findAll(tenant);
   }
 
   @Get('unit/:unitId')
   @Roles('Admin', 'Agent')
-  findByUnit(@Param('unitId') unitId: string) {
-    return this.historyService.findByUnit(unitId);
+  findByUnit(@Param('unitId') unitId: string, @CurrentTenant() tenant: TenantContext) {
+    return this.historyService.findByUnit(unitId, tenant);
   }
 }

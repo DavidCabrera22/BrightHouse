@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CurrentTenant, TenantContext } from '../common/tenant';
 
 @ApiTags('Campaigns')
 @ApiBearerAuth()
@@ -16,31 +17,31 @@ export class CampaignsController {
 
   @Post()
   @Roles('Admin')
-  create(@Body() createCampaignDto: CreateCampaignDto) {
-    return this.campaignsService.create(createCampaignDto);
+  create(@Body() createCampaignDto: CreateCampaignDto, @CurrentTenant() tenant: TenantContext) {
+    return this.campaignsService.create(createCampaignDto, tenant);
   }
 
   @Get()
   @Roles('Admin', 'Agent')
-  findAll() {
-    return this.campaignsService.findAll();
+  findAll(@CurrentTenant() tenant: TenantContext) {
+    return this.campaignsService.findAll(tenant);
   }
 
   @Get(':id')
   @Roles('Admin', 'Agent')
-  findOne(@Param('id') id: string) {
-    return this.campaignsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.campaignsService.findOne(id, tenant);
   }
 
   @Patch(':id')
   @Roles('Admin')
-  update(@Param('id') id: string, @Body() updateCampaignDto: UpdateCampaignDto) {
-    return this.campaignsService.update(id, updateCampaignDto);
+  update(@Param('id') id: string, @Body() updateCampaignDto: UpdateCampaignDto, @CurrentTenant() tenant: TenantContext) {
+    return this.campaignsService.update(id, updateCampaignDto, tenant);
   }
 
   @Delete(':id')
   @Roles('Admin')
-  remove(@Param('id') id: string) {
-    return this.campaignsService.remove(id);
+  remove(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.campaignsService.remove(id, tenant);
   }
 }

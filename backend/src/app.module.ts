@@ -12,6 +12,7 @@ import { UnitStatusesModule } from './unit-statuses/unit-statuses.module';
 import { UnitStatusHistoryModule } from './unit-status-history/unit-status-history.module';
 import { ClientsModule } from './clients/clients.module';
 import { SalesModule } from './sales/sales.module';
+import { QuotesModule } from './quotes/quotes.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { DocumentsModule } from './documents/documents.module';
 import { DigitalSignaturesModule } from './digital-signatures/digital-signatures.module';
@@ -23,9 +24,18 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { TenantsModule } from './tenants/tenants.module';
+import { TenantModule } from './common/tenant/tenant.module';
+import { AutomationsModule } from './automations/automations.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    TenantModule,
+    // Decouples lead events from the automations that react to them.
+    EventEmitterModule.forRoot(),
+    // Drives the hourly sweep for idle leads.
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -40,7 +50,12 @@ import { TenantsModule } from './tenants/tenants.module';
         database: configService.get<string>('DB_DATABASE'),
         ssl: configService.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // Set to false in production
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        // Off unless explicitly enabled. synchronize alters the live schema on
+        // every boot and will drop a column the moment an entity drifts, so
+        // production evolves through migrations instead.
+        synchronize: configService.get<string>('DB_SYNCHRONIZE') === 'true',
+        migrationsRun: configService.get<string>('DB_MIGRATIONS_RUN') === 'true',
         autoLoadEntities: true,
       }),
       inject: [ConfigService],
@@ -54,6 +69,7 @@ import { TenantsModule } from './tenants/tenants.module';
     UnitStatusHistoryModule,
     ClientsModule,
     SalesModule,
+    QuotesModule,
     CommissionsModule,
     DocumentsModule,
     DigitalSignaturesModule,
@@ -65,6 +81,7 @@ import { TenantsModule } from './tenants/tenants.module';
     AnalyticsModule,
     CloudinaryModule,
     TenantsModule,
+    AutomationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

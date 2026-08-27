@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
+import { CurrentTenant, TenantContext } from '../common/tenant';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -22,7 +23,7 @@ export class ProjectsController {
   @Public()
   @Get('public')
   findAllPublic() {
-    return this.projectsService.findAll();
+    return this.projectsService.findAllPublic();
   }
 
   @ApiBearerAuth()
@@ -43,27 +44,27 @@ export class ProjectsController {
       },
     },
   })
-  async create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file: Express.Multer.File, @Request() req) {
+  async create(@Body() createProjectDto: CreateProjectDto, @UploadedFile() file: Express.Multer.File, @CurrentTenant() tenant: TenantContext) {
     if (file) {
       createProjectDto.image = await this.cloudinaryService.uploadFile(file, 'brighthouse/projects');
     }
-    return this.projectsService.create(createProjectDto, req.user?.tenant_id);
+    return this.projectsService.create(createProjectDto, tenant);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get()
   @Roles('Admin', 'Agent')
-  findAll(@Request() req) {
-    return this.projectsService.findAll(req.user?.tenant_id);
+  findAll(@CurrentTenant() tenant: TenantContext) {
+    return this.projectsService.findAll(tenant);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(':id')
   @Roles('Admin', 'Agent')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.projectsService.findOne(id, tenant);
   }
 
   @ApiBearerAuth()
@@ -72,18 +73,18 @@ export class ProjectsController {
   @Roles('Admin')
   @UseInterceptors(FileInterceptor('image', { storage: memoryStorage() }))
   @ApiConsumes('multipart/form-data')
-  async update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @UploadedFile() file?: Express.Multer.File) {
+  async update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto, @CurrentTenant() tenant: TenantContext, @UploadedFile() file?: Express.Multer.File) {
     if (file) {
       updateProjectDto.image = await this.cloudinaryService.uploadFile(file, 'brighthouse/projects');
     }
-    return this.projectsService.update(id, updateProjectDto);
+    return this.projectsService.update(id, updateProjectDto, tenant);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(':id')
   @Roles('Admin')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(id);
+  remove(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.projectsService.remove(id, tenant);
   }
 }

@@ -6,6 +6,12 @@ import Anthropic from '@anthropic-ai/sdk';
 import { Lead } from './entities/lead.entity';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
+import { TenantContext, TenantScopeService } from '../common/tenant';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  LEAD_CREATED,
+  LEAD_STATUS_CHANGED,
+} from '../automations/automation-events';
 
 // ─── AI Score ─────────────────────────────────────────────────────────────────
 // Deterministic score based on real lead data. No API calls needed.
@@ -57,51 +63,68 @@ export class LeadsService {
     @InjectRepository(Lead)
     private readonly leadRepository: Repository<Lead>,
     private readonly configService: ConfigService,
+    private readonly tenantScope: TenantScopeService,
+    private readonly events: EventEmitter2,
   ) {
     this.anthropic = new Anthropic({
       apiKey: this.configService.get<string>('ANTHROPIC_API_KEY'),
     });
   }
 
-  create(createLeadDto: CreateLeadDto) {
+  async create(createLeadDto: CreateLeadDto, ctx: TenantContext) {
+    await this.tenantScope.assertProjectInTenant(createLeadDto.project_id, ctx);
     const lead = this.leadRepository.create(createLeadDto);
     lead.ai_score = calculateScore(lead);
-    return this.leadRepository.save(lead);
+    const saved = await this.leadRepository.save(lead);
+    this.events.emit(LEAD_CREATED, { leadId: saved.id });
+    return saved;
   }
 
-  findAll(tenantId?: string) {
-    const qb = this.leadRepository.createQueryBuilder('lead')
+  findAll(ctx: TenantContext) {
+    return this.tenantScope
+      .scoped(Lead, 'lead', ctx)
       .leftJoinAndSelect('lead.project', 'project')
-      .leftJoinAndSelect('lead.assigned_agent', 'agent');
-    if (tenantId) qb.where('project.tenant_id = :tenantId', { tenantId });
-    return qb.getMany();
+      .leftJoinAndSelect('lead.assigned_agent', 'agent')
+      .getMany();
   }
 
-  async findOne(id: string) {
-    const lead = await this.leadRepository.findOne({
-      where: { id },
-      relations: ['project', 'assigned_agent'],
-    });
+  async findOne(id: string, ctx: TenantContext) {
+    const lead = await this.tenantScope
+      .scoped(Lead, 'lead', ctx)
+      .leftJoinAndSelect('lead.project', 'project')
+      .leftJoinAndSelect('lead.assigned_agent', 'assigned_agent')
+      .andWhere('lead.id = :id', { id })
+      .getOne();
     if (!lead) throw new NotFoundException(`Lead ${id} no encontrado`);
     return lead;
   }
 
-  async update(id: string, updateLeadDto: UpdateLeadDto) {
-    const lead = await this.findOne(id);
+  async update(id: string, updateLeadDto: UpdateLeadDto, ctx: TenantContext) {
+    const lead = await this.findOne(id, ctx);
+    await this.tenantScope.assertProjectInTenant((updateLeadDto as any).project_id, ctx);
+    const previousStatus = lead.status;
     Object.assign(lead, updateLeadDto);
     // Recalculate score whenever lead data changes
     lead.ai_score = calculateScore(lead);
-    return this.leadRepository.save(lead);
+    const saved = await this.leadRepository.save(lead);
+    if (updateLeadDto.status && updateLeadDto.status !== previousStatus) {
+      this.events.emit(LEAD_STATUS_CHANGED, {
+        leadId: saved.id,
+        from: previousStatus,
+        to: saved.status,
+      });
+    }
+    return saved;
   }
 
-  async remove(id: string) {
-    const lead = await this.findOne(id);
+  async remove(id: string, ctx: TenantContext) {
+    const lead = await this.findOne(id, ctx);
     return this.leadRepository.remove(lead);
   }
 
   // ─── AI Suggestion ───────────────────────────────────────────────────────────
-  async getSuggestion(id: string): Promise<AiSuggestion> {
-    const lead = await this.findOne(id);
+  async getSuggestion(id: string, ctx: TenantContext): Promise<AiSuggestion> {
+    const lead = await this.findOne(id, ctx);
 
     const daysInCrm = Math.floor(
       (Date.now() - new Date(lead.created_at).getTime()) / 86_400_000,
@@ -149,8 +172,8 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
   }
 
   // ─── Recalculate scores for all leads (bulk) ─────────────────────────────────
-  async recalculateAllScores(): Promise<number> {
-    const leads = await this.leadRepository.find();
+  async recalculateAllScores(ctx: TenantContext): Promise<number> {
+    const leads = await this.tenantScope.scoped(Lead, 'lead', ctx).getMany();
     for (const lead of leads) {
       lead.ai_score = calculateScore(lead);
     }
@@ -176,6 +199,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     });
     lead.ai_score = calculateScore(lead);
     const saved = await this.leadRepository.save(lead);
+    this.events.emit(LEAD_CREATED, { leadId: saved.id });
     return { lead: saved, created: true };
   }
 
@@ -205,6 +229,13 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
 
     if (Object.keys(updates).length > 0) {
       await this.leadRepository.update(id, updates);
+      if (updates.status && updates.status !== lead.status) {
+        this.events.emit(LEAD_STATUS_CHANGED, {
+          leadId: id,
+          from: lead.status,
+          to: updates.status,
+        });
+      }
     }
   }
 }

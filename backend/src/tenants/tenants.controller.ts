@@ -10,36 +10,39 @@ import { Roles } from '../auth/roles.decorator';
 @ApiTags('Tenants')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+// The tenant registry holds every tenant's WhatsApp and Instagram
+// credentials, so it is SuperAdmin-only - a tenant Admin listing this table
+// would read other tenants' channel tokens.
 @Controller('tenants')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
   @Post()
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   create(@Body() dto: CreateTenantDto) {
     return this.tenantsService.create(dto);
   }
 
   @Get()
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   findAll() {
     return this.tenantsService.findAll();
   }
 
   @Get(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   findOne(@Param('id') id: string) {
     return this.tenantsService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenantsService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   remove(@Param('id') id: string) {
     return this.tenantsService.remove(id);
   }

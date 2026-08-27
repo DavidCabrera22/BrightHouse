@@ -6,7 +6,13 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [searchParams] = useSearchParams();
   const sessionExpired = searchParams.get('expired') === '1';
-  const [error, setError] = useState(sessionExpired ? 'Tu sesión expiró. Vuelve a iniciar sesión.' : '');
+  const noTenant = searchParams.get('no_tenant') === '1';
+  const initialError = sessionExpired
+    ? 'Tu sesión expiró. Vuelve a iniciar sesión.'
+    : noTenant
+      ? 'Tu cuenta no está asignada a ninguna empresa. Contacta al administrador de la plataforma.'
+      : '';
+  const [error, setError] = useState(initialError);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 

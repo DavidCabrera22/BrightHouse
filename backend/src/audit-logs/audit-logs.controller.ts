@@ -4,6 +4,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CurrentTenant, TenantContext } from '../common/tenant';
 
 @ApiTags('Audit Logs')
 @ApiBearerAuth()
@@ -14,13 +15,17 @@ export class AuditLogsController {
 
   @Get()
   @Roles('Admin')
-  findAll() {
-    return this.auditLogsService.findAll();
+  findAll(@CurrentTenant() tenant: TenantContext) {
+    return this.auditLogsService.findAll(tenant);
   }
 
   @Get(':entity/:id')
   @Roles('Admin')
-  findByEntity(@Param('entity') entity: string, @Param('id') id: string) {
-    return this.auditLogsService.findByEntity(entity, id);
+  findByEntity(
+    @Param('entity') entity: string,
+    @Param('id') id: string,
+    @CurrentTenant() tenant: TenantContext,
+  ) {
+    return this.auditLogsService.findByEntity(entity, id, tenant);
   }
 }

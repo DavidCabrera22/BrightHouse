@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsEnum, IsUUID } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -41,4 +41,9 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   slug?: string;
+
+  @ApiProperty({ required: false, description: 'SuperAdmin only - the tenant this belongs to' })
+  @IsUUID()
+  @IsOptional()
+  tenant_id?: string;
 }

@@ -26,4 +26,9 @@ export class CreateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   status?: string;
+
+  @ApiProperty({ required: false, description: 'SuperAdmin only - the tenant this belongs to' })
+  @IsUUID()
+  @IsOptional()
+  tenant_id?: string;
 }

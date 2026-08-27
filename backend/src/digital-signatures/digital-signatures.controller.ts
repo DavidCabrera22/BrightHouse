@@ -6,6 +6,7 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { CurrentTenant, TenantContext } from '../common/tenant';
 
 @ApiTags('Digital Signatures')
 @ApiBearerAuth()
@@ -16,31 +17,31 @@ export class DigitalSignaturesController {
 
   @Post()
   @Roles('Admin')
-  create(@Body() createDto: CreateDigitalSignatureDto) {
-    return this.signaturesService.create(createDto);
+  create(@Body() createDto: CreateDigitalSignatureDto, @CurrentTenant() tenant: TenantContext) {
+    return this.signaturesService.createForTenant(createDto, tenant);
   }
 
   @Get()
   @Roles('Admin', 'Agent')
-  findAll() {
-    return this.signaturesService.findAll();
+  findAll(@CurrentTenant() tenant: TenantContext) {
+    return this.signaturesService.findAll(tenant);
   }
 
   @Get(':id')
   @Roles('Admin', 'Agent')
-  findOne(@Param('id') id: string) {
-    return this.signaturesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.signaturesService.findOne(id, tenant);
   }
 
   @Patch(':id')
   @Roles('Admin')
-  update(@Param('id') id: string, @Body() updateDto: UpdateDigitalSignatureDto) {
-    return this.signaturesService.update(id, updateDto);
+  update(@Param('id') id: string, @Body() updateDto: UpdateDigitalSignatureDto, @CurrentTenant() tenant: TenantContext) {
+    return this.signaturesService.update(id, updateDto, tenant);
   }
 
   @Delete(':id')
   @Roles('Admin')
-  remove(@Param('id') id: string) {
-    return this.signaturesService.remove(id);
+  remove(@Param('id') id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.signaturesService.remove(id, tenant);
   }
 }

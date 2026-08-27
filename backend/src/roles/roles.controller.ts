@@ -10,12 +10,14 @@ import { Roles } from '../auth/roles.decorator';
 @ApiTags('Roles')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+// Global catalog shared by every tenant: reads are open to tenant Admins,
+// but writes are SuperAdmin-only since one edit changes all tenants.
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   create(@Body() createRoleDto: CreateRoleDto) {
     return this.rolesService.create(createRoleDto);
   }
@@ -33,13 +35,13 @@ export class RolesController {
   }
 
   @Patch(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   update(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
     return this.rolesService.update(id, updateRoleDto);
   }
 
   @Delete(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   remove(@Param('id') id: string) {
     return this.rolesService.remove(id);
   }

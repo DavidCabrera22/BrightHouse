@@ -15,8 +15,14 @@ async function bootstrap() {
   // Health check for Railway / load balancers
   app.use('/api/health', (_req: any, res: any) => res.json({ status: 'ok' }));
 
-  // Serve static files from uploads directory
-  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+  // Legacy local storage (nothing writes here any more - uploads go to
+  // Cloudinary). Project images are marketing assets referenced by
+  // project.image, so they stay public.
+  //
+  // uploads/documents is deliberately NOT mounted: those are customer
+  // contracts, and express.static bypasses the auth guards completely. They
+  // are served by GET /api/documents/:id/file, which checks the tenant first.
+  app.use('/uploads/projects', express.static(join(__dirname, '..', 'uploads', 'projects')));
 
   // Serve compiled frontend (production)
   const publicDir = join(__dirname, '..', 'public');

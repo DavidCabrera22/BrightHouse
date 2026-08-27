@@ -10,12 +10,14 @@ import { Roles } from '../auth/roles.decorator';
 @ApiTags('Unit Statuses')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+// Global catalog shared by every tenant: reads are open to the CRM, but
+// writes are SuperAdmin-only since one edit changes all tenants.
 @Controller('unit-statuses')
 export class UnitStatusesController {
   constructor(private readonly unitStatusesService: UnitStatusesService) {}
 
   @Post()
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   create(@Body() createUnitStatusDto: CreateUnitStatusDto) {
     return this.unitStatusesService.create(createUnitStatusDto);
   }
@@ -33,13 +35,13 @@ export class UnitStatusesController {
   }
 
   @Patch(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   update(@Param('id') id: string, @Body() updateUnitStatusDto: UpdateUnitStatusDto) {
     return this.unitStatusesService.update(id, updateUnitStatusDto);
   }
 
   @Delete(':id')
-  @Roles('Admin')
+  @Roles('SuperAdmin')
   remove(@Param('id') id: string) {
     return this.unitStatusesService.remove(id);
   }
