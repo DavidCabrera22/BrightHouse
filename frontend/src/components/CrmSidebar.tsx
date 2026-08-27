@@ -92,6 +92,12 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
                 <span className="text-sm font-medium">Comisiones</span>
               </Link>
             )}
+            {(userRole === 'Admin' || userRole === 'admin' || userRole === 'SuperAdmin' || userRole === 'super_admin') && (
+              <Link to="/crm/users" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/users') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                <span className={`material-symbols-outlined ${isActive('/crm/users') ? 'filled' : ''}`}>group</span>
+                <span className="text-sm font-medium">Usuarios</span>
+              </Link>
+            )}
             {(userRole === 'SuperAdmin' || userRole === 'super_admin') && (
               <Link to="/crm/tenants" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/tenants') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
                 <span className={`material-symbols-outlined ${isActive('/crm/tenants') ? 'filled' : ''}`}>corporate_fare</span>
