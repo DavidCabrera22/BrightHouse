@@ -6,7 +6,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Quote, decimalTransformer } from './quote.entity';
+import { Quote } from './quote.entity';
+import { decimalTransformer } from './decimal-transformer';
 
 /**
  * Una fila por pago del cronograma. Se guardan en vez de recalcularse para que

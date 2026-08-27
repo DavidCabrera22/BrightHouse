@@ -14,16 +14,7 @@ import { Unit } from '../../units/entities/unit.entity';
 import { Client } from '../../clients/entities/client.entity';
 import { User } from '../../users/entities/user.entity';
 import { QuoteInstallment } from './quote-installment.entity';
-
-/**
- * `pg` devuelve los `numeric` como cadena. Sin esto, `total_value` llegaría
- * como "320000000.00" y cualquier suma en el servicio o en el PDF concatenaría
- * en vez de sumar.
- */
-export const decimalTransformer = {
-  to: (value: number | null) => value,
-  from: (value: string | null) => (value === null ? null : parseFloat(value)),
-};
+import { decimalTransformer } from './decimal-transformer';
 
 @Entity('quotes')
 // El consecutivo es por proyecto y por año; el índice es lo que arbitra dos
