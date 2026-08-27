@@ -194,7 +194,11 @@ y te confirmo" al cliente sin silenciar el bot.
 |---|---|
 | `#pausa` | `nova_paused = true`, sella `nova_paused_at` y `nova_paused_by = 'whatsapp'`. |
 | `#nova` | `nova_paused = false`, limpia `nova_paused_at` y `needs_human`. |
-| `#estado` | Responde en el mismo chat con el estado de la conversación (pausada o activa, desde cuándo, edificio). Se borra igual que los demás. |
+**No hay comando de estado.** Se diseñó un `#estado` y se descartó al
+implementarlo: el comando se puede borrar del chat, pero su respuesta no —
+`sendText` la manda a la conversación del prospecto, que vería un texto interno
+("Nova está PAUSADA desde…"). El estado de la conversación se consulta en el CRM,
+que ya lo muestra. `#pausa` y `#nova` no tienen el problema porque solo borran.
 
 **Borrado del comando.** El comando no debería quedar visible para el cliente. Al
 implementar hay que verificar contra la API de Whapi que el borrado de mensajes

@@ -105,7 +105,6 @@ export class WhatsAppController {
             text,
             tenantId,
             whapiToken,
-            buildingSlug,
           });
           continue;
         }
@@ -212,9 +211,8 @@ export class WhatsAppController {
     text: string;
     tenantId?: string;
     whapiToken?: string;
-    buildingSlug: string;
   }): Promise<void> {
-    const { phone, messageId, text, tenantId, whapiToken, buildingSlug } = params;
+    const { phone, messageId, text, tenantId, whapiToken } = params;
 
     const conv = await this.conversationsService.findOrCreateByPhone(
       phone, 'whatsapp', undefined, tenantId,
@@ -236,23 +234,8 @@ export class WhatsAppController {
       return;
     }
 
-    if (command === 'status') {
-      const fresh = await this.conversationsService.findConversationById(conv.id);
-      const estado = fresh.nova_paused
-        ? `Nova está PAUSADA (por ${fresh.nova_paused_by ?? 'origen desconocido'}${
-            fresh.nova_paused_at
-              ? ` desde ${new Date(fresh.nova_paused_at).toLocaleString('es-CO')}`
-              : ''
-          })`
-        : 'Nova está ACTIVA';
-      await this.whapiService.deleteMessage(messageId, whapiToken);
-      await this.whapiService.sendText(
-        phone,
-        `${estado}. Edificio: ${buildingSlug}.`,
-        whapiToken,
-      );
-      return;
-    }
+    // No hay comando de estado: cualquier respuesta al chat la vería el
+    // prospecto. El estado de la conversación se consulta en el CRM.
 
     // No es comando: el asesor está atendiendo. Se guarda y Nova se calla.
     await this.conversationsService.addMessage(conv.id, {

@@ -9,8 +9,8 @@ describe('parseNovaCommand', () => {
     expect(parseNovaCommand('#nova')).toBe('resume');
   });
 
-  it('reconoce #estado', () => {
-    expect(parseNovaCommand('#estado')).toBe('status');
+  it('no reconoce #estado: se quitó para no filtrar texto interno al cliente', () => {
+    expect(parseNovaCommand('#estado')).toBeNull();
   });
 
   it('ignora mayúsculas y espacios sobrantes', () => {

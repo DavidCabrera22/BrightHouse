@@ -2,12 +2,11 @@
  * Comandos que el asesor escribe en el propio chat de WhatsApp, desde el número
  * del negocio. Solo se interpretan en mensajes con `from_me: true`.
  */
-export type NovaCommand = 'pause' | 'resume' | 'status';
+export type NovaCommand = 'pause' | 'resume';
 
 const COMMANDS: Record<string, NovaCommand> = {
   '#pausa': 'pause',
   '#nova': 'resume',
-  '#estado': 'status',
 };
 
 /**

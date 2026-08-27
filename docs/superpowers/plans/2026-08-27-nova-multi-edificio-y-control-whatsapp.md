@@ -4,7 +4,7 @@
 
 **Goal:** Que Nova atienda varios edificios —cada tenant con su propio perfil y su inventario real— y que el asesor pueda silenciarla y recuperarla desde el mismo WhatsApp, sin entrar al CRM.
 
-**Architecture:** El `SYSTEM_PROMPT` constante se parte en dos: un `BuildingProfile` por edificio (archivo TypeScript, resuelto por `tenant.slug`) y un bloque de inventario generado en tiempo real desde la tabla `units`, ensamblados por una función pura `buildSystemPrompt()`. El webhook de WhatsApp deja de descartar los mensajes con `from_me: true` y los usa como señal de que el asesor tomó el control, más un parser de comandos (`#pausa`, `#nova`, `#estado`) y una ventana de reactivación automática. Toda la lógica decidible —ensamblado del prompt, comandos, ventana— vive en funciones puras con pruebas; el controlador solo cablea.
+**Architecture:** El `SYSTEM_PROMPT` constante se parte en dos: un `BuildingProfile` por edificio (archivo TypeScript, resuelto por `tenant.slug`) y un bloque de inventario generado en tiempo real desde la tabla `units`, ensamblados por una función pura `buildSystemPrompt()`. El webhook de WhatsApp deja de descartar los mensajes con `from_me: true` y los usa como señal de que el asesor tomó el control, más un parser de comandos (`#pausa`, `#nova`) y una ventana de reactivación automática. Toda la lógica decidible —ensamblado del prompt, comandos, ventana— vive en funciones puras con pruebas; el controlador solo cablea.
 
 **Tech Stack:** NestJS 10, TypeORM 0.3 (PostgreSQL/Supabase), Jest 29, `@anthropic-ai/sdk` 0.80, React 19 + Vite 7, Tailwind v4.
 
@@ -1190,8 +1190,8 @@ describe('parseNovaCommand', () => {
     expect(parseNovaCommand('#nova')).toBe('resume');
   });
 
-  it('reconoce #estado', () => {
-    expect(parseNovaCommand('#estado')).toBe('status');
+  it('no reconoce #estado: se quitó para no filtrar texto interno al cliente', () => {
+    expect(parseNovaCommand('#estado')).toBeNull();
   });
 
   it('ignora mayúsculas y espacios sobrantes', () => {
@@ -1230,12 +1230,11 @@ Expected: FAIL — `Cannot find module './nova-commands'`.
  * Comandos que el asesor escribe en el propio chat de WhatsApp, desde el número
  * del negocio. Solo se interpretan en mensajes con `from_me: true`.
  */
-export type NovaCommand = 'pause' | 'resume' | 'status';
+export type NovaCommand = 'pause' | 'resume';
 
 const COMMANDS: Record<string, NovaCommand> = {
   '#pausa': 'pause',
   '#nova': 'resume',
-  '#estado': 'status',
 };
 
 /**
@@ -1808,23 +1807,8 @@ Método nuevo, justo después de `receive()`:
       return;
     }
 
-    if (command === 'status') {
-      const fresh = await this.conversationsService.findConversationById(conv.id);
-      const estado = fresh.nova_paused
-        ? `Nova está PAUSADA (por ${fresh.nova_paused_by ?? 'origen desconocido'}${
-            fresh.nova_paused_at
-              ? ` desde ${new Date(fresh.nova_paused_at).toLocaleString('es-CO')}`
-              : ''
-          })`
-        : 'Nova está ACTIVA';
-      await this.whapiService.deleteMessage(messageId, whapiToken);
-      await this.whapiService.sendText(
-        phone,
-        `${estado}. Edificio: ${buildingSlug}.`,
-        whapiToken,
-      );
-      return;
-    }
+    // No hay comando de estado: cualquier respuesta al chat la vería el
+    // prospecto. El estado de la conversación se consulta en el CRM.
 
     // No es comando: el asesor está atendiendo. Se guarda y Nova se calla.
     await this.conversationsService.addMessage(conv.id, {
@@ -2046,7 +2030,9 @@ Escribir `#nova` en el chat desde el número del negocio. Verificar:
 - La conversación vuelve a "Nova activa" en el CRM.
 - Si el cliente escribe, Nova responde otra vez.
 
-Repetir con `#pausa` y con `#estado`.
+Repetir con `#pausa`. (No hay `#estado`: se descartó porque su respuesta la
+vería el prospecto. Escribir `#estado` debe comportarse como texto normal, es
+decir, guardarse y pausar a Nova.)
 
 - [ ] **Step 6: Commit de cierre**
 
