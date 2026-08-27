@@ -81,8 +81,10 @@ export function addMonthsClamped(isoDate: string, months: number): string {
  * fecha no existe y es un 400.
  */
 function normalizeDate(isoDate: string): string {
+  // Un valor nulo ya salió por `addMonthsClamped`, así que aquí `isoDate`
+  // siempre es algo que se puede convertir a cadena.
   const normalized = addMonthsClamped(isoDate, 0);
-  if (normalized !== String(isoDate ?? '').slice(0, 10)) {
+  if (normalized !== String(isoDate).slice(0, 10)) {
     throw new QuoteCalculationError(`Fecha inválida: ${isoDate}`);
   }
   return normalized;
