@@ -61,6 +61,18 @@ export class Conversation {
   @Column({ default: false })
   nova_paused: boolean; // When true, Nova will not auto-respond
 
+  /** Cuándo se pausó. Base de la ventana de reactivación automática. */
+  @Column({ nullable: true, type: 'timestamp' })
+  nova_paused_at: Date | null;
+
+  /** Quién pausó: 'whatsapp' | 'crm' | 'nova'. */
+  @Column({ nullable: true })
+  nova_paused_by: string | null;
+
+  /** Nova pidió escalar. Se apaga cuando un asesor responde. */
+  @Column({ default: false })
+  needs_human: boolean;
+
   @Column({ nullable: true })
   tenant_id: string;
 
