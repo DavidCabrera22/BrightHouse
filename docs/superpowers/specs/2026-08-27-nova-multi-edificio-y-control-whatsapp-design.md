@@ -300,23 +300,45 @@ que se verifica con el flujo completo.
 - Verificación manual en el flujo real: escribir desde el WhatsApp del negocio y
   confirmar que Nova se calla y que el mensaje aparece en el CRM.
 
-## Datos de entrada requeridos — Alpes Vista
 
-El perfil no se puede escribir sin esto. Es entrada del negocio, no una decisión
-de diseño pendiente:
+## Alpes Vista entra en prelanzamiento, no en venta
 
-- Nombre comercial y ubicación exacta (barrio, ciudad, referencia cercana).
-- Número de pisos, de apartamentos y de apartamentos por piso.
-- Tipologías: área, distribución y qué las diferencia entre sí.
-- Precio y si aplica subsidio VIS.
-- Esquema de pago: porcentaje y monto de cuota inicial, saldo, cuota mensual
-  aproximada.
-- Constructora y fiducia.
-- Zonas comunes.
-- Dirección de la sala de ventas y horarios de asesores.
-- Teléfono de WhatsApp y correo de contacto.
-- Fecha de entrega.
+La información del negocio llegó después de escrito este diseño y cambió una
+suposición de fondo: Alpes Vista **no tiene precio, tipologías, fecha de entrega
+ni sala de ventas**, y la instrucción explícita es no comprometer ninguno de esos
+datos. Manejarlo como "próximamente".
 
-Además, del lado del sistema: el tenant de Alpes Vista creado con su `slug`, su
-`whapi_token` y su `default_project_id`, y las unidades cargadas en `units` para
-que el bloque de inventario tenga de dónde salir.
+El diseño original exigía todos esos campos, así que el registro habría
+rechazado el perfil y Nova no habría respondido nada. Es el comportamiento
+correcto ante un perfil a medio llenar, pero el equivocado aquí: sí queremos que
+responda, capturando datos y diciendo "próximamente".
+
+**Un edificio en prelanzamiento no es uno en venta con los campos vacíos.** No
+tiene las mismas piezas, y el objetivo de la conversación tampoco es el mismo:
+no hay visita que agendar, hay datos de contacto que capturar. Por eso
+`BuildingProfile` pasó a ser una unión discriminada por `stage`
+(`'prelaunch' | 'selling'`), con dos consecuencias:
+
+- El compilador impide escribir un perfil a medias — un `SellingBuilding` sin
+  precio no compila, y a un `PrelaunchBuilding` no se le puede poner uno.
+- `buildSystemPrompt` mira `stage` y arma un prompt distinto. El de
+  prelanzamiento se construye al revés que el de venta: en vez de darle a Nova
+  todo lo que sabe, le da la lista corta de lo único que puede afirmar
+  (`confirmed`) y le prohíbe el resto.
+
+La validación de completitud también depende de la etapa: exigirle una sala de
+ventas a un prelanzamiento lo dejaría rechazado para siempre. Se le exige, en
+cambio, tener algo confirmado que decir y datos que capturar — sin eso no
+tendría ni de qué hablar ni para qué.
+
+En prelanzamiento no se consulta el inventario: no hay unidades cargadas, y el
+prompt de esa etapa ni siquiera menciona disponibilidad.
+
+**Captura del correo.** El objetivo del prelanzamiento es registrar al
+interesado, y el correo es parte de eso. `LeadExtraction` lo extrae y
+`updateFromNova` lo escribe, pero solo si el lead no tenía uno: lo que un asesor
+registró a mano vale más que lo que el modelo leyó del chat.
+
+Cuando el proyecto salga a la venta, el cambio es editar su archivo a
+`stage: 'selling'` con precio, tipologías, sala de ventas y horarios. El prompt
+cambia solo.
