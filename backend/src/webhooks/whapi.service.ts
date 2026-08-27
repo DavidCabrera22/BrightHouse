@@ -46,4 +46,37 @@ export class WhapiService {
       return false;
     }
   }
+
+  /**
+   * Borra un mensaje propio del chat. Se usa para que el comando del asesor
+   * (`#pausa`, `#nova`) no le quede visible al cliente.
+   *
+   * Un fallo aquí no es grave: el comando ya surtió efecto, lo único que se
+   * pierde es que el cliente lo vea.
+   */
+  async deleteMessage(messageId: string, tokenOverride?: string): Promise<boolean> {
+    const token = tokenOverride || this.token;
+    if (!token) {
+      this.logger.warn('WHAPI_TOKEN not set — no se puede borrar el mensaje');
+      return false;
+    }
+
+    try {
+      const res = await fetch(`${this.apiUrl}/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        this.logger.warn(`No se pudo borrar el mensaje ${messageId}: ${res.status} ${body}`);
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      this.logger.warn(`Fallo borrando el mensaje ${messageId}`, err);
+      return false;
+    }
+  }
 }
