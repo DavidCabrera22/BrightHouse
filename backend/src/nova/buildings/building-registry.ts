@@ -24,9 +24,20 @@ export class IncompleteBuildingProfileError extends Error {
   }
 }
 
+/**
+ * El slug del tenant y el del perfil se escriben a mano en sitios distintos
+ * —uno en la base, otro en el código— y basta un guion de diferencia para que
+ * Nova deje de responder. El tenant de Oasis Park está guardado como
+ * `oasispark` y su perfil como `oasis-park`: sin normalizar, ese desajuste
+ * silencia el bot. Se comparan solo letras y números.
+ */
+function normalizeSlug(slug: string): string {
+  return (slug ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 const PROFILES: Record<string, BuildingProfile> = {
-  [OASIS_PARK.slug]: OASIS_PARK,
-  [ALPES_VISTA.slug]: ALPES_VISTA,
+  [normalizeSlug(OASIS_PARK.slug)]: OASIS_PARK,
+  [normalizeSlug(ALPES_VISTA.slug)]: ALPES_VISTA,
 };
 
 /**
@@ -64,8 +75,8 @@ export function assertProfileComplete(profile: BuildingProfile): void {
  * perfil.
  */
 export function getBuildingProfile(slug: string): BuildingProfile {
-  const key = (slug ?? '').trim().toLowerCase();
-  const profile = PROFILES[key];
+  const key = normalizeSlug(slug);
+  const profile = key ? PROFILES[key] : undefined;
   if (!profile) throw new MissingBuildingProfileError(slug);
   assertProfileComplete(profile);
   return profile;

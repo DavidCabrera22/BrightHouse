@@ -16,6 +16,16 @@ describe('building-registry', () => {
     expect(getBuildingProfile('  Oasis-Park  ').slug).toBe('oasis-park');
   });
 
+  it('resuelve "oasispark", que es como está guardado el tenant en la base', () => {
+    // El slug del tenant y el del perfil se escriben en sitios distintos; un
+    // guion de diferencia no puede dejar mudo al bot.
+    expect(getBuildingProfile('oasispark').building_name).toBe('Oasis Park');
+  });
+
+  it('resuelve "alpesvista" igual que "alpes-vista"', () => {
+    expect(getBuildingProfile('alpesvista').slug).toBe('alpes-vista');
+  });
+
   it('lanza MissingBuildingProfileError si el slug no existe', () => {
     expect(() => getBuildingProfile('no-existe')).toThrow(
       MissingBuildingProfileError,

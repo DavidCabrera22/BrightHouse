@@ -4,10 +4,12 @@ export interface ChatMessage {
 }
 
 /**
- * La API de Anthropic exige que el primer mensaje sea del `user`. El historial
- * viene de la tabla `messages`, que puede empezar con un mensaje de Nova o del
- * asesor —un saludo de difusión, o el asesor escribiendo primero—. Esos
- * mensajes de apertura se descartan.
+ * Deja el historial empezando por un mensaje del prospecto.
+ *
+ * El historial sale de la tabla `messages`, que puede empezar con un mensaje de
+ * Nova o del asesor —un saludo de difusión, o el asesor escribiendo primero—.
+ * Arrancar con el bot hablándole a nadie confunde al modelo y desperdicia
+ * contexto, así que esos mensajes de apertura se descartan.
  */
 export function normalizeHistory(history: ChatMessage[]): ChatMessage[] {
   const firstUser = history.findIndex((m) => m.role === 'user');
