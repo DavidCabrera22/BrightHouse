@@ -30,6 +30,16 @@ export class TenantsService {
     return this.tenantRepo.findOneBy({ slug });
   }
 
+  /**
+   * Como `findOne`, pero devuelve `null` en vez de lanzar. Lo usan las rutas
+   * que solo quieren las credenciales del canal: que una conversación vieja
+   * sin tenant no pueda entregarse no es un 404 de la petición.
+   */
+  async findByIdOrNull(id?: string | null): Promise<Tenant | null> {
+    if (!id) return null;
+    return this.tenantRepo.findOneBy({ id });
+  }
+
   async update(id: string, dto: UpdateTenantDto) {
     const tenant = await this.findOne(id);
     Object.assign(tenant, dto);

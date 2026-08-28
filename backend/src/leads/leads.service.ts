@@ -187,7 +187,12 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     projectId: string,
     name?: string,
   ): Promise<{ lead: Lead; created: boolean }> {
-    const existing = await this.leadRepository.findOne({ where: { phone } });
+    // La búsqueda va atada al proyecto. Solo por teléfono, alguien que ya es
+    // lead de un edificio y escribe al WhatsApp de otro reutilizaría la ficha
+    // del primero, y su conversación quedaría colgando del tenant equivocado.
+    const existing = await this.leadRepository.findOne({
+      where: { phone, project_id: projectId },
+    });
     if (existing) return { lead: existing, created: false };
 
     const lead = this.leadRepository.create({
@@ -201,6 +206,42 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     const saved = await this.leadRepository.save(lead);
     this.events.emit(LEAD_CREATED, { leadId: saved.id });
     return { lead: saved, created: true };
+  }
+
+  /**
+   * "Convertir en Lead" desde la bandeja de entrada. Ruta de request: valida el
+   * proyecto contra el tenant de quien pulsa el botón, y si esa persona ya es
+   * lead de ese proyecto devuelve su ficha en vez de duplicarla.
+   */
+  async createFromConversation(
+    input: {
+      project_id: string;
+      name: string;
+      phone: string;
+      email?: string;
+      source: string;
+    },
+    ctx: TenantContext,
+  ): Promise<Lead> {
+    await this.tenantScope.assertProjectInTenant(input.project_id, ctx);
+
+    const existing = await this.leadRepository.findOne({
+      where: { phone: input.phone, project_id: input.project_id },
+    });
+    if (existing) return existing;
+
+    const lead = this.leadRepository.create({
+      project_id: input.project_id,
+      name: input.name,
+      phone: input.phone,
+      email: input.email,
+      source: input.source,
+      status: 'new',
+    });
+    lead.ai_score = calculateScore(lead);
+    const saved = await this.leadRepository.save(lead);
+    this.events.emit(LEAD_CREATED, { leadId: saved.id });
+    return saved;
   }
 
   /**

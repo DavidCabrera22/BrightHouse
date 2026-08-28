@@ -4,11 +4,19 @@ import CrmLayout from './CrmLayout';
 interface Message {
   id: string;
   content: string;
-  sender_type: 'user' | 'agent' | 'bot';
+  sender_type: 'user' | 'agent' | 'bot' | 'note';
   sender_name: string;
   is_read: boolean;
   created_at: string;
 }
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+/** Las tres acciones rápidas del panel de detalle. */
+type QuickAction = 'lead' | 'visit' | 'note';
 
 interface Conversation {
   id: string;
@@ -66,13 +74,23 @@ const ConversationsPage: React.FC = () => {
   const [filter, setFilter]               = useState<'all' | 'unread'>('all');
   const [mobileView, setMobileView]       = useState<'list' | 'chat'>('list');
   const [showDetails, setShowDetails]     = useState(false);
+  const [projects, setProjects]           = useState<Project[]>([]);
+  const [action, setAction]               = useState<QuickAction | null>(null);
+  const [actionBusy, setActionBusy]       = useState(false);
+  const [actionError, setActionError]     = useState('');
+  const [leadForm, setLeadForm]           = useState({ project_id: '', name: '', email: '' });
+  const [visitForm, setVisitForm]         = useState({ scheduled_at: '', notes: '' });
+  const [noteText, setNoteText]           = useState('');
+  const [sendError, setSendError]         = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const token   = localStorage.getItem('access_token');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+  const author  = localStorage.getItem('user_name') || 'Asesor';
 
   useEffect(() => {
     fetchConversations();
+    fetchProjects();
     const interval = setInterval(fetchConversations, 15000);
     return () => clearInterval(interval);
   }, []);
@@ -117,11 +135,95 @@ const ConversationsPage: React.FC = () => {
     setConversations(prev => prev.map(c => c.id === convId ? { ...c, unread_count: 0 } : c));
   };
 
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch('/api/projects', { headers });
+      if (res.ok) setProjects(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // ─── Acciones rápidas ──────────────────────────────────────────────────────
+
+  const openAction = (next: QuickAction) => {
+    setActionError('');
+    if (next === 'lead') {
+      setLeadForm({
+        project_id: projects[0]?.id ?? '',
+        name: selected?.contact_name ?? '',
+        email: selected?.contact_email ?? '',
+      });
+    }
+    if (next === 'visit') setVisitForm({ scheduled_at: '', notes: '' });
+    if (next === 'note') setNoteText('');
+    setAction(next);
+  };
+
+  /** Todas las acciones postean a la conversación y refrescan lo que cambió. */
+  const runAction = async (path: string, body: object) => {
+    if (!selectedId || actionBusy) return;
+    setActionBusy(true);
+    setActionError('');
+    try {
+      const res = await fetch(`/api/conversations/${selectedId}/${path}`, {
+        method: 'POST', headers, body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => null);
+        const message = detail?.message;
+        setActionError(
+          Array.isArray(message) ? message.join('. ') : message || 'No se pudo completar la acción',
+        );
+        return;
+      }
+      setAction(null);
+      await Promise.all([fetchConversations(), fetchMessages(selectedId)]);
+    } catch {
+      setActionError('No se pudo conectar con el servidor');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const submitLead = () => {
+    if (!leadForm.project_id) {
+      setActionError('Elige el proyecto al que entra el lead');
+      return;
+    }
+    return runAction('convert-to-lead', {
+      project_id: leadForm.project_id,
+      name: leadForm.name.trim() || undefined,
+      email: leadForm.email.trim() || undefined,
+    });
+  };
+
+  const submitVisit = () => {
+    if (!visitForm.scheduled_at) {
+      setActionError('Indica la fecha y la hora de la visita');
+      return;
+    }
+    return runAction('visits', {
+      scheduled_at: visitForm.scheduled_at,
+      notes: visitForm.notes.trim() || undefined,
+      author,
+    });
+  };
+
+  const submitNote = () => {
+    if (!noteText.trim()) {
+      setActionError('La nota está vacía');
+      return;
+    }
+    return runAction('notes', { content: noteText.trim(), author });
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || !selectedId || sending) return;
     const content = messageInput.trim();
     setMessageInput('');
+    setSendError('');
     setSending(true);
     try {
       const res = await fetch(`/api/conversations/${selectedId}/messages`, {
@@ -140,9 +242,20 @@ const ConversationsPage: React.FC = () => {
             ? { ...c, last_message: content, last_message_at: new Date().toISOString() }
             : c)
         );
+      } else {
+        // El backend no guarda lo que no pudo entregar, así que aquí tampoco se
+        // pinta: se devuelve el texto al cuadro para poder reintentarlo.
+        const detail = await res.json().catch(() => null);
+        const message = detail?.message;
+        setSendError(
+          Array.isArray(message) ? message.join('. ') : message || 'No se pudo enviar el mensaje',
+        );
+        setMessageInput(content);
       }
     } catch (err) {
       console.error(err);
+      setSendError('No se pudo conectar con el servidor. El mensaje no se envió.');
+      setMessageInput(content);
     } finally {
       setSending(false);
     }
@@ -152,6 +265,7 @@ const ConversationsPage: React.FC = () => {
     setSelectedId(id);
     setMobileView('chat');
     setShowDetails(false);
+    setSendError('');
   };
 
   const selected     = conversations.find(c => c.id === selectedId);
@@ -411,6 +525,27 @@ const ConversationsPage: React.FC = () => {
                     </div>
                   )}
                   {messages.map(msg => {
+                    // Nota interna: no se envió a nadie, así que no va en un
+                    // globo de conversación sino centrada y marcada como tal.
+                    if (msg.sender_type === 'note') {
+                      return (
+                        <div key={msg.id} className="flex justify-center py-1">
+                          <div className="max-w-[90%] rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                            <div className="flex items-center gap-1.5 mb-0.5 text-[10px] font-bold uppercase tracking-wider">
+                              <span className="material-symbols-outlined text-[13px]">sticky_note_2</span>
+                              Nota interna · {msg.sender_name}
+                            </div>
+                            <p className="text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                            <span className="mt-0.5 block text-[10px] opacity-70">
+                              {new Date(msg.created_at).toLocaleString('es', {
+                                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const isOutgoing = msg.sender_type === 'agent' || msg.sender_type === 'bot';
                     return (
                       <div
@@ -481,6 +616,12 @@ const ConversationsPage: React.FC = () => {
 
                 {/* Input */}
                 <form onSubmit={sendMessage} className="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 sm:p-4">
+                  {sendError && (
+                    <div className="mb-2 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                      <span className="material-symbols-outlined text-[15px]">error</span>
+                      <span>{sendError}</span>
+                    </div>
+                  )}
                   <div className="flex items-end gap-2">
                     <textarea
                       value={messageInput}
@@ -625,16 +766,39 @@ const ConversationsPage: React.FC = () => {
                 <div>
                   <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Acciones Rápidas</h4>
                   <div className="space-y-1">
-                    {[
-                      { icon: 'person_add',    label: 'Convertir en Lead', color: 'blue' },
-                      { icon: 'edit_calendar', label: 'Agendar Visita',    color: 'emerald' },
-                      { icon: 'note_add',      label: 'Agregar Nota',      color: 'orange' },
-                    ].map(({ icon, label, color }) => (
+                    {([
+                      {
+                        key: 'lead' as const,
+                        icon: 'person_add',
+                        label: selected.lead ? 'Ya tiene lead asociado' : 'Convertir en Lead',
+                        // Los colores van escritos completos: Tailwind no genera
+                        // las clases que se arman concatenando strings.
+                        tone: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 group-hover:bg-blue-600 group-hover:text-white',
+                        disabled: !!selected.lead,
+                      },
+                      {
+                        key: 'visit' as const,
+                        icon: 'edit_calendar',
+                        label: 'Agendar Visita',
+                        tone: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white',
+                        disabled: false,
+                      },
+                      {
+                        key: 'note' as const,
+                        icon: 'note_add',
+                        label: 'Agregar Nota',
+                        tone: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 group-hover:bg-orange-600 group-hover:text-white',
+                        disabled: false,
+                      },
+                    ]).map(({ key, icon, label, tone, disabled }) => (
                       <button
-                        key={label}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left group"
+                        key={key}
+                        onClick={() => openAction(key)}
+                        disabled={disabled}
+                        title={disabled ? 'Esta conversación ya está enlazada a un lead' : undefined}
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent transition-colors text-left group"
                       >
-                        <div className={`w-8 h-8 rounded-lg bg-${color}-50 dark:bg-${color}-900/20 text-${color}-600 flex items-center justify-center group-hover:bg-${color}-600 group-hover:text-white transition-colors`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${tone}`}>
                           <span className="material-symbols-outlined text-sm">{icon}</span>
                         </div>
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
@@ -656,6 +820,133 @@ const ConversationsPage: React.FC = () => {
               className="xl:hidden absolute inset-0 bg-black/20 z-20"
               onClick={() => setShowDetails(false)}
             />
+          )}
+
+          {/* ── Modal de las acciones rápidas ── */}
+          {action && selected && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+              onClick={() => !actionBusy && setAction(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-5 py-3">
+                  <h3 className="font-bold text-slate-900 dark:text-white">
+                    {action === 'lead' ? 'Convertir en Lead' : action === 'visit' ? 'Agendar Visita' : 'Nota interna'}
+                  </h3>
+                  <button
+                    onClick={() => setAction(null)}
+                    className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <span className="material-symbols-outlined text-lg">close</span>
+                  </button>
+                </div>
+
+                <div className="px-5 py-4 space-y-3">
+                  {action === 'lead' && (
+                    <>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Proyecto</span>
+                        <select
+                          value={leadForm.project_id}
+                          onChange={e => setLeadForm({ ...leadForm, project_id: e.target.value })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                        >
+                          <option value="">Elige un proyecto…</option>
+                          {projects.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Nombre</span>
+                        <input
+                          value={leadForm.name}
+                          onChange={e => setLeadForm({ ...leadForm, name: e.target.value })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Correo (opcional)</span>
+                        <input
+                          type="email"
+                          value={leadForm.email}
+                          onChange={e => setLeadForm({ ...leadForm, email: e.target.value })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                        />
+                      </label>
+                      <p className="text-xs text-slate-400">
+                        El teléfono ({selected.contact_phone || 'sin número'}) se toma de la conversación.
+                      </p>
+                    </>
+                  )}
+
+                  {action === 'visit' && (
+                    <>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Fecha y hora</span>
+                        <input
+                          type="datetime-local"
+                          value={visitForm.scheduled_at}
+                          onChange={e => setVisitForm({ ...visitForm, scheduled_at: e.target.value })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold text-slate-500">Comentario (opcional)</span>
+                        <textarea
+                          rows={3}
+                          value={visitForm.notes}
+                          onChange={e => setVisitForm({ ...visitForm, notes: e.target.value })}
+                          className="mt-1 w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                        />
+                      </label>
+                      <p className="text-xs text-slate-400">
+                        Queda como nota interna en el chat. No se le envía nada al contacto.
+                      </p>
+                    </>
+                  )}
+
+                  {action === 'note' && (
+                    <>
+                      <textarea
+                        rows={4}
+                        autoFocus
+                        value={noteText}
+                        onChange={e => setNoteText(e.target.value)}
+                        placeholder="Lo que el equipo debe saber de este contacto…"
+                        className="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-200"
+                      />
+                      <p className="text-xs text-slate-400">
+                        Solo se ve en el CRM. No se le envía al contacto.
+                      </p>
+                    </>
+                  )}
+
+                  {actionError && (
+                    <p className="text-xs font-semibold text-red-600 dark:text-red-400">{actionError}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+                  <button
+                    onClick={() => setAction(null)}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={action === 'lead' ? submitLead : action === 'visit' ? submitVisit : submitNote}
+                    disabled={actionBusy}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {actionBusy ? 'Guardando…' : action === 'lead' ? 'Crear lead' : action === 'visit' ? 'Agendar' : 'Guardar nota'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>

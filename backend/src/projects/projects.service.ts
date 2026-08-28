@@ -32,6 +32,15 @@ export class ProjectsService {
   }
 
   /**
+   * Lee un proyecto sin contexto de tenant. Ruta de sistema: la usa el webhook
+   * para comprobar que el `default_project_id` de un tenant es realmente suyo,
+   * antes de que exista una petición con contexto que validar.
+   */
+  async findForWebhook(id: string): Promise<Project | null> {
+    return this.projectRepository.findOne({ where: { id } });
+  }
+
+  /**
    * Public marketing catalog - deliberately unscoped, it powers the logged-out
    * landing page. Kept as its own method so no request path can reach the
    * cross-tenant listing by leaving a tenant argument out.

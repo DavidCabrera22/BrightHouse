@@ -7,9 +7,10 @@ import { ConversationsModule } from '../conversations/conversations.module';
 import { NovaModule } from '../nova/nova.module';
 import { LeadsModule } from '../leads/leads.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { ProjectsModule } from '../projects/projects.module';
 
 @Module({
-  imports: [ConversationsModule, NovaModule, LeadsModule, TenantsModule],
+  imports: [ConversationsModule, NovaModule, LeadsModule, TenantsModule, ProjectsModule],
   controllers: [WhatsAppController, InstagramController],
   providers: [WhapiService, InstagramService],
 })

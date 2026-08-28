@@ -14,7 +14,10 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { InstagramService } from './instagram.service';
+import { resolveLeadProject } from './resolve-lead-project';
 import { TenantsService } from '../tenants/tenants.service';
+import { Tenant } from '../tenants/entities/tenant.entity';
+import { ProjectsService } from '../projects/projects.service';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../auth/public.decorator';
@@ -31,6 +34,7 @@ export class InstagramController {
     private readonly novaService: NovaService,
     private readonly instagramService: InstagramService,
     private readonly tenantsService: TenantsService,
+    private readonly projectsService: ProjectsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -64,15 +68,14 @@ export class InstagramController {
       let tenantId: string | undefined;
       let instagramToken: string | undefined;
       let instagramPageId: string | undefined;
-      let projectId: string | undefined;
+      let tenant: Tenant | null = null;
 
       if (tenantSlug) {
-        const tenant = await this.tenantsService.findBySlug(tenantSlug);
+        tenant = await this.tenantsService.findBySlug(tenantSlug);
         if (tenant) {
           tenantId = tenant.id;
           instagramToken = tenant.instagram_token;
           instagramPageId = tenant.instagram_account_id;
-          projectId = tenant.default_project_id;
         } else {
           this.logger.warn(`Instagram webhook for unknown tenant: ${tenantSlug}`);
         }
@@ -80,7 +83,17 @@ export class InstagramController {
 
       if (!instagramToken) instagramToken = this.configService.get<string>('INSTAGRAM_ACCESS_TOKEN');
       if (!instagramPageId) instagramPageId = this.configService.get<string>('INSTAGRAM_PAGE_ID');
-      if (!projectId) projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
+
+      // Igual que en WhatsApp: con tenant resuelto, el lead solo puede entrar
+      // en un proyecto de ESE tenant. Nunca en el del entorno.
+      const { projectId, problem } = resolveLeadProject({
+        tenant,
+        configuredProject: tenant?.default_project_id
+          ? await this.projectsService.findForWebhook(tenant.default_project_id)
+          : null,
+        envProjectId: this.configService.get<string>('DEFAULT_PROJECT_ID'),
+      });
+      if (problem) this.logger.error(problem);
 
       // El edificio sale del tenant, igual que en WhatsApp. Con un slug fijo,
       // un DM de Alpes Vista recibiría la copia y el inventario de Oasis Park.
@@ -123,7 +136,7 @@ export class InstagramController {
         });
 
         // 4. Get conversation history
-        const allMessages = await this.conversationsService.getMessages(conv.id);
+        const allMessages = await this.conversationsService.getMessagesForNova(conv.id);
         const history: ChatMessage[] = allMessages
           .slice(-21, -1)
           .map((m) => ({
