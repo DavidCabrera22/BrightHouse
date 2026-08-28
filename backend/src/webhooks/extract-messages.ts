@@ -30,8 +30,33 @@ export interface ExtractedMessage {
  */
 const AGENT_SOURCES = new Set(['mobile', 'web', 'desktop']);
 
-/** Los chats 1:1 terminan así; los grupos en `@g.us` y los estados en `@broadcast`. */
-const DIRECT_CHAT_SUFFIX = '@s.whatsapp.net';
+const PHONE_SUFFIX = '@s.whatsapp.net';
+
+/**
+ * WhatsApp identifica a algunos contactos por LID (Linked Identity) en vez de
+ * por teléfono, y entonces `chat_id` termina en `@lid`. No se puede reducir a
+ * un número: el LID completo *es* la dirección, y hay que conservarlo tal cual
+ * para poder responderle.
+ */
+const LID_SUFFIX = '@lid';
+
+/**
+ * Devuelve el identificador del interlocutor a partir del `chat_id`, o `null`
+ * si el chat no es una conversación 1:1 (grupos `@g.us`, estados, historias).
+ *
+ * `chat_id` es la fuente de verdad, no `from`: en los mensajes salientes `from`
+ * es el número del negocio, y en los contactos por LID `from` trae el LID sin
+ * que se pueda distinguir de un teléfono.
+ */
+function counterpartFrom(chatId: string): string | null {
+  if (!chatId) return null;
+  if (chatId.endsWith(PHONE_SUFFIX)) {
+    const phone = chatId.slice(0, -PHONE_SUFFIX.length);
+    return phone || null;
+  }
+  if (chatId.endsWith(LID_SUFFIX)) return chatId;
+  return null;
+}
 
 export interface ExtractResult {
   messages: ExtractedMessage[];
@@ -59,6 +84,23 @@ export function extractMessages(body: any): ExtractResult {
       const fromMe = Boolean(msg.from_me);
       const type = String(msg.type ?? '');
 
+      // `chat_id` manda en ambos sentidos: es la dirección a la que se responde.
+      const chatId = String(msg.chat_id ?? '');
+      let counterpart = chatId ? counterpartFrom(chatId) : null;
+
+      // Si el payload no trae `chat_id`, en un entrante `from` sí es el
+      // interlocutor. En un saliente no sirve: ahí `from` es el número del
+      // negocio. El respaldo solo aplica cuando `chat_id` falta por completo —
+      // si está y es un grupo, el mensaje se descarta, que es lo correcto.
+      if (!counterpart && !chatId && !fromMe && msg.from) {
+        counterpart = String(msg.from);
+      }
+      if (!counterpart) continue;
+
+      // El propio mensaje trae el nombre del contacto; el arreglo `contacts`
+      // no siempre lo incluye, y nunca lo trae para los contactos por LID.
+      const profileName = msg.from_name || contacts[counterpart] || counterpart;
+
       if (fromMe) {
         const source = String(msg.source ?? '');
         if (!source) {
@@ -67,21 +109,13 @@ export function extractMessages(body: any): ExtractResult {
         }
         if (!AGENT_SOURCES.has(source)) continue;
 
-        // En los salientes, `from` es el número del negocio: el interlocutor
-        // está en `chat_id`. Solo nos sirven los chats 1:1.
-        const chatId = String(msg.chat_id ?? '');
-        if (!chatId.endsWith(DIRECT_CHAT_SUFFIX)) continue;
-
-        const counterpart = chatId.slice(0, -DIRECT_CHAT_SUFFIX.length);
-        if (!counterpart) continue;
-
         // Un saliente que no es texto igual cuenta: una nota de voz del asesor
         // también significa que tomó el control.
         messages.push({
           from: counterpart,
           messageId: msg.id,
           text: msg.text?.body || '',
-          profileName: contacts[counterpart] || counterpart,
+          profileName,
           fromMe: true,
           type,
         });
@@ -90,13 +124,12 @@ export function extractMessages(body: any): ExtractResult {
 
       // Un entrante que no es texto no le sirve a Nova.
       if (type !== 'text') continue;
-      if (!msg.from) continue;
 
       messages.push({
-        from: msg.from,
+        from: counterpart,
         messageId: msg.id,
         text: msg.text?.body || '',
-        profileName: contacts[msg.from] || msg.from,
+        profileName,
         fromMe: false,
         type,
       });

@@ -19,9 +19,13 @@ export class WhapiService {
       return false;
     }
 
-    // Whapi expects phone in format: 521XXXXXXXXXX or country code + number
-    // Ensure it doesn't start with + and append @s.whatsapp.net for chat_id
-    const chatId = to.replace(/^\+/, '') + '@s.whatsapp.net';
+    // Un teléfono suelto se convierte en chat_id; un identificador que ya trae
+    // dominio (`...@lid` para los contactos por LID de WhatsApp) se manda tal
+    // cual. Concatenarle el sufijo produciría `<lid>@lid@s.whatsapp.net`, que
+    // Whapi rechaza — y el prospecto se queda sin respuesta.
+    const chatId = to.includes('@')
+      ? to
+      : to.replace(/^\+/, '') + '@s.whatsapp.net';
 
     try {
       const res = await fetch(`${this.apiUrl}/messages/text`, {
