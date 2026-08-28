@@ -116,16 +116,25 @@ export class ConversationsService {
    */
   async pauseNova(
     conversationId: string,
-    by: 'whatsapp' | 'crm' | 'nova',
+    by: 'whatsapp' | 'crm',
   ): Promise<void> {
     await this.conversationRepo.update(conversationId, {
       nova_paused: true,
       nova_paused_at: new Date(),
       nova_paused_by: by,
-      // Un asesor que entra al chat ya está atendiendo: la señal de escalamiento
-      // deja de aplicar. Salvo cuando es la propia Nova la que escala.
-      needs_human: by === 'nova',
+      // Un asesor que entra al chat ya está atendiendo: la señal de que hace
+      // falta una persona deja de aplicar.
+      needs_human: false,
     });
+  }
+
+  /**
+   * Marca que la conversación conviene que la vea un asesor, SIN silenciar a
+   * Nova. Nova solo se pausa por decisión de una persona —comando o botón—:
+   * callarse sola dejaba al prospecto sin respuesta si nadie miraba el CRM.
+   */
+  async markNeedsHuman(conversationId: string): Promise<void> {
+    await this.conversationRepo.update(conversationId, { needs_human: true });
   }
 
   /** Devuelve el control a Nova y limpia el estado de pausa. */

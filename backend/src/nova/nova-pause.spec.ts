@@ -43,10 +43,12 @@ describe('shouldAutoResume', () => {
     expect(shouldAutoResume(pausedHoursAgo(20, 'crm'), AHORA, HOURS)).toBe(true);
   });
 
-  it('NUNCA reactiva una conversación escalada por Nova', () => {
-    // Reactivarla la devolvería a la situación que la hizo escalar.
+  it('no hay excepciones: cualquier pausa se reactiva pasada la ventana', () => {
+    // Antes las conversaciones escaladas por Nova quedaban mudas para siempre.
+    // Nova ya no se pausa sola, y si quedara una fila vieja marcada así,
+    // también debe volver: el silencio permanente es peor que el bot.
     expect(shouldAutoResume(pausedHoursAgo(99, 'nova'), AHORA, HOURS)).toBe(
-      false,
+      true,
     );
   });
 

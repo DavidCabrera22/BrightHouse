@@ -113,10 +113,18 @@ está en 1024, que en WhatsApp son varias pantallas. Una instrucción de "sé br
 en el prompt es una sugerencia; `max_tokens: 400` es un techo. Van los dos: la
 regla explica el formato deseado, el parámetro lo garantiza.
 
-**El escalamiento auto-pausa.** Cuando Nova detecta que debe pasar a humano, no
-basta con decirlo: si sigue respondiendo, sigue dando vueltas. Marca la
-conversación, avisa al cliente y se calla, que es exactamente el mismo estado que
-produce el botón "Tomar control".
+**Nova nunca se pausa a sí misma.** Se diseñó así —al detectar que hacía falta
+un humano, se callaba— y en producción resultó ser el peor comportamiento del
+sistema: bastaban dos "Hola" seguidos para que el modelo decidiera que la
+conversación "no avanzaba", y como las conversaciones que ella escalaba estaban
+exentas de la reactivación automática, el prospecto quedaba sin respuesta para
+siempre salvo que alguien abriera el CRM.
+
+Ahora la pausa es **siempre** decisión de una persona: `#pausa`, el botón del
+CRM, o simplemente escribirle al cliente desde el WhatsApp del negocio. Cuando
+el modelo detecta que conviene un asesor, marca `needs_human` —que el CRM
+destaca— y Nova **sigue respondiendo**. Un bot atendiendo es mejor que el
+silencio, y la marca ya cumple su función de avisar.
 
 ## Arquitectura
 
@@ -165,10 +173,8 @@ ocurre en el paso 5, después de crear el lead y guardar el mensaje.
 5. **Ventana de reactivación:** si la conversación está pausada y
    `nova_paused_at` tiene más de `NOVA_RESUME_HOURS` (por defecto 12), despausar
    y seguir. Si está pausada y dentro de la ventana, terminar sin responder.
-   **La ventana no aplica cuando `nova_paused_by = 'nova'`:** una conversación
-   escalada solo la reactiva una persona, con `#nova` o con el botón del CRM.
-   Reactivarla sola devolvería a Nova exactamente a la situación que la hizo
-   escalar.
+   **La ventana no tiene excepciones.** Toda pausa la decidió una persona, y si
+   esa persona no la levanta, la ventana lo hace.
 6. Resolver el perfil del edificio por el slug del tenant y el resumen de
    inventario por `project_id`.
 7. Generar la respuesta, guardarla, enviarla por Whapi.
@@ -239,11 +245,13 @@ un dato que el cliente ya dio en la conversación. Una sola pregunta por mensaje
 que es una regla que el prompt actual ya tiene y conviene conservar.
 
 **Escalamiento.** Nova pasa a humano ante: una pregunta concreta sobre el caso de
-crédito del cliente, un intento de negociar el precio, una queja o reclamo, una
-petición explícita de hablar con un asesor, o dos turnos seguidos sin que la
-conversación avance. Al dispararse: cierra con una frase de traspaso, el
-controlador marca `needs_human = true` y `nova_paused = true` con
-`nova_paused_by = 'nova'`, y deja de responder.
+crédito del cliente, un intento de negociar el precio, una queja o reclamo, o
+una petición explícita de hablar con un asesor. Que la conversación sea corta,
+repetitiva o no avance **no** cuenta: esa condición existió, disparaba con dos
+saludos seguidos y fue la causa de que Nova abandonara conversaciones.
+
+Al dispararse, el controlador marca `needs_human = true` y nada más. Nova ofrece
+el asesor y sigue atendiendo.
 
 La detección la hace el modelo, no una lista de palabras clave. El
 `enrichLeadAsync` actual ya muestra el problema de las listas: busca "sábado" o

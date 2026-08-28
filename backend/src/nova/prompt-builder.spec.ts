@@ -36,10 +36,18 @@ describe('buildSystemPrompt', () => {
     expect(prompt).not.toMatch(/unidades disponibles/i);
   });
 
-  it('siempre incluye las reglas globales de formato y escalamiento', () => {
+  it('siempre incluye las reglas globales de formato y de traspaso a asesor', () => {
     const prompt = buildSystemPrompt(OASIS_PARK, null);
     expect(prompt).toMatch(/dos párrafos/i);
-    expect(prompt).toMatch(/escalar/i);
+    expect(prompt).toMatch(/ofrecer un asesor humano|conectarte con uno de nuestros asesores/i);
+  });
+
+  it('le ordena seguir atendiendo aunque ofrezca un asesor', () => {
+    // Nova ya no se pausa sola: si dejara de responder, el prospecto quedaría
+    // sin nadie hasta que un humano abriera el CRM.
+    const prompt = buildSystemPrompt(OASIS_PARK, null);
+    expect(prompt).toMatch(/NO dejes de atenderlo/);
+    expect(prompt).not.toMatch(/Deja de responder/);
   });
 });
 

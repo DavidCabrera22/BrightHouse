@@ -13,8 +13,11 @@ export const DEFAULT_RESUME_HOURS = 12;
  * La ventana se mide desde `nova_paused_at`, que se reescribe con cada mensaje
  * del asesor: mientras el asesor esté activo en el chat, Nova no se mete.
  *
- * Una conversación escalada por Nova (`nova_paused_by === 'nova'`) no se
- * reactiva sola nunca: solo con `#nova` o con el botón del CRM.
+ * No hay excepciones. Nova solo se pausa porque una persona lo decidió —con
+ * `#pausa`, con el botón del CRM, o simplemente escribiéndole al cliente— y si
+ * esa persona no la reactiva, la ventana lo hace. Antes existía una excepción
+ * para las conversaciones que Nova escalaba sola, y era justo el caso que
+ * dejaba a un prospecto sin respuesta para siempre.
  */
 export function shouldAutoResume(
   conv: PauseState,
@@ -22,7 +25,6 @@ export function shouldAutoResume(
   resumeHours: number,
 ): boolean {
   if (!conv.nova_paused) return false;
-  if (conv.nova_paused_by === 'nova') return false;
   if (!conv.nova_paused_at) return false;
 
   const elapsedMs = now.getTime() - new Date(conv.nova_paused_at).getTime();

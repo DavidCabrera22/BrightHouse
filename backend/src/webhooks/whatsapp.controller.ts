@@ -396,10 +396,12 @@ export class WhatsAppController {
       const conv = await this.conversationsService.findConversationById(convId);
       if (!conv.lead_id) return;
 
-      // Nova pidió escalar: se calla y queda marcada para el asesor.
+      // Queda marcada para que un asesor la vea, pero Nova SIGUE respondiendo:
+      // callarse sola dejaba al prospecto sin respuesta hasta que alguien
+      // abriera el CRM, y si nadie lo hacía, para siempre.
       if (extraction.needs_human) {
-        await this.conversationsService.pauseNova(convId, 'nova');
-        this.logger.log(`Conversación ${convId} escalada a asesor humano`);
+        await this.conversationsService.markNeedsHuman(convId);
+        this.logger.log(`Conversación ${convId} marcada: conviene que la vea un asesor`);
       }
 
       // ── Determine next status based on extraction ──────────────────────────
