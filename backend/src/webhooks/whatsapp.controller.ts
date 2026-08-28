@@ -197,13 +197,26 @@ export class WhatsAppController {
           continue;
         }
 
+        // Enviar ANTES de guardar. Si el envío falla y el mensaje se guarda
+        // igual, Nova queda creyendo que dijo algo que el prospecto nunca
+        // leyó: en el siguiente turno no vuelve a saludar y responde como si
+        // hubiera una conversación en curso que, del otro lado, no existe.
+        // Sin guardar, la próxima vez lo intenta de nuevo desde el principio.
+        const enviado = await this.whapiService.sendText(from, novaReply, whapiToken);
+
+        if (!enviado) {
+          this.logger.error(
+            `No se pudo entregar la respuesta a ${from}; no se guarda para que Nova la reintente`,
+          );
+          continue;
+        }
+
         await this.conversationsService.addMessage(conv.id, {
           content: novaReply,
           sender_type: 'bot',
           sender_name: 'Nova',
         });
 
-        await this.whapiService.sendText(from, novaReply, whapiToken);
         this.logger.log(`Nova replied to ${from}: "${novaReply.substring(0, 80)}..."`);
 
         // ── 7. Avance del lead ──────────────────────────────────────────────
