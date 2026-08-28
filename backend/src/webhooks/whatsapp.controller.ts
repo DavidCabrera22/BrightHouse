@@ -22,7 +22,10 @@ import {
 } from '../nova/conversation-memory';
 import { WhapiService } from './whapi.service';
 import { extractMessages } from './extract-messages';
+import { resolveLeadProject } from './resolve-lead-project';
 import { TenantsService } from '../tenants/tenants.service';
+import { Tenant } from '../tenants/entities/tenant.entity';
+import { ProjectsService } from '../projects/projects.service';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { Public } from '../auth/public.decorator';
@@ -39,6 +42,7 @@ export class WhatsAppController {
     private readonly novaService: NovaService,
     private readonly whapiService: WhapiService,
     private readonly tenantsService: TenantsService,
+    private readonly projectsService: ProjectsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -68,15 +72,14 @@ export class WhatsAppController {
       // ── 1. Resolver tenant ────────────────────────────────────────────────
       let tenantId: string | undefined;
       let whapiToken: string | undefined;
-      let projectId: string | undefined;
       let buildingSlug = tenantSlug ?? '';
+      let tenant: Tenant | null = null;
 
       if (tenantSlug) {
-        const tenant = await this.tenantsService.findBySlug(tenantSlug);
+        tenant = await this.tenantsService.findBySlug(tenantSlug);
         if (tenant) {
           tenantId = tenant.id;
           whapiToken = tenant.whapi_token;
-          projectId = tenant.default_project_id;
           buildingSlug = tenant.slug;
         } else {
           this.logger.warn(`Webhook received for unknown tenant slug: ${tenantSlug}`);
@@ -84,7 +87,19 @@ export class WhatsAppController {
       }
 
       if (!whapiToken) whapiToken = this.configService.get<string>('WHAPI_TOKEN');
-      if (!projectId) projectId = this.configService.get<string>('DEFAULT_PROJECT_ID');
+
+      // El proyecto del lead sale del tenant, y solo del tenant. El respaldo
+      // del entorno apunta a un edificio concreto: aplicarlo cuando el tenant
+      // ya se resolvió registra al prospecto en la cartera de otra empresa.
+      const { projectId, problem } = resolveLeadProject({
+        tenant,
+        configuredProject: tenant?.default_project_id
+          ? await this.projectsService.findForWebhook(tenant.default_project_id)
+          : null,
+        envProjectId: this.configService.get<string>('DEFAULT_PROJECT_ID'),
+      });
+      if (problem) this.logger.error(problem);
+
       if (!buildingSlug) {
         buildingSlug = this.configService.get<string>('DEFAULT_BUILDING_SLUG') ?? 'oasis-park';
         // Sin `?tenant=` no sabemos de qué edificio se trata y estamos
@@ -128,7 +143,13 @@ export class WhatsAppController {
         );
       }
 
-      for (const { from, messageId, text, profileName, fromMe, type } of messages) {
+      for (const { from: rawFrom, messageId, text, profileName, fromMe, type } of messages) {
+        // Los contactos por LID llegan con un identificador distinto al del
+        // chat canónico, que es el del teléfono. Sin traducirlo, la misma
+        // persona genera dos conversaciones —sus mensajes bajo el LID, los del
+        // asesor bajo el número— y pausar una no silencia la otra.
+        const from = await this.whapiService.resolveChatPhone(rawFrom, whapiToken);
+
         // ── 3. Mensaje del asesor: comando o toma de control ────────────────
         if (fromMe) {
           await this.handleAgentMessage({
@@ -195,7 +216,7 @@ export class WhatsAppController {
           }
         }
 
-        const allMessages = await this.conversationsService.getMessages(conv.id);
+        const allMessages = await this.conversationsService.getMessagesForNova(conv.id);
 
         // El último es el que acabamos de ingerir: va aparte, como el turno
         // que Nova está respondiendo.
