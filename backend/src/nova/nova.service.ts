@@ -5,16 +5,23 @@ import { buildSystemPrompt } from './prompt-builder';
 import { getBuildingProfile } from './buildings/building-registry';
 import { InventorySummaryService } from './inventory-summary.service';
 import { ChatMessage, normalizeHistory } from './chat-history';
+import { ProspectFacts, buildProspectBlock } from './prospect-context';
 
 /** Se reexporta para no romper los imports existentes de los webhooks. */
 export type { ChatMessage };
 
-/** De qué edificio habla esta conversación. */
+/** De qué edificio habla esta conversación, y con quién. */
 export interface NovaContext {
   /** Slug del tenant; debe tener un perfil en `building-registry`. */
   buildingSlug: string;
   /** Proyecto del que sale el inventario. */
   projectId?: string;
+  /**
+   * Lo que el CRM ya sabe del prospecto y cuánto hace que no escribe. El
+   * historial son solo los últimos 20 mensajes; esto es lo que le da a Nova
+   * memoria más allá de esa ventana.
+   */
+  prospect?: ProspectFacts;
 }
 
 const FALLBACK_MESSAGE =
@@ -166,7 +173,10 @@ export class NovaService {
         profile.stage === 'prelaunch'
           ? null
           : await this.inventory.getSummary(ctx.projectId);
-      systemPrompt = buildSystemPrompt(profile, inventory);
+      const prospecto = ctx.prospect
+        ? buildProspectBlock(ctx.prospect, new Date())
+        : null;
+      systemPrompt = buildSystemPrompt(profile, inventory, prospecto);
     } catch (err) {
       this.logger.error(
         `Sin perfil utilizable para "${ctx.buildingSlug}": ${err?.message}. Nova no responde.`,

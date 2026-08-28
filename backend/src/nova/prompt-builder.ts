@@ -222,8 +222,15 @@ ${PRELAUNCH_ESCALATION}`;
 export function buildSystemPrompt(
   profile: BuildingProfile,
   inventory: string | null,
+  /** Ficha del prospecto, cuando el CRM ya sabe algo de él. */
+  prospect: string | null = null,
 ): string {
-  return profile.stage === 'prelaunch'
-    ? buildPrelaunchPrompt(profile)
-    : buildSellingPrompt(profile, inventory);
+  const base =
+    profile.stage === 'prelaunch'
+      ? buildPrelaunchPrompt(profile)
+      : buildSellingPrompt(profile, inventory);
+
+  // Va al final, después de las reglas: es lo más específico de esta
+  // conversación y lo último que el modelo lee antes de responder.
+  return prospect ? `${base}\n\n${prospect}` : base;
 }

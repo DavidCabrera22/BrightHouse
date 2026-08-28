@@ -203,6 +203,16 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     return { lead: saved, created: true };
   }
 
+  /**
+   * Lee un lead sin filtrar por tenant. Es una ruta de sistema: la llama el
+   * webhook con el `lead_id` que ya cuelga de una conversación resuelta con su
+   * tenant, así que el aislamiento ya ocurrió antes. Cualquier ruta de request
+   * debe usar `findOne(id, ctx)`, que sí valida.
+   */
+  async findByIdForWebhook(id: string): Promise<Lead | null> {
+    return this.leadRepository.findOne({ where: { id } });
+  }
+
   async updateFromNova(
     id: string,
     data: { name?: string; email?: string; interested_in?: string; ai_score?: number; priority?: string; status?: string },

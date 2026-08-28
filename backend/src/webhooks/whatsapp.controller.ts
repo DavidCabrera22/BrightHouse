@@ -137,6 +137,10 @@ export class WhatsAppController {
         );
         const isNewConversation = !conv.lead_id;
 
+        // Se captura ANTES de ingerir el mensaje: después, `last_message_at`
+        // apunta al mensaje actual y el silencio siempre daría cero.
+        const ultimoMensajePrevio = conv.last_message_at ?? null;
+
         if (isNewConversation && projectId) {
           const { lead, created } = await this.leadsService.findOrCreateByPhone(
             from,
@@ -185,9 +189,32 @@ export class WhatsAppController {
           }));
 
         // ── 6. Responder ────────────────────────────────────────────────────
+        // La ficha del CRM le da memoria más allá de los últimos 20 mensajes:
+        // sin esto, a los tres meses le vuelve a preguntar el nombre a alguien
+        // que ya está registrado con nombre, correo y propósito.
+        const lead = freshConv.lead_id
+          ? await this.leadsService.findByIdForWebhook(freshConv.lead_id)
+          : null;
+
+        // Un lead autocreado guarda el teléfono como nombre (`name || phone`),
+        // y en los contactos por LID el nombre de WhatsApp puede ser un alias
+        // decorativo. Pasar eso haría que Nova salude a alguien por su número.
+        const nombreUtil =
+          lead?.name && lead.name !== from && lead.name !== lead.phone
+            ? lead.name
+            : null;
+
         const novaReply = await this.novaService.generateResponse(text, history, {
           buildingSlug,
           projectId,
+          prospect: {
+            name: nombreUtil,
+            email: lead?.email,
+            interested_in: lead?.interested_in,
+            status: lead?.status,
+            firstContactAt: lead?.created_at,
+            lastMessageAt: ultimoMensajePrevio,
+          },
         });
 
         if (!novaReply) {
