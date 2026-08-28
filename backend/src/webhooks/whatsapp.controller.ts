@@ -150,6 +150,18 @@ export class WhatsAppController {
         // asesor bajo el número— y pausar una no silencia la otra.
         const from = await this.whapiService.resolveChatPhone(rawFrom, whapiToken);
 
+        // Si el identificador cambió, este contacto ya escribió antes bajo el
+        // anterior —era un desconocido y alguien lo guardó en la agenda—. Su
+        // conversación se unifica en vez de empezar una nueva y perder lo que
+        // ya se habló con él.
+        if (from !== rawFrom) {
+          await this.conversationsService.mergeConversationIdentity(
+            rawFrom,
+            from,
+            tenantId,
+          );
+        }
+
         // ── 3. Mensaje del asesor: comando o toma de control ────────────────
         if (fromMe) {
           await this.handleAgentMessage({
