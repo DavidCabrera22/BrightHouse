@@ -42,8 +42,12 @@ const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
  */
 const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
-/** La extracción es una tarea mecánica: un modelo pequeño basta y es más rápido. */
-const DEFAULT_EXTRACTION_MODEL = 'llama-3.1-8b-instant';
+/**
+ * La extracción es una tarea mecánica: un modelo pequeño basta y es más rápido.
+ * `llama-3.1-8b-instant` quedó deprecado en agosto de 2026; este es el sucesor
+ * que recomienda Groq.
+ */
+const DEFAULT_EXTRACTION_MODEL = 'openai/gpt-oss-20b';
 
 export interface LeadExtraction {
   name?: string;
