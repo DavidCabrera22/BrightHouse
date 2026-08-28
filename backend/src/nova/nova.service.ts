@@ -295,7 +295,8 @@ Responde SOLO con el resumen, sin encabezados ni comentarios.`,
           {
             role: 'system',
             content: `Eres un extractor de datos. Analiza la conversación y responde SOLO con un JSON válido sin texto adicional.
-Extrae: nombre real del prospecto (name, si lo mencionó), correo electrónico (email, si lo dio), propósito (interested_in: para vivir/invertir), financiamiento (financing: FNA/subsidio/recursos propios/combinación), nivel de interés (ai_score 1-100), prioridad (priority: high/medium/low), y needs_human (true si el prospecto pregunta por su caso concreto de crédito, intenta negociar el precio, presenta una queja, pide hablar con un asesor, o la conversación lleva dos turnos sin avanzar).
+Extrae: nombre real del prospecto (name, si lo mencionó), correo electrónico (email, si lo dio), propósito (interested_in: para vivir/invertir), financiamiento (financing: FNA/subsidio/recursos propios/combinación), nivel de interés (ai_score 1-100), prioridad (priority: high/medium/low), y needs_human (true SOLO si el prospecto pide explícitamente hablar con una persona, presenta una queja o reclamo, intenta negociar el precio, o pregunta por su caso concreto de crédito).
+needs_human NUNCA es true porque la conversación sea corta, repetitiva o no avance: saludar varias veces, responder con monosílabos o quedarse callado no es motivo para escalar. Ante la duda, false.
 Si un campo no está claro, devuélvelo como null. No inventes un correo: cópialo tal cual lo escribió el prospecto o déjalo en null.
 Los valores de texto van SIEMPRE en español, con las palabras del propio prospecto. El campo priority solo puede ser high, medium o low, en minúscula.
 Ejemplo: {"name":"Carlos","email":"carlos@gmail.com","interested_in":"para vivir","financing":"FNA","ai_score":70,"priority":"medium","needs_human":false}`,
