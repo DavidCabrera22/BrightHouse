@@ -217,6 +217,51 @@ export class NovaService {
     }
   }
 
+  /**
+   * Pliega mensajes viejos en el resumen acumulativo de la conversación.
+   *
+   * Se llama con lo que acaba de salir de la ventana textual, junto al resumen
+   * que ya existía, para no reprocesar toda la historia cada vez. Devuelve
+   * `null` si falla: el llamador conserva el resumen anterior, que es peor que
+   * uno actualizado pero mucho mejor que ninguno.
+   */
+  async summarizeConversation(
+    previousSummary: string | null,
+    transcript: string,
+  ): Promise<string | null> {
+    if (!transcript.trim()) return previousSummary;
+
+    const anterior = previousSummary?.trim()
+      ? `Resumen acumulado hasta ahora:\n${previousSummary.trim()}\n\n`
+      : '';
+
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.extractionModel,
+        max_tokens: 2000,
+        messages: [
+          {
+            role: 'system',
+            content: `Mantienes la memoria de un asesor inmobiliario sobre un prospecto.
+Recibes el resumen acumulado y los mensajes nuevos, y devuelves un resumen actualizado que los integre.
+
+Conserva lo que el prospecto contó de sí mismo y de lo que busca: su situación familiar y laboral, dónde vive, presupuesto o forma de pago si lo mencionó, preferencias, objeciones, y cualquier compromiso adquirido por cualquiera de las partes.
+Descarta los saludos, las cortesías y lo que dijo Nova salvo que sea un compromiso.
+NUNCA escribas sobre lo que se desconoce: nada de "no indicó su presupuesto" o "no planteó objeciones". Si un dato no está, simplemente no lo menciones. El resumen solo contiene hechos que el prospecto dijo.
+Escribe en español, en tercera persona, en prosa breve: como máximo seis frases. Si algo del resumen anterior se contradice con lo nuevo, quédate con lo nuevo.
+Responde SOLO con el resumen, sin encabezados ni comentarios.`,
+          },
+          { role: 'user', content: `${anterior}Mensajes nuevos:\n${transcript}` },
+        ],
+      });
+
+      return response.choices[0]?.message?.content?.trim() || previousSummary;
+    } catch (err) {
+      this.logger.warn(`No se pudo actualizar el resumen: ${err?.message}`);
+      return null;
+    }
+  }
+
   async extractLeadInfo(
     conversationHistory: ChatMessage[],
   ): Promise<LeadExtraction> {

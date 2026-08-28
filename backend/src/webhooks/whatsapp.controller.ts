@@ -15,6 +15,11 @@ import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { parseNovaCommand } from '../nova/nova-commands';
 import { shouldAutoResume, DEFAULT_RESUME_HOURS } from '../nova/nova-pause';
+import {
+  DEFAULT_HISTORY_WINDOW,
+  splitHistory,
+  toTranscript,
+} from '../nova/conversation-memory';
 import { WhapiService } from './whapi.service';
 import { extractMessages } from './extract-messages';
 import { TenantsService } from '../tenants/tenants.service';
@@ -101,6 +106,16 @@ export class WhatsAppController {
           ? configuredHours
           : DEFAULT_RESUME_HOURS;
 
+      // Cuántos mensajes viajan textuales. Lo que queda fuera no se pierde:
+      // se pliega en el resumen acumulativo de la conversación.
+      const configuredWindow = Number(
+        this.configService.get<string>('NOVA_HISTORY_MESSAGES'),
+      );
+      const historyWindow =
+        Number.isFinite(configuredWindow) && configuredWindow > 0
+          ? configuredWindow
+          : DEFAULT_HISTORY_WINDOW;
+
       // ── 2. Extraer mensajes (salientes del asesor incluidos) ──────────────
       const { messages, outgoingWithoutSource } = extractMessages(body);
 
@@ -181,12 +196,20 @@ export class WhatsAppController {
         }
 
         const allMessages = await this.conversationsService.getMessages(conv.id);
-        const history: ChatMessage[] = allMessages
-          .slice(-21, -1)
-          .map((m) => ({
-            role: m.sender_type === 'user' ? 'user' : 'assistant',
-            content: m.content,
-          }));
+
+        // El último es el que acabamos de ingerir: va aparte, como el turno
+        // que Nova está respondiendo.
+        const previos = allMessages.slice(0, -1);
+        const { window, toSummarize } = splitHistory(
+          previos,
+          historyWindow,
+          freshConv.memory_summary_until,
+        );
+
+        const history: ChatMessage[] = window.map((m) => ({
+          role: m.sender_type === 'user' ? 'user' : 'assistant',
+          content: m.content,
+        }));
 
         // ── 6. Responder ────────────────────────────────────────────────────
         // La ficha del CRM le da memoria más allá de los últimos 20 mensajes:
@@ -214,6 +237,7 @@ export class WhatsAppController {
             status: lead?.status,
             firstContactAt: lead?.created_at,
             lastMessageAt: ultimoMensajePrevio,
+            conversationSummary: freshConv.memory_summary,
           },
         });
 
@@ -260,6 +284,17 @@ export class WhatsAppController {
         const userTurns = allMessages.filter((m) => m.sender_type === 'user').length;
         if (userTurns >= 2 && userTurns % 2 === 0) {
           this.enrichLeadAsync(conv.id, [...history, { role: 'user', content: text }]);
+        }
+
+        // Lo que salió de la ventana se pliega al resumen. Va después de haber
+        // respondido y sin await: es memoria para la próxima vez, no algo que
+        // el prospecto deba esperar.
+        if (toSummarize.length > 0) {
+          this.updateMemoryAsync(
+            conv.id,
+            freshConv.memory_summary,
+            toSummarize,
+          );
         }
       }
     } catch (err) {
@@ -319,6 +354,37 @@ export class WhatsAppController {
     });
     await this.conversationsService.pauseNova(conv.id, 'whatsapp');
     this.logger.log(`Asesor escribió a ${phone} (${type}) — Nova pausada`);
+  }
+
+  /**
+   * Fire-and-forget: pliega al resumen los mensajes que salieron de la ventana.
+   *
+   * Solo avanza el marcador si el resumen se actualizó de verdad. Si el modelo
+   * falla, esos mensajes quedan pendientes y se reintentan en el próximo turno
+   * — perderlos significaría un hueco permanente en la memoria.
+   */
+  private async updateMemoryAsync(
+    convId: string,
+    resumenPrevio: string | null,
+    porResumir: Array<{ sender_type: string; content: string; created_at: Date }>,
+  ) {
+    try {
+      const nuevo = await this.novaService.summarizeConversation(
+        resumenPrevio,
+        toTranscript(porResumir),
+      );
+      if (!nuevo) return;
+
+      await this.conversationsService.updateConversation(convId, {
+        memory_summary: nuevo,
+        memory_summary_until: porResumir[porResumir.length - 1].created_at,
+      });
+      this.logger.log(
+        `Memoria de ${convId} actualizada con ${porResumir.length} mensaje(s)`,
+      );
+    } catch (err) {
+      this.logger.warn(`Error actualizando la memoria: ${err?.message}`);
+    }
   }
 
   /** Fire-and-forget: extract lead info and auto-advance pipeline status */

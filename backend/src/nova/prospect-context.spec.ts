@@ -86,3 +86,32 @@ describe('buildProspectBlock', () => {
     ).toMatch(/último mensaje fue/);
   });
 });
+
+describe('buildProspectBlock — resumen de lo conversado', () => {
+  it('incluye el resumen y aclara que ya ocurrió', () => {
+    const b = buildProspectBlock(
+      {
+        name: 'Jorge',
+        conversationSummary: 'Su esposa trabaja en Barranquilla y quieren mudarse en 2027.',
+        lastMessageAt: haceMs(95 * DIA),
+      },
+      AHORA,
+    )!;
+    expect(b).toContain('Su esposa trabaja en Barranquilla');
+    expect(b).toMatch(/no las repitas ni las cuestiones/);
+  });
+
+  it('un resumen basta para que el bloque exista, sin más datos', () => {
+    const b = buildProspectBlock(
+      { conversationSummary: 'Busca dos alcobas.', lastMessageAt: haceMs(5 * MINUTO) },
+      AHORA,
+    );
+    expect(b).toContain('Busca dos alcobas.');
+  });
+
+  it('un resumen vacío o en blanco no genera bloque', () => {
+    expect(
+      buildProspectBlock({ conversationSummary: '   ', lastMessageAt: haceMs(MINUTO) }, AHORA),
+    ).toBeNull();
+  });
+});

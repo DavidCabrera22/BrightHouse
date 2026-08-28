@@ -73,6 +73,18 @@ export class Conversation {
   @Column({ default: false })
   needs_human: boolean;
 
+  /**
+   * Resumen acumulativo de lo que quedó fuera de la ventana de mensajes
+   * textuales. Es lo que le da memoria a Nova cuando un cliente vuelve meses
+   * después: los datos del lead dicen quién es, esto dice qué contó.
+   */
+  @Column({ type: 'text', nullable: true })
+  memory_summary: string | null;
+
+  /** Fecha del mensaje más reciente ya incorporado a `memory_summary`. */
+  @Column({ nullable: true, type: 'timestamp' })
+  memory_summary_until: Date | null;
+
   @Column({ nullable: true })
   tenant_id: string;
 

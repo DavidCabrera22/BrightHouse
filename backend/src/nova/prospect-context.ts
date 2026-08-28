@@ -18,6 +18,11 @@ export interface ProspectFacts {
   firstContactAt?: Date | null;
   /** Último mensaje ANTES del que se está atendiendo ahora. */
   lastMessageAt?: Date | null;
+  /**
+   * Resumen de lo conversado que ya salió de la ventana de mensajes textuales.
+   * Los demás campos dicen quién es; esto dice qué contó.
+   */
+  conversationSummary?: string | null;
 }
 
 const MINUTO = 60_000;
@@ -79,7 +84,9 @@ export function buildProspectBlock(
       ? describeElapsed(facts.lastMessageAt, now)
       : null;
 
-  if (datos.length === 0 && !silencio) return null;
+  const resumen = facts.conversationSummary?.trim() || null;
+
+  if (datos.length === 0 && !silencio && !resumen) return null;
 
   const partes: string[] = ['## Lo que ya sabes de este prospecto'];
 
@@ -87,6 +94,13 @@ export function buildProspectBlock(
     partes.push(
       'Esto ya está registrado en el CRM. NO se lo vuelvas a preguntar, y úsalo para hablarle de forma personal.',
       datos.join('\n'),
+    );
+  }
+
+  if (resumen) {
+    partes.push(
+      'Resumen de lo que han hablado antes (son conversaciones reales que ya tuvieron, no las repitas ni las cuestiones):',
+      resumen,
     );
   }
 
