@@ -20,6 +20,7 @@ interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   status: string;
   role_id?: string;
   role?: Role;
@@ -32,6 +33,7 @@ interface User {
 const emptyForm = {
   name: '',
   email: '',
+  phone: '',
   password: '',
   role_id: '',
   project_id: '',
@@ -126,6 +128,7 @@ const UsersPage: React.FC = () => {
     setForm({
       name: u.name,
       email: u.email,
+      phone: u.phone || '',
       password: '',
       role_id: u.role_id || u.role?.id || '',
       project_id: u.project_id || '',
@@ -149,6 +152,8 @@ const UsersPage: React.FC = () => {
     };
     if (form.project_id) payload.project_id = form.project_id;
     if (isSuperAdmin && form.tenant_id) payload.tenant_id = form.tenant_id;
+    // Se manda siempre: vaciar el campo en una edición tiene que borrar el teléfono.
+    payload.phone = form.phone.trim() || null;
     // On edit an empty field means "leave the current password alone".
     if (form.password) payload.password = form.password;
 
@@ -183,7 +188,10 @@ const UsersPage: React.FC = () => {
   const visibleUsers = users.filter((u) => {
     const term = search.trim().toLowerCase();
     const matchesSearch =
-      !term || u.name.toLowerCase().includes(term) || u.email.toLowerCase().includes(term);
+      !term ||
+      u.name.toLowerCase().includes(term) ||
+      u.email.toLowerCase().includes(term) ||
+      (u.phone || '').toLowerCase().includes(term);
     const matchesRole = roleFilter === 'all' || u.role?.name === roleFilter;
     return matchesSearch && matchesRole;
   });
@@ -274,7 +282,10 @@ const UsersPage: React.FC = () => {
                         <span className="ml-2 text-[11px] font-semibold text-slate-400">(tú)</span>
                       )}
                     </p>
-                    <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                    <p className="text-xs text-slate-400 truncate">
+                      {u.email}
+                      {u.phone && <span className="ml-2">· {u.phone}</span>}
+                    </p>
                     {isSuperAdmin && (
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         {tenantName(u.tenant_id) || (
@@ -373,6 +384,19 @@ const UsersPage: React.FC = () => {
                     className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  placeholder="3001234567"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
 
               <div>

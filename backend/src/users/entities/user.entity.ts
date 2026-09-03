@@ -13,6 +13,9 @@ export class User {
   @Column({ unique: true })
   email: string;
 
+  @Column({ nullable: true })
+  phone: string;
+
   @Column({ select: false })
   password_hash: string;
 
