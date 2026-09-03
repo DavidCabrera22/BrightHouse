@@ -8,6 +8,7 @@
  * contó de sí mismo. La salida es quedarse con los últimos N textuales y plegar
  * lo demás en un resumen acumulativo: memoria sin techo, costo acotado.
  */
+import { DEFAULT_ASSISTANT_NAME } from './buildings/building-profile';
 
 export interface StoredMessage {
   sender_type: string;
@@ -59,7 +60,10 @@ export function splitHistory(
  * Transcripción legible para pedirle un resumen al modelo. Nombra a los
  * interlocutores como los ve el prospecto, no por el tipo interno de remitente.
  */
-export function toTranscript(messages: StoredMessage[]): string {
+export function toTranscript(
+  messages: StoredMessage[],
+  assistantName: string = DEFAULT_ASSISTANT_NAME,
+): string {
   return messages
     .map((m) => {
       const quien =
@@ -67,7 +71,7 @@ export function toTranscript(messages: StoredMessage[]): string {
           ? 'Prospecto'
           : m.sender_type === 'agent'
             ? 'Asesor'
-            : 'Nova';
+            : assistantName;
       return `${quien}: ${m.content}`;
     })
     .join('\n');

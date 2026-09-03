@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { buildSystemPrompt } from './prompt-builder';
 import { getBuildingProfile } from './buildings/building-registry';
+import { DEFAULT_ASSISTANT_NAME } from './buildings/building-profile';
 import { InventorySummaryService } from './inventory-summary.service';
 import { ChatMessage, normalizeHistory } from './chat-history';
 import { ProspectFacts, buildProspectBlock } from './prospect-context';
@@ -228,6 +229,10 @@ export class NovaService {
   async summarizeConversation(
     previousSummary: string | null,
     transcript: string,
+    /** Cómo se llama el bot en este edificio: el resumen vuelve al prompt, y
+     *  con el nombre equivocado el bot termina hablando de sí en tercera
+     *  persona y llamándose como el de otro proyecto. */
+    assistantName: string = DEFAULT_ASSISTANT_NAME,
   ): Promise<string | null> {
     if (!transcript.trim()) return previousSummary;
 
@@ -246,7 +251,7 @@ export class NovaService {
 Recibes el resumen acumulado y los mensajes nuevos, y devuelves un resumen actualizado que los integre.
 
 Conserva lo que el prospecto contó de sí mismo y de lo que busca: su situación familiar y laboral, dónde vive, presupuesto o forma de pago si lo mencionó, preferencias, objeciones, y cualquier compromiso adquirido por cualquiera de las partes.
-Descarta los saludos, las cortesías y lo que dijo Nova salvo que sea un compromiso.
+Descarta los saludos, las cortesías y lo que dijo ${assistantName} salvo que sea un compromiso.
 NUNCA escribas sobre lo que se desconoce: nada de "no indicó su presupuesto" o "no planteó objeciones". Si un dato no está, simplemente no lo menciones. El resumen solo contiene hechos que el prospecto dijo.
 Escribe en español, en tercera persona, en prosa breve: como máximo seis frases. Si algo del resumen anterior se contradice con lo nuevo, quédate con lo nuevo.
 Responde SOLO con el resumen, sin encabezados ni comentarios.`,
@@ -264,11 +269,12 @@ Responde SOLO con el resumen, sin encabezados ni comentarios.`,
 
   async extractLeadInfo(
     conversationHistory: ChatMessage[],
+    assistantName: string = DEFAULT_ASSISTANT_NAME,
   ): Promise<LeadExtraction> {
     if (conversationHistory.length < 2) return {};
 
     const transcript = conversationHistory
-      .map((m) => `${m.role === 'user' ? 'Prospecto' : 'Nova'}: ${m.content}`)
+      .map((m) => `${m.role === 'user' ? 'Prospecto' : assistantName}: ${m.content}`)
       .join('\n');
 
     try {

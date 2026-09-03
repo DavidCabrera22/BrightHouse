@@ -15,6 +15,7 @@ import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { InstagramService } from './instagram.service';
 import { resolveLeadProject } from './resolve-lead-project';
+import { assistantNameFor } from '../nova/buildings/building-registry';
 import { TenantsService } from '../tenants/tenants.service';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { ProjectsService } from '../projects/projects.service';
@@ -178,7 +179,7 @@ export class InstagramController {
 
         // 10. Enrich lead every 4 exchanges
         if (allMessages.length >= 4 && allMessages.length % 4 === 0) {
-          this.enrichLeadAsync(conv.id, senderId, [...history, { role: 'user', content: text }], instagramToken, instagramPageId);
+          this.enrichLeadAsync(conv.id, senderId, [...history, { role: 'user', content: text }], instagramToken, instagramPageId, assistantNameFor(buildingSlug));
         }
       }
     } catch (err) {
@@ -194,9 +195,10 @@ export class InstagramController {
     history: ChatMessage[],
     instagramToken?: string,
     instagramPageId?: string,
+    assistantName?: string,
   ) {
     try {
-      const extraction = await this.novaService.extractLeadInfo(history);
+      const extraction = await this.novaService.extractLeadInfo(history, assistantName);
       if (Object.keys(extraction).length === 0) return;
 
       const conv = await this.conversationsService.findOrCreateByPhone(senderId, 'instagram');

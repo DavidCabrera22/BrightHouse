@@ -15,6 +15,7 @@ export const ALPES_VISTA: PrelaunchBuilding = {
   slug: 'alpes-vista',
   stage: 'prelaunch',
   building_name: 'Alpes Vista',
+  assistant_name: 'Sofía',
   location: 'sector Los Alpes, Cartagena',
   location_notes:
     'Un sector consolidado de la ciudad, pensado para quienes sueñan con tener vivienda propia.',

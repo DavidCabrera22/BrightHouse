@@ -1,5 +1,6 @@
 import {
   BuildingProfile,
+  DEFAULT_ASSISTANT_NAME,
   REQUIRED_PRELAUNCH_FIELDS,
   REQUIRED_SELLING_FIELDS,
 } from './building-profile';
@@ -80,4 +81,17 @@ export function getBuildingProfile(slug: string): BuildingProfile {
   if (!profile) throw new MissingBuildingProfileError(slug);
   assertProfileComplete(profile);
   return profile;
+}
+
+/**
+ * El nombre del bot para un tenant, sin exigir que el perfil esté completo.
+ *
+ * `getBuildingProfile` lanza a propósito cuando el perfil falta o está a
+ * medias, porque en ese caso no se debe responder. Pero rotular una
+ * transcripción o pedir un resumen no es responderle a nadie: ahí un perfil
+ * ausente no puede tumbar el flujo, así que se cae al nombre por defecto.
+ */
+export function assistantNameFor(slug: string): string {
+  const profile = PROFILES[normalizeSlug(slug)];
+  return profile?.assistant_name ?? DEFAULT_ASSISTANT_NAME;
 }

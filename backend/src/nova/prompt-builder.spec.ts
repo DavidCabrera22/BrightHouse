@@ -101,3 +101,32 @@ describe('buildSystemPrompt — prelanzamiento', () => {
     expect(prompt).toMatch(/dos párrafos/i);
   });
 });
+
+describe('buildSystemPrompt — identidad del asistente', () => {
+  it('en Alpes Vista se llama Sofía y nunca menciona a Nova', () => {
+    const prompt = buildSystemPrompt(ALPES_VISTA, null);
+    expect(prompt).toContain('Sofía');
+    // El nombre viejo no puede quedar en ningún rincón del prompt: basta que
+    // aparezca en una regla de formato para que el modelo lo adopte.
+    expect(prompt).not.toContain('Nova');
+  });
+
+  it('los edificios sin nombre propio siguen siendo Nova', () => {
+    const prompt = buildSystemPrompt(OASIS_PARK, null);
+    expect(prompt).toContain('Nova');
+    expect(prompt).not.toContain('Sofía');
+  });
+
+  it('se presenta como asesora de BrightHouse, no como asistente virtual', () => {
+    for (const profile of [OASIS_PARK, ALPES_VISTA]) {
+      const prompt = buildSystemPrompt(profile, null);
+      expect(prompt).toMatch(/asesora de BrightHouse/);
+      expect(prompt).not.toMatch(/asistente virtual/i);
+    }
+  });
+
+  it('la regla del prefijo prohibido usa el nombre que lleva el asistente', () => {
+    expect(buildSystemPrompt(ALPES_VISTA, null)).toContain('"Sofía:"');
+    expect(buildSystemPrompt(OASIS_PARK, null)).toContain('"Nova:"');
+  });
+});

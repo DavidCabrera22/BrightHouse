@@ -33,10 +33,19 @@ export interface PaymentPlan {
   notes: string;
 }
 
+/** Cómo se llama el bot cuando su edificio no le pone otro nombre. */
+export const DEFAULT_ASSISTANT_NAME = 'Nova';
+
 interface BuildingBase {
   /** Debe coincidir con el `slug` del tenant en la tabla `tenants`. */
   slug: string;
   building_name: string;
+  /**
+   * Con qué nombre se presenta el bot en este edificio. Cada comercializadora
+   * bautiza al suyo, y el nombre viaja con el edificio y no con el código: por
+   * eso vive aquí y no en `prompt-builder`. Sin valor, `DEFAULT_ASSISTANT_NAME`.
+   */
+  assistant_name?: string;
   location: string;
   /** Por qué la zona importa: valorización, cercanías. */
   location_notes: string;

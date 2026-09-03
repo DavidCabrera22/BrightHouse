@@ -15,6 +15,7 @@ import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { parseNovaCommand } from '../nova/nova-commands';
 import { shouldAutoResume, DEFAULT_RESUME_HOURS } from '../nova/nova-pause';
+import { assistantNameFor } from '../nova/buildings/building-registry';
 import {
   DEFAULT_HISTORY_WINDOW,
   splitHistory,
@@ -316,7 +317,11 @@ export class WhatsAppController {
         // no— así que un módulo sobre el total nunca se cumpliría.
         const userTurns = allMessages.filter((m) => m.sender_type === 'user').length;
         if (userTurns >= 2 && userTurns % 2 === 0) {
-          this.enrichLeadAsync(conv.id, [...history, { role: 'user', content: text }]);
+          this.enrichLeadAsync(
+            conv.id,
+            [...history, { role: 'user', content: text }],
+            assistantNameFor(buildingSlug),
+          );
         }
 
         // Lo que salió de la ventana se pliega al resumen. Va después de haber
@@ -327,6 +332,7 @@ export class WhatsAppController {
             conv.id,
             freshConv.memory_summary,
             toSummarize,
+            assistantNameFor(buildingSlug),
           );
         }
       }
@@ -400,11 +406,13 @@ export class WhatsAppController {
     convId: string,
     resumenPrevio: string | null,
     porResumir: Array<{ sender_type: string; content: string; created_at: Date }>,
+    assistantName: string,
   ) {
     try {
       const nuevo = await this.novaService.summarizeConversation(
         resumenPrevio,
-        toTranscript(porResumir),
+        toTranscript(porResumir, assistantName),
+        assistantName,
       );
       if (!nuevo) return;
 
@@ -421,9 +429,13 @@ export class WhatsAppController {
   }
 
   /** Fire-and-forget: extract lead info and auto-advance pipeline status */
-  private async enrichLeadAsync(convId: string, history: ChatMessage[]) {
+  private async enrichLeadAsync(
+    convId: string,
+    history: ChatMessage[],
+    assistantName: string,
+  ) {
     try {
-      const extraction = await this.novaService.extractLeadInfo(history);
+      const extraction = await this.novaService.extractLeadInfo(history, assistantName);
       if (Object.keys(extraction).length === 0) return;
 
       const conv = await this.conversationsService.findConversationById(convId);

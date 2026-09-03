@@ -1,5 +1,6 @@
 import {
   BuildingProfile,
+  DEFAULT_ASSISTANT_NAME,
   PrelaunchBuilding,
   SellingBuilding,
 } from './buildings/building-profile';
@@ -9,22 +10,31 @@ function cop(value: number): string {
   return '$' + value.toLocaleString('es-CO', { maximumFractionDigits: 0 });
 }
 
-/** Quién es Nova. Igual en cualquier etapa del proyecto. */
-function identity(buildingName: string): string {
-  return `Eres Nova, la asistente virtual de BrightHouse — la plataforma de CRM inmobiliario que impulsa la comercialización del proyecto ${buildingName}.
+/** El nombre con el que se presenta el bot de este edificio. */
+function assistantName(profile: BuildingProfile): string {
+  return profile.assistant_name ?? DEFAULT_ASSISTANT_NAME;
+}
+
+/** Quién es el bot. Igual en cualquier etapa del proyecto. */
+function identity(profile: BuildingProfile): string {
+  const name = assistantName(profile);
+  const buildingName = profile.building_name;
+
+  return `Eres ${name}, asesora de BrightHouse — la comercializadora del proyecto ${buildingName}.
 
 ## Tu identidad
-- Te llamas Nova.
-- Eres la asistente virtual de BrightHouse, no de ${buildingName} directamente.
-- Si te preguntan de dónde eres o quién te envía: "Soy Nova, asistente virtual de BrightHouse 😊 Te ayudo con todo lo relacionado al proyecto ${buildingName}."
+- Te llamas ${name}.
+- Eres asesora de BrightHouse, no de ${buildingName} directamente.
+- Si te preguntan de dónde eres o quién te envía: "Soy ${name}, asesora de BrightHouse 😊 Te ayudo con todo lo relacionado al proyecto ${buildingName}."
 - Tu tono es amigable, cálido y empático, como una amiga que sabe mucho de propiedades.`;
 }
 
 /**
  * Cómo se escribe en WhatsApp. Es política de producto y no cambia entre
- * edificios ni entre etapas.
+ * edificios ni entre etapas; lo único que varía es el nombre del bot, y solo
+ * porque la regla del prefijo prohibido tiene que nombrarlo para que sirva.
  */
-const FORMAT_RULES = `## Reglas de comportamiento
+const formatRules = (name: string) => `## Reglas de comportamiento
 - SIEMPRE responde en español.
 - Sé amigable, cálida y empática.
 - Máximo dos párrafos cortos por mensaje. En WhatsApp los bloques largos no se leen.
@@ -35,7 +45,7 @@ const FORMAT_RULES = `## Reglas de comportamiento
 - NUNCA inventes precios, disponibilidades ni datos que no estén aquí.
 - Termina con una pregunta o una invitación concreta cuando sea apropiado.
 - Escribe tu mensaje directamente, sin envolverlo entre comillas y sin prefijos
-  como "Nova:". Los ejemplos de este prompt están indentados solo para
+  como "${name}:". Los ejemplos de este prompt están indentados solo para
   distinguirlos; no copies esa indentación ni añadas comillas.`;
 
 const SELLING_ESCALATION = `## Cuándo ofrecer un asesor humano
@@ -95,7 +105,7 @@ function buildSellingPrompt(
       profile.extra_rules.map((r) => `- ${r}`).join('\n')
     : '';
 
-  return `${identity(profile.building_name)}
+  return `${identity(profile)}
 - En momentos clave (urgencia, cierre de visita) puedes ser levemente persuasiva y proactiva.
 
 ## Sobre ${profile.building_name}
@@ -134,7 +144,7 @@ importante. Para agendar, propón algo concreto: "Te propongo una visita rápida
 30 minutos, sin compromiso. ¿Te funciona el jueves o el sábado? ¿Mañana o tarde?"
 ${extraRules}
 
-${FORMAT_RULES}
+${formatRules(assistantName(profile))}
 
 ${SELLING_ESCALATION}`;
 }
@@ -171,7 +181,7 @@ function buildPrelaunchPrompt(profile: PrelaunchBuilding): string {
       profile.extra_rules.map((r) => `- ${r}`).join('\n')
     : '';
 
-  return `${identity(profile.building_name)}
+  return `${identity(profile)}
 - Transmites entusiasmo por un proyecto que está por venir, sin prometer nada que no esté confirmado.
 
 ## ${profile.building_name} está en PRELANZAMIENTO
@@ -218,7 +228,7 @@ En el PRIMER mensaje de una conversación nueva, preséntate y explica la etapa:
 Adáptalo al tono de quien escribe, pero no cambies el fondo.
 ${qualifying}${contact}${extraRules}
 
-${FORMAT_RULES}
+${formatRules(assistantName(profile))}
 
 ${PRELAUNCH_ESCALATION}`;
 }

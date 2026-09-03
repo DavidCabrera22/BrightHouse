@@ -72,3 +72,13 @@ describe('toTranscript', () => {
     expect(t).toBe('Prospecto: Hola\nNova: ¿En qué te ayudo?\nAsesor: Yo sigo desde aquí');
   });
 });
+
+describe('toTranscript — nombre del asistente', () => {
+  it('usa el nombre que lleva el bot en ese edificio', () => {
+    const t = toTranscript(
+      [{ sender_type: 'bot', content: 'Hola', created_at: new Date(T0) }],
+      'Sofía',
+    );
+    expect(t).toBe('Sofía: Hola');
+  });
+});
