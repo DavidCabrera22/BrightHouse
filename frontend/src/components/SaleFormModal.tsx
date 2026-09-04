@@ -69,6 +69,11 @@ const SaleFormModal: React.FC<Props> = ({ open, onClose, onSaved, prefill }) => 
   // "Separado" o "Vendido": el nombre, no el id, porque el id cambia por entorno.
   const [statusName, setStatusName] = useState('Vendido');
 
+  // Buscador de unidad: un proyecto puede tener cientos de apartamentos y en un
+  // desplegable normal hay que bajar a mano hasta encontrar el código.
+  const [unitQuery, setUnitQuery] = useState('');
+  const [unitOpen, setUnitOpen] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     setError('');
@@ -84,6 +89,8 @@ const SaleFormModal: React.FC<Props> = ({ open, onClose, onSaved, prefill }) => 
     });
     setStatusName('Vendido');
     setProjectId(prefill?.project_id ?? '');
+    setUnitQuery('');
+    setUnitOpen(false);
 
     fetch('/api/projects', { headers: authHeaders() })
       .then((r) => (r.ok ? r.json() : []))
@@ -127,20 +134,60 @@ const SaleFormModal: React.FC<Props> = ({ open, onClose, onSaved, prefill }) => 
   const chosenStatus = statuses.find((s) => s.name === statusName);
   const generaComision = chosenStatus?.triggers_commission ?? statusName === 'Vendido';
 
-  const pickUnit = (id: string) => {
-    const unit = sellableUnits.find((u) => u.id === id);
+  /** Texto de una unidad: lo que se ve en la lista y contra lo que se busca. */
+  const unitLabel = (u: Unit) =>
+    [
+      u.code,
+      u.tower ? `Torre ${u.tower}` : '',
+      u.floor != null ? `Piso ${u.floor}` : '',
+      u.area != null ? `${u.area} m²` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
+
+  const matchingUnits = useMemo(() => {
+    const term = unitQuery.trim().toLowerCase();
+    if (!term) return sellableUnits;
+
+    // Tras elegir, el buscador muestra el nombre de la unidad elegida. Filtrar
+    // por ese texto dejaría la lista en un solo elemento y obligaría a borrarlo
+    // a mano para volver a buscar, así que al reabrirla se ven todas.
+    const chosen = sellableUnits.find((u) => u.id === form.unit_id);
+    if (chosen && unitLabel(chosen).toLowerCase() === term) return sellableUnits;
+
+    return sellableUnits.filter((u) => unitLabel(u).toLowerCase().includes(term));
+  }, [sellableUnits, unitQuery, form.unit_id]);
+
+  const pickUnit = (unit: Unit) => {
     setForm((f) => ({
       ...f,
-      unit_id: id,
-      // El precio de lista precarga el valor, pero se puede editar: casi nunca
-      // se cierra exactamente en el precio de lista.
-      sale_value: unit?.price != null && !f.sale_value ? String(unit.price) : f.sale_value,
+      unit_id: unit.id,
+      // El precio del apartamento pasa al valor de venta. Se sobrescribe a
+      // propósito: si se cambia de unidad, dejar el valor de la anterior sería
+      // registrar la venta por un precio que no es el de este apartamento.
+      // Sigue siendo editable, porque casi nunca se cierra en el precio de lista.
+      sale_value: unit.price != null ? String(unit.price) : '',
     }));
+    setUnitQuery(unitLabel(unit));
+    setUnitOpen(false);
+  };
+
+  const clearUnit = () => {
+    setForm((f) => ({ ...f, unit_id: '', sale_value: '' }));
+    setUnitQuery('');
+    setUnitOpen(true);
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // El buscador es un input de texto, así que `required` no cubre esto: se
+    // puede haber escrito algo sin llegar a elegir un apartamento de la lista.
+    if (!form.unit_id) {
+      setError('Elige un apartamento de la lista.');
+      return;
+    }
 
     if (!chosenStatus) {
       setError('No se encontró el estado de unidad. Recarga la página e intenta de nuevo.');
@@ -274,6 +321,7 @@ const SaleFormModal: React.FC<Props> = ({ open, onClose, onSaved, prefill }) => 
                   onChange={(e) => {
                     setProjectId(e.target.value);
                     setForm((f) => ({ ...f, unit_id: '', sale_value: '' }));
+                    setUnitQuery('');
                   }}
                   className={input}
                 >
@@ -285,37 +333,93 @@ const SaleFormModal: React.FC<Props> = ({ open, onClose, onSaved, prefill }) => 
                   ))}
                 </select>
               </div>
-              <div>
+              <div className="relative">
                 <label className={label}>
                   Unidad <span className="text-red-500">*</span>
                 </label>
-                <select
-                  required
-                  disabled={!projectId || loadingUnits}
-                  value={form.unit_id}
-                  onChange={(e) => pickUnit(e.target.value)}
-                  className={`${input} disabled:opacity-50`}
-                >
-                  <option value="">
-                    {!projectId
-                      ? 'Elige un proyecto primero'
-                      : loadingUnits
-                        ? 'Cargando…'
-                        : sellableUnits.length === 0
-                          ? 'Sin unidades disponibles'
-                          : 'Selecciona…'}
-                  </option>
-                  {sellableUnits.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.code}
-                      {u.tower ? ` · Torre ${u.tower}` : ''}
-                      {u.floor != null ? ` · Piso ${u.floor}` : ''}
-                      {u.area != null ? ` · ${u.area} m²` : ''}
-                      {u.price != null ? ` · ${cop(u.price)}` : ''}
-                      {u.current_status?.name ? ` — ${u.current_status.name}` : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <input
+                    disabled={!projectId || loadingUnits}
+                    value={unitQuery}
+                    onChange={(e) => {
+                      setUnitQuery(e.target.value);
+                      setUnitOpen(true);
+                      // Escribir invalida la elección anterior: si no se vuelve a
+                      // elegir, el envío avisa en vez de mandar la unidad vieja.
+                      if (form.unit_id) setForm((f) => ({ ...f, unit_id: '' }));
+                    }}
+                    onFocus={() => setUnitOpen(true)}
+                    // El cierre se retrasa para que el clic en una opción llegue antes.
+                    onBlur={() => setTimeout(() => setUnitOpen(false), 150)}
+                    placeholder={
+                      !projectId
+                        ? 'Elige un proyecto primero'
+                        : loadingUnits
+                          ? 'Cargando…'
+                          : sellableUnits.length === 0
+                            ? 'Sin unidades disponibles'
+                            : `Busca entre ${sellableUnits.length} apartamentos…`
+                    }
+                    className={`${input} disabled:opacity-50 pr-9`}
+                  />
+                  {form.unit_id ? (
+                    <button
+                      type="button"
+                      onClick={clearUnit}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      title="Cambiar de unidad"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                  ) : (
+                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[18px] text-slate-400 pointer-events-none">
+                      search
+                    </span>
+                  )}
+                </div>
+
+                {unitOpen && projectId && !loadingUnits && (
+                  <ul className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl">
+                    {matchingUnits.length === 0 ? (
+                      <li className="px-4 py-3 text-sm text-slate-400">
+                        Ningún apartamento coincide con “{unitQuery}”.
+                      </li>
+                    ) : (
+                      matchingUnits.map((u) => (
+                        <li key={u.id}>
+                          <button
+                            type="button"
+                            // onMouseDown corre antes que el blur del input, que
+                            // si no cerraría la lista y se perdería el clic.
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              pickUnit(u);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-700/60 ${
+                              u.id === form.unit_id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <span>
+                              <span className="block text-sm font-semibold text-slate-900 dark:text-white">
+                                {unitLabel(u)}
+                              </span>
+                              {u.current_status?.name && (
+                                <span className="block text-xs text-slate-400">
+                                  {u.current_status.name}
+                                </span>
+                              )}
+                            </span>
+                            {u.price != null && (
+                              <span className="shrink-0 text-sm font-semibold text-slate-500 dark:text-slate-300">
+                                {cop(u.price)}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
               </div>
               <div>
                 <label className={label}>
