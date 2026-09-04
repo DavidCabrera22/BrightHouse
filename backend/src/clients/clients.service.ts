@@ -9,6 +9,9 @@ import { TenantContext, TenantScopeService } from '../common/tenant';
 /** `foreign_key_violation` de Postgres. */
 const FOREIGN_KEY_VIOLATION = '23503';
 
+/** `unique_violation` de Postgres. */
+const UNIQUE_VIOLATION = '23505';
+
 @Injectable()
 export class ClientsService {
   constructor(
@@ -21,6 +24,40 @@ export class ClientsService {
     await this.tenantScope.assertProjectInTenant(createClientDto.project_id, ctx);
     const client = this.clientRepository.create(createClientDto);
     return this.clientRepository.save(client);
+  }
+
+  /**
+   * El comprador de una venta, identificado por su cédula.
+   *
+   * Quien ya compró antes no se duplica, y reintentar un registro que falló a
+   * medias no choca contra el índice único de `document_number`. La búsqueda va
+   * scopeada: una cédula de otro tenant no se reutiliza, se intenta crear.
+   *
+   * Ese índice es global y no por tenant, así que la creación todavía puede
+   * chocar con la misma cédula registrada en otra empresa. Se traduce a un
+   * mensaje que se entiende, en vez del 500 que saldría del 23505 crudo.
+   */
+  async findOrCreateByDocument(dto: CreateClientDto, ctx: TenantContext) {
+    await this.tenantScope.assertProjectInTenant(dto.project_id, ctx);
+
+    const existing = await this.tenantScope
+      .scoped(Client, 'client', ctx)
+      .andWhere('client.document_number = :doc', { doc: dto.document_number })
+      .getOne();
+
+    if (existing) return existing;
+
+    try {
+      return await this.clientRepository.save(this.clientRepository.create(dto));
+    } catch (err) {
+      if (err?.code === UNIQUE_VIOLATION) {
+        throw new ConflictException(
+          `La cédula ${dto.document_number} ya está registrada en otra empresa. ` +
+            'Las cédulas son únicas en toda la plataforma.',
+        );
+      }
+      throw err;
+    }
   }
 
   findAll(ctx: TenantContext, projectId?: string) {

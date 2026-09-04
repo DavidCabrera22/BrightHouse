@@ -70,6 +70,10 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
               <span className={`material-symbols-outlined ${isActive('/crm/projects') ? 'filled' : ''}`}>folder_open</span>
               <span className="text-sm font-medium">Proyectos</span>
             </Link>
+            <Link to="/crm/sales" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/sales') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+              <span className={`material-symbols-outlined ${isActive('/crm/sales') ? 'filled' : ''}`}>sell</span>
+              <span className="text-sm font-medium">Ventas</span>
+            </Link>
             {userRole !== 'Agent' && userRole !== 'agent' && (
               <>
                 <Link to="/crm/automations" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/automations') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>

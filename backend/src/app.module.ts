@@ -12,6 +12,7 @@ import { UnitStatusesModule } from './unit-statuses/unit-statuses.module';
 import { UnitStatusHistoryModule } from './unit-status-history/unit-status-history.module';
 import { ClientsModule } from './clients/clients.module';
 import { SalesModule } from './sales/sales.module';
+import { SaleRegistrationModule } from './sale-registration/sale-registration.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { CommissionsModule } from './commissions/commissions.module';
 import { DocumentsModule } from './documents/documents.module';
@@ -69,6 +70,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     UnitStatusHistoryModule,
     ClientsModule,
     SalesModule,
+    SaleRegistrationModule,
     QuotesModule,
     CommissionsModule,
     DocumentsModule,

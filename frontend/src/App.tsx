@@ -17,6 +17,7 @@ import ProjectAnalyticsPage from './components/ProjectAnalyticsPage';
 import MarketingPage from './components/MarketingPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CommissionsPage from './components/CommissionsPage';
+import SalesPage from './components/SalesPage';
 import TenantsPage from './components/TenantsPage';
 import UsersPage from './components/UsersPage';
 import OasisParkPage from './components/OasisParkPage';
@@ -49,6 +50,7 @@ function App() {
           <Route path="/crm/projects/:projectId/analytics" element={<ProjectAnalyticsPage />} />
           <Route path="/crm/marketing" element={<MarketingPage />} />
           <Route path="/crm/analytics" element={<AnalyticsPage />} />
+          <Route path="/crm/sales" element={<SalesPage />} />
           <Route path="/crm/commissions" element={<CommissionsPage />} />
           <Route path="/crm/users" element={<UsersPage />} />
           <Route path="/crm/tenants" element={<TenantsPage />} />

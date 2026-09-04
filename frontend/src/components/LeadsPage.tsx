@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import CrmLayout from './CrmLayout';
+import SaleFormModal from './SaleFormModal';
+import type { SalePrefill } from './SaleFormModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Lead {
@@ -93,6 +95,10 @@ const LeadsPage: React.FC = () => {
 
   // AI suggestion panel
   const [activeSuggestion, setActiveSuggestion] = useState<{ lead: Lead; data: AiSuggestion | null; loading: boolean } | null>(null);
+
+  // El lead que se está convirtiendo en venta. Su nombre, teléfono y correo
+  // precargan el formulario; cédula la escribe la asesora.
+  const [saleFor, setSaleFor] = useState<SalePrefill | null>(null);
 
   const token = () => localStorage.getItem('access_token');
   const authHeaders = () => ({ Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' });
@@ -444,7 +450,7 @@ const LeadsPage: React.FC = () => {
                     <th className="px-6 py-4">Fuente</th>
                     <th className="px-6 py-4">Agente</th>
                     <th className="px-6 py-4">Registrado</th>
-                    <th className="px-6 py-4 text-center">IA</th>
+                    <th className="px-6 py-4 text-center">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -480,15 +486,32 @@ const LeadsPage: React.FC = () => {
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                         {new Date(lead.created_at).toLocaleDateString('es', { day: '2-digit', month: 'short' })}
                       </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => requestSuggestion(lead)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
-                          title="Sugerencia IA"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-                          IA
-                        </button>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => requestSuggestion(lead)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs font-semibold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                            title="Sugerencia IA"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                            IA
+                          </button>
+                          <button
+                            onClick={() =>
+                              setSaleFor({
+                                name: lead.name,
+                                phone: lead.phone,
+                                email: lead.email,
+                                project_id: lead.project_id,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                            title="Registrar venta"
+                          >
+                            <span className="material-symbols-outlined text-[14px]">sell</span>
+                            Venta
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -498,6 +521,13 @@ const LeadsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <SaleFormModal
+        open={saleFor !== null}
+        prefill={saleFor ?? undefined}
+        onClose={() => setSaleFor(null)}
+        onSaved={fetchLeads}
+      />
     </CrmLayout>
   );
 };
