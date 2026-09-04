@@ -71,9 +71,31 @@ export class LeadsService {
     });
   }
 
+  /**
+   * Repartir cartera es cosa de quien dirige, no de quien vende.
+   *
+   * `PATCH /leads/:id` está abierto a Agent porque un asesor tiene que poder
+   * trabajar su lead —cambiarle el estado, corregir el teléfono—. Pero
+   * `assigned_agent_id` viajaba en el mismo DTO sin filtro, así que una asesora
+   * podía pasarse a su nombre la cartera de otra con una sola llamada. Que la
+   * interfaz no tuviera un botón para hacerlo no era una restricción.
+   *
+   * Un asesor solo puede quedarse leads suyos; el dueño ajeno se descarta en
+   * silencio, igual que `users.service` descarta el `tenant_id` que no le toca.
+   */
+  private canAssignFreely(ctx: TenantContext): boolean {
+    return ctx.isSuperAdmin || ctx.role === 'Admin';
+  }
+
   async create(createLeadDto: CreateLeadDto, ctx: TenantContext) {
     await this.tenantScope.assertProjectInTenant(createLeadDto.project_id, ctx);
-    const lead = this.leadRepository.create(createLeadDto);
+
+    // El espejo del caso de `update`: sin esto bastaría con crear para colarse.
+    const payload = this.canAssignFreely(ctx)
+      ? createLeadDto
+      : { ...createLeadDto, assigned_agent_id: ctx.userId };
+
+    const lead = this.leadRepository.create(payload);
     lead.ai_score = calculateScore(lead);
     const saved = await this.leadRepository.save(lead);
     this.events.emit(LEAD_CREATED, { leadId: saved.id });
@@ -103,7 +125,13 @@ export class LeadsService {
     const lead = await this.findOne(id, ctx);
     await this.tenantScope.assertProjectInTenant((updateLeadDto as any).project_id, ctx);
     const previousStatus = lead.status;
-    Object.assign(lead, updateLeadDto);
+
+    // Nunca client-controlled para un asesor: el lead se queda con su dueño.
+    const { assigned_agent_id, ...safe } = updateLeadDto as any;
+    Object.assign(lead, safe);
+    if (this.canAssignFreely(ctx) && assigned_agent_id !== undefined) {
+      lead.assigned_agent_id = assigned_agent_id;
+    }
     // Recalculate score whenever lead data changes
     lead.ai_score = calculateScore(lead);
     const saved = await this.leadRepository.save(lead);
