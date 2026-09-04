@@ -98,6 +98,12 @@ const ProjectDocumentsPage: React.FC = () => {
   const token = localStorage.getItem('access_token');
   const userId = localStorage.getItem('user_id') || '';
   const headers = { 'Authorization': `Bearer ${token}` };
+  /**
+   * Borrar documentos es de Admin, como en el resto del sistema. SuperAdmin
+   * entra igual: el guard del backend lo deja pasar por encima de todo.
+   */
+  const userRole = (localStorage.getItem('user_role') || '').toLowerCase();
+  const canDelete = userRole === 'admin' || userRole === 'superadmin';
 
   const [projectName, setProjectName] = useState('Cargando...');
   const [units, setUnits] = useState<UnitFolder[]>([]);
@@ -203,11 +209,23 @@ const ProjectDocumentsPage: React.FC = () => {
     const res = await fetch(`/api/documents/${docId}`, {
       method: 'DELETE', headers,
     });
-    if (res.ok) {
-      setDocs(prev => prev.filter(d => d.id !== docId));
-      const key = currentFolder.type === 'unit' ? (currentFolder as any).unitId : '__project__';
-      setDocCounts(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 1) - 1) }));
+
+    if (!res.ok) {
+      // Antes se ignoraba el fallo en silencio: el documento seguía ahí y no
+      // había forma de saber por qué. Un 403 es lo más probable — borrar es de
+      // Admin — y sin este aviso parecía que el botón no funcionaba.
+      const body = await res.json().catch(() => null);
+      alert(
+        res.status === 403
+          ? 'No tienes permiso para eliminar documentos. Solo un administrador puede hacerlo.'
+          : `No se pudo eliminar el documento: ${body?.message || `error ${res.status}`}`,
+      );
+      return;
     }
+
+    setDocs(prev => prev.filter(d => d.id !== docId));
+    const key = currentFolder.type === 'unit' ? (currentFolder as any).unitId : '__project__';
+    setDocCounts(prev => ({ ...prev, [key]: Math.max(0, (prev[key] || 1) - 1) }));
   };
 
   // Drag & drop
@@ -600,13 +618,15 @@ const ProjectDocumentsPage: React.FC = () => {
                               >
                                 <span className="material-symbols-outlined text-[16px]">download</span>
                               </button>
-                              <button
-                                onClick={() => handleDelete(doc.id)}
-                                className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
-                                title="Eliminar"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">delete</span>
-                              </button>
+                              {canDelete && (
+                                <button
+                                  onClick={() => handleDelete(doc.id)}
+                                  className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="flex-1">
@@ -658,7 +678,9 @@ const ProjectDocumentsPage: React.FC = () => {
                                 <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button onClick={() => openDocFile(doc.id, false, doc.original_name)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors" title="Abrir"><span className="material-symbols-outlined text-[16px]">open_in_new</span></button>
                                   <button onClick={() => openDocFile(doc.id, true, doc.original_name)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-600 transition-colors" title="Descargar"><span className="material-symbols-outlined text-[16px]">download</span></button>
-                                  <button onClick={() => handleDelete(doc.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-[16px]">delete</span></button>
+                                  {canDelete && (
+                                    <button onClick={() => handleDelete(doc.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-[16px]">delete</span></button>
+                                  )}
                                 </div>
                               </td>
                             </tr>

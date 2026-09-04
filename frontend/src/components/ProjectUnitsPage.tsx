@@ -45,6 +45,13 @@ const ProjectUnitsPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   
   const [userRole] = useState<string>(() => (localStorage.getItem('user_role') || 'admin').toLowerCase());
+  /**
+   * SuperAdmin tiene todo lo de Admin: el RolesGuard del backend lo deja pasar
+   * por encima de cualquier restricción. Comparar solo contra 'admin' dejaba a
+   * la propia cuenta de plataforma viendo el inventario como de solo lectura,
+   * con el selector de estado deshabilitado, aunque la API sí le respondía.
+   */
+  const canManage = userRole === 'admin' || userRole === 'superadmin';
   const [userId] = useState<string>(() => localStorage.getItem('user_id') || '');
   const [units, setUnits] = useState<Unit[]>([]);
   const [statuses, setStatuses] = useState<UnitStatus[]>([]);
@@ -426,7 +433,7 @@ const ProjectUnitsPage: React.FC = () => {
   }, [fetchUnits, fetchProjectDetails]);
 
   useEffect(() => {
-    if (userRole === 'admin') {
+    if (canManage) {
         const fetchAgents = async () => {
             try {
               const token = localStorage.getItem('access_token');
@@ -593,7 +600,7 @@ const ProjectUnitsPage: React.FC = () => {
       subtitle="Inventario en tiempo real y gestión comercial por torre."
       actions={
         <div className="flex items-center gap-2">
-          {userRole === 'admin' && (
+          {canManage && (
             <button
               onClick={() => setShowTowerModal(true)}
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
@@ -607,7 +614,7 @@ const ProjectUnitsPage: React.FC = () => {
               )}
             </button>
           )}
-          {userRole === 'admin' && (
+          {canManage && (
             <button
               onClick={() => setShowSingleCreateModal(true)}
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
@@ -1457,7 +1464,7 @@ const ProjectUnitsPage: React.FC = () => {
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado</label>
-                {userRole === 'admin' && (
+                {canManage && (
                   <button
                     onClick={() => setShowManageStatuses(true)}
                     title="Gestionar estados"
@@ -1616,10 +1623,10 @@ const ProjectUnitsPage: React.FC = () => {
                           <div className="relative">
                             <button
                               onClick={(e) => { e.stopPropagation(); setOpenMenuFor(null); setOpenStatusFor(openStatusFor === unit.id ? null : unit.id); }}
-                              disabled={userRole !== 'admin'}
+                              disabled={!canManage}
                               className={[
                                 'px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 w-fit transition-all',
-                                userRole === 'admin' ? 'hover:ring-2 hover:ring-offset-1 cursor-pointer' : 'cursor-default',
+                                canManage ? 'hover:ring-2 hover:ring-offset-1 cursor-pointer' : 'cursor-default',
                                 changingStatus === unit.id ? 'opacity-50' : '',
                               ].join(' ')}
                               style={{
@@ -1631,7 +1638,7 @@ const ProjectUnitsPage: React.FC = () => {
                             >
                               <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: unit.current_status?.color_hex }} />
                               {unit.current_status?.name ?? 'Sin estado'}
-                              {userRole === 'admin' && (
+                              {canManage && (
                                 <span className="material-symbols-outlined text-[13px] opacity-60">
                                   {openStatusFor === unit.id ? 'expand_less' : 'expand_more'}
                                 </span>
@@ -1689,7 +1696,7 @@ const ProjectUnitsPage: React.FC = () => {
                             )}
 
                             {/* Admin: edit */}
-                            {userRole === 'admin' && (
+                            {canManage && (
                               <button
                                 onClick={() => handleEditClick(unit)}
                                 className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
@@ -1738,7 +1745,7 @@ const ProjectUnitsPage: React.FC = () => {
                                     <span className="material-symbols-outlined text-[17px] text-slate-400">link</span>
                                     Copiar enlace
                                   </button>
-                                  {userRole === 'admin' && (
+                                  {canManage && (
                                     <>
                                       <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
                                       <button
