@@ -194,6 +194,7 @@ export class WhatsAppController {
             from,
             projectId,
             profileName !== from ? profileName : undefined,
+            tenant?.default_agent_id,
           );
           if (created) {
             this.logger.log(`Lead creado automáticamente: ${lead.id} para ${from}`);

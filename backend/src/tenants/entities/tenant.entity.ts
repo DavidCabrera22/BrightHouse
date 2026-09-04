@@ -38,6 +38,14 @@ export class Tenant {
   @Column({ nullable: true })
   default_project_id: string;
 
+  /**
+   * Asesor que atiende el chatbot: se queda los leads que entran solos por
+   * WhatsApp o Instagram. Los que un asesor crea a mano en el CRM siguen
+   * quedando a nombre de quien los crea.
+   */
+  @Column({ nullable: true })
+  default_agent_id: string;
+
   @CreateDateColumn()
   created_at: Date;
 

@@ -186,6 +186,14 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
     phone: string,
     projectId: string,
     name?: string,
+    /**
+     * Quién atiende los leads que entran por el chatbot de este tenant.
+     *
+     * Solo se aplica al crear: si el lead ya existe, su dueño no se toca. Un
+     * mensaje nuevo del prospecto no puede quitarle la ficha al asesor que ya
+     * la tenía.
+     */
+    assignedAgentId?: string,
   ): Promise<{ lead: Lead; created: boolean }> {
     // La búsqueda va atada al proyecto. Solo por teléfono, alguien que ya es
     // lead de un edificio y escribe al WhatsApp de otro reutilizaría la ficha
@@ -201,6 +209,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
       project_id: projectId,
       source: 'whatsapp',
       status: 'new',
+      ...(assignedAgentId ? { assigned_agent_id: assignedAgentId } : {}),
     });
     lead.ai_score = calculateScore(lead);
     const saved = await this.leadRepository.save(lead);

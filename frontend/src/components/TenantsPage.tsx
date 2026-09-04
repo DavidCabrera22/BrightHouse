@@ -9,16 +9,20 @@ interface Tenant {
   status: string;
   whapi_token?: string;
   default_project_id?: string;
+  default_agent_id?: string;
   created_at: string;
 }
 
-const emptyForm = { name: '', slug: '', plan: 'basic', whapi_token: '', whapi_api_url: '', instagram_token: '', instagram_account_id: '', default_project_id: '' };
+interface Agent { id: string; name: string; tenant_id?: string; role?: { name: string } }
+
+const emptyForm = { name: '', slug: '', plan: 'basic', whapi_token: '', whapi_api_url: '', instagram_token: '', instagram_account_id: '', default_project_id: '', default_agent_id: '' };
 
 const TenantsPage: React.FC = () => {
   const token = localStorage.getItem('access_token');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Tenant | null>(null);
@@ -32,7 +36,13 @@ const TenantsPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchTenants(); }, []);
+  useEffect(() => {
+    fetchTenants();
+    // Para poder elegir quién atiende el chatbot de cada empresa.
+    fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Agent[]) => setAgents(data.filter(u => u.role?.name === 'Agent')));
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -42,7 +52,7 @@ const TenantsPage: React.FC = () => {
 
   const openEdit = (t: Tenant) => {
     setEditing(t);
-    setForm({ name: t.name, slug: t.slug, plan: t.plan, whapi_token: (t as any).whapi_token || '', whapi_api_url: (t as any).whapi_api_url || '', instagram_token: (t as any).instagram_token || '', instagram_account_id: (t as any).instagram_account_id || '', default_project_id: t.default_project_id || '' });
+    setForm({ name: t.name, slug: t.slug, plan: t.plan, whapi_token: (t as any).whapi_token || '', whapi_api_url: (t as any).whapi_api_url || '', instagram_token: (t as any).instagram_token || '', instagram_account_id: (t as any).instagram_account_id || '', default_project_id: t.default_project_id || '', default_agent_id: t.default_agent_id || '' });
     setShowModal(true);
   };
 
@@ -181,6 +191,17 @@ const TenantsPage: React.FC = () => {
                   <input type="text" placeholder="UUID del proyecto" value={form.default_project_id} onChange={e => setForm({ ...form, default_project_id: e.target.value })}
                     className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Asesor que atiende el chatbot</label>
+                <select value={form.default_agent_id} onChange={e => setForm({ ...form, default_agent_id: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">Sin asignar — los leads del bot entran sin dueño</option>
+                  {agents
+                    .filter(a => !editing || !a.tenant_id || a.tenant_id === editing.id)
+                    .map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+                <p className="mt-1 text-xs text-slate-400">Se queda los leads que llegan por WhatsApp o Instagram. Los que un asesor crea a mano en el CRM siguen siendo suyos.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Whapi Token</label>

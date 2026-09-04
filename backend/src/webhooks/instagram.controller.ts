@@ -126,6 +126,7 @@ export class InstagramController {
             senderId,
             projectId,
             username && username !== senderId ? username : undefined,
+            tenant?.default_agent_id,
           );
           if (created) {
             this.logger.log(`Lead creado automáticamente: ${lead.id} para Instagram PSID ${senderId}`);

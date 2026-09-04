@@ -112,3 +112,53 @@ describe('LeadsService — leads que entran por un canal', () => {
     });
   });
 });
+
+describe('LeadsService — a quién queda el lead que crea el bot', () => {
+  let repo: ReturnType<typeof fakeRepo>;
+  let service: LeadsService;
+
+  beforeEach(() => {
+    repo = fakeRepo([
+      { id: 'lead-viejo', phone: '573001112233', project_id: 'proj-alpes', name: 'Jorge' },
+    ]);
+    service = new LeadsService(
+      repo as any,
+      { get: () => 'test-key' } as any,
+      { assertProjectInTenant: jest.fn() } as any,
+      { emit: jest.fn() } as any,
+    );
+  });
+
+  it('queda a nombre del asesor que atiende el chatbot', async () => {
+    const { lead } = await service.findOrCreateByPhone(
+      '573009998877',
+      'proj-alpes',
+      'Nuevo prospecto',
+      'sofia',
+    );
+
+    expect(lead.assigned_agent_id).toBe('sofia');
+  });
+
+  it('sin asesor configurado el lead entra sin asignar, como hasta ahora', async () => {
+    const { lead } = await service.findOrCreateByPhone('573009998877', 'proj-alpes');
+
+    expect(lead.assigned_agent_id).toBeUndefined();
+  });
+
+  it('no le roba un lead que ya existe a quien lo tenga', async () => {
+    // El bot solo decide el dueño al crear. Si un asesor ya tomó ese lead, un
+    // mensaje nuevo del prospecto no puede cambiárselo de manos.
+    repo.rows[0].assigned_agent_id = 'diana';
+
+    const { lead, created } = await service.findOrCreateByPhone(
+      '573001112233',
+      'proj-alpes',
+      undefined,
+      'sofia',
+    );
+
+    expect(created).toBe(false);
+    expect(lead.assigned_agent_id).toBe('diana');
+  });
+});

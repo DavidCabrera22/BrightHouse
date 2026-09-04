@@ -27,4 +27,8 @@ export class CreateTenantDto {
 
   @IsOptional() @IsString()
   default_project_id?: string;
+
+  /** Asesor que se queda los leads que entran por el chatbot. */
+  @IsOptional() @IsString()
+  default_agent_id?: string;
 }
