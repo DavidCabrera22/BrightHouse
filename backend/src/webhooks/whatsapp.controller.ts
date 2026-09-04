@@ -24,6 +24,7 @@ import {
 import { WhapiService } from './whapi.service';
 import { extractMessages } from './extract-messages';
 import { resolveLeadProject } from './resolve-lead-project';
+import { resolveBuildingSlug } from './resolve-building-slug';
 import { TenantsService } from '../tenants/tenants.service';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { ProjectsService } from '../projects/projects.service';
@@ -73,7 +74,6 @@ export class WhatsAppController {
       // ── 1. Resolver tenant ────────────────────────────────────────────────
       let tenantId: string | undefined;
       let whapiToken: string | undefined;
-      let buildingSlug = tenantSlug ?? '';
       let tenant: Tenant | null = null;
 
       if (tenantSlug) {
@@ -81,7 +81,6 @@ export class WhatsAppController {
         if (tenant) {
           tenantId = tenant.id;
           whapiToken = tenant.whapi_token;
-          buildingSlug = tenant.slug;
         } else {
           this.logger.warn(`Webhook received for unknown tenant slug: ${tenantSlug}`);
         }
@@ -101,16 +100,16 @@ export class WhatsAppController {
       });
       if (problem) this.logger.error(problem);
 
-      if (!buildingSlug) {
-        buildingSlug = this.configService.get<string>('DEFAULT_BUILDING_SLUG') ?? 'oasis-park';
-        // Sin `?tenant=` no sabemos de qué edificio se trata y estamos
-        // adivinando. Se conserva por compatibilidad con el montaje de un solo
-        // tenant, pero con un aviso: si aparece en producción con más de un
-        // edificio activo, hay una URL de webhook mal configurada en Whapi.
-        this.logger.warn(
-          `Webhook sin ?tenant= — respondiendo como "${buildingSlug}" por defecto`,
-        );
-      }
+      // Sin tenant resuelto no se adivina el edificio: `buildingSlug` queda
+      // vacío, Nova no encuentra perfil y no responde. El mensaje entrante sí se
+      // guarda, así que la conversación no se pierde y se puede retomar en
+      // cuanto la URL del webhook esté bien.
+      const { slug, problem: buildingProblem } = resolveBuildingSlug({
+        tenant,
+        requestedSlug: tenantSlug,
+      });
+      const buildingSlug = slug ?? '';
+      if (buildingProblem) this.logger.error(buildingProblem);
 
       // Un valor no numérico daría NaN, y `elapsed >= NaN` es siempre falso: la
       // reactivación automática dejaría de funcionar sin que nadie se entere.

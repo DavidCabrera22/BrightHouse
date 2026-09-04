@@ -15,6 +15,7 @@ import { LeadsService } from '../leads/leads.service';
 import { NovaService, ChatMessage } from '../nova/nova.service';
 import { InstagramService } from './instagram.service';
 import { resolveLeadProject } from './resolve-lead-project';
+import { resolveBuildingSlug } from './resolve-building-slug';
 import { assistantNameFor } from '../nova/buildings/building-registry';
 import { TenantsService } from '../tenants/tenants.service';
 import { Tenant } from '../tenants/entities/tenant.entity';
@@ -96,10 +97,15 @@ export class InstagramController {
       });
       if (problem) this.logger.error(problem);
 
-      // El edificio sale del tenant, igual que en WhatsApp. Con un slug fijo,
-      // un DM de Alpes Vista recibiría la copia y el inventario de Oasis Park.
-      const buildingSlug =
-        tenantSlug || this.configService.get<string>('DEFAULT_BUILDING_SLUG') || 'oasis-park';
+      // El edificio sale del tenant, igual que en WhatsApp: sin tenant resuelto
+      // no se adivina y Nova no responde. Con un slug por defecto, un DM de
+      // Alpes Vista recibía la copia y el inventario de Oasis Park.
+      const { slug, problem: buildingProblem } = resolveBuildingSlug({
+        tenant,
+        requestedSlug: tenantSlug,
+      });
+      const buildingSlug = slug ?? '';
+      if (buildingProblem) this.logger.error(buildingProblem);
 
       const messages = this.extractMessages(body);
 
