@@ -16,6 +16,7 @@ import { Sale } from '../../sales/entities/sale.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitStatusHistory } from '../../unit-status-history/entities/unit-status-history.entity';
 import { User } from '../../users/entities/user.entity';
+import { DayTask } from '../../my-day/entities/day-task.entity';
 
 /**
  * Relation chain to walk from an entity to the row that carries `tenant_id`.
@@ -32,6 +33,7 @@ import { User } from '../../users/entities/user.entity';
 const TENANT_PATHS = new Map<Function, string[]>([
   [Project, []],
   [User, []],
+  [DayTask, ['owner']],
   [Conversation, []],
   [Unit, ['project']],
   [Automation, ['project']],

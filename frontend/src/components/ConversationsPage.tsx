@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CrmLayout from './CrmLayout';
+import { useSearchParams } from 'react-router-dom';
 
 interface Message {
   id: string;
@@ -65,14 +66,16 @@ const timeAgo = (date?: string) => {
 const avatar = (name?: string) => (name || '?').charAt(0).toUpperCase();
 
 const ConversationsPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const requestedConversation = searchParams.get('conversation');
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedId, setSelectedId]       = useState<string | null>(null);
+  const [selectedId, setSelectedId]       = useState<string | null>(requestedConversation);
   const [messages, setMessages]           = useState<Message[]>([]);
   const [messageInput, setMessageInput]   = useState('');
   const [loading, setLoading]             = useState(true);
   const [sending, setSending]             = useState(false);
   const [filter, setFilter]               = useState<'all' | 'unread'>('all');
-  const [mobileView, setMobileView]       = useState<'list' | 'chat'>('list');
+  const [mobileView, setMobileView]       = useState<'list' | 'chat'>(requestedConversation ? 'chat' : 'list');
   const [showDetails, setShowDetails]     = useState(false);
   const [projects, setProjects]           = useState<Project[]>([]);
   const [action, setAction]               = useState<QuickAction | null>(null);
@@ -106,13 +109,17 @@ const ConversationsPage: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (requestedConversation) { setSelectedId(requestedConversation); setMobileView('chat'); }
+  }, [requestedConversation]);
+
   const fetchConversations = async () => {
     try {
       const res = await fetch('/api/conversations', { headers });
       if (res.ok) {
         const data = await res.json();
         setConversations(data);
-        if (!selectedId && data.length > 0) setSelectedId(data[0].id);
+        setSelectedId(current => current ?? data[0]?.id ?? null);
       }
     } catch (err) {
       console.error(err);

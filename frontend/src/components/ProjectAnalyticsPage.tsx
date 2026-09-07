@@ -386,7 +386,7 @@ const ProjectAnalyticsPage: React.FC = () => {
               {!aiResult && !aiLoading && (
                 <>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    Claude analiza los datos reales de {projectName} y genera recomendaciones específicas.
+                    La IA analiza los datos reales de {projectName} y genera recomendaciones específicas.
                   </p>
                   <button
                     onClick={handleAI}

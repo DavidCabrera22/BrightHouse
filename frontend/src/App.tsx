@@ -5,6 +5,7 @@ import AboutUsPage from './components/AboutUsPage';
 import SolutionsPage from './components/SolutionsPage';
 import LoginPage from './components/LoginPage';
 import CrmDashboard from './components/CrmDashboard';
+import MyDayPage from './components/MyDayPage';
 import LeadsPage from './components/LeadsPage';
 import PipelinePage from './components/PipelinePage';
 import ConversationsPage from './components/ConversationsPage';
@@ -38,6 +39,7 @@ function App() {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route path="/crm" element={<CrmDashboard />} />
+          <Route path="/crm/my-day" element={<MyDayPage />} />
           <Route path="/crm/leads" element={<LeadsPage />} />
           <Route path="/crm/pipeline" element={<PipelinePage />} />
           <Route path="/crm/conversations" element={<ConversationsPage />} />

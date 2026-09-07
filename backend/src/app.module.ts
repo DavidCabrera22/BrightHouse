@@ -29,6 +29,7 @@ import { TenantModule } from './common/tenant/tenant.module';
 import { AutomationsModule } from './automations/automations.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
+import { MyDayModule } from './my-day/my-day.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     CloudinaryModule,
     TenantsModule,
     AutomationsModule,
+    MyDayModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

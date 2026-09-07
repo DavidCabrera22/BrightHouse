@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import CrmLayout from './CrmLayout';
 import ProjectTabs from './ProjectTabs';
 import QuoteFormModal from './QuoteFormModal';
@@ -17,12 +17,13 @@ const FILTERS: { value: '' | QuoteStatus; label: string }[] = [
 
 export default function ProjectQuotesPage() {
   const { projectId } = useParams();
+  const [searchParams] = useSearchParams();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'' | QuoteStatus>('');
   const [showForm, setShowForm] = useState(false);
-  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(searchParams.get('quote'));
 
   const load = useCallback(async () => {
     setLoading(true);

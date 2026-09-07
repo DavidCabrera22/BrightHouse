@@ -35,7 +35,7 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
   return (
     <>
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-[#0B1120] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col justify-between border-r border-slate-800 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-30 w-64 bg-[#0B1120] transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col justify-between overflow-y-auto border-r border-slate-800 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           {/* Brand */}
           <div className="flex items-center gap-3 mb-10">
@@ -50,6 +50,10 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
 
           {/* Navigation */}
           <nav className="flex flex-col gap-2">
+            <Link to="/crm/my-day" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm/my-day') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+              <span className="material-symbols-outlined">today</span>
+              <span className="text-sm font-semibold">Mi día</span>
+            </Link>
             <Link to="/crm" className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive('/crm') ? 'bg-crm-primary text-white shadow-lg shadow-crm-primary/20' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
               <span className={`material-symbols-outlined ${isActive('/crm') ? 'filled' : ''}`}>dashboard</span>
               <span className="text-sm font-semibold">Panel Principal</span>

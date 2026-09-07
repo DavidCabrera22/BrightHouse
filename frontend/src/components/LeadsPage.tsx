@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import CrmLayout from './CrmLayout';
+import { useSearchParams } from 'react-router-dom';
 import SaleFormModal from './SaleFormModal';
 import type { SalePrefill } from './SaleFormModal';
 
@@ -73,6 +74,8 @@ const ScoreCircle: React.FC<{ score: number }> = ({ score }) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const LeadsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusedLead = searchParams.get('lead');
   const [leads, setLeads]           = useState<Lead[]>([]);
   const [projects, setProjects]     = useState<Project[]>([]);
   const [agents, setAgents]         = useState<Agent[]>([]);
@@ -162,6 +165,7 @@ const LeadsPage: React.FC = () => {
   // ─── Filter + sort ──────────────────────────────────────────────────────────
   const filtered = leads
     .filter(l => {
+      if (focusedLead && l.id !== focusedLead) return false;
       const q = search.toLowerCase();
       const matchSearch = !q || l.name.toLowerCase().includes(q) || l.phone?.includes(q) || l.email?.toLowerCase().includes(q);
       const matchStatus  = statusFilter  === 'all' || l.status === statusFilter;
@@ -202,6 +206,7 @@ const LeadsPage: React.FC = () => {
       }
     >
       {/* ── Create Modal ─────────────────────────────────────────────────────── */}
+      {focusedLead && <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-700 dark:bg-blue-950 dark:text-blue-200">Lead seleccionado en Mi día. <button className="ml-2 font-bold underline" onClick={() => setSearchParams({})}>Ver todos los leads</button></div>}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowCreate(false)}>
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>

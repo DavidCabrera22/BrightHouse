@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import { createAiClient, getAiModel } from '../common/ai/ai-client';
 import { buildSystemPrompt } from './prompt-builder';
 import { getBuildingProfile } from './buildings/building-registry';
 import { DEFAULT_ASSISTANT_NAME } from './buildings/building-profile';
@@ -35,20 +36,6 @@ const ERROR_MESSAGE =
  * en el prompt es una sugerencia; esto es un techo.
  */
 const MAX_TOKENS = 400;
-
-/**
- * Groq expone una API compatible con la de OpenAI, así que se usa el SDK de
- * OpenAI apuntado a su base URL. Todo es configurable por entorno: cambiar de
- * proveedor compatible o de modelo no debería exigir tocar código.
- */
-const DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
-
-/**
- * `moonshotai/kimi-k2-instruct` quedó descontinuado —Groq lo reemplazó por
- * este modelo, y Moonshot discontinuó la serie—, así que el valor por defecto
- * es el sucesor que la propia Groq recomienda.
- */
-const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 /**
  * La extracción es una tarea mecánica: un modelo pequeño basta y es más rápido.
@@ -134,12 +121,8 @@ export class NovaService {
     private readonly configService: ConfigService,
     private readonly inventory: InventorySummaryService,
   ) {
-    this.client = new OpenAI({
-      apiKey: this.configService.get<string>('GROQ_API_KEY'),
-      baseURL:
-        this.configService.get<string>('GROQ_BASE_URL') ?? DEFAULT_BASE_URL,
-    });
-    this.model = this.configService.get<string>('GROQ_MODEL') ?? DEFAULT_MODEL;
+    this.client = createAiClient(this.configService);
+    this.model = getAiModel(this.configService);
     this.extractionModel =
       this.configService.get<string>('GROQ_EXTRACTION_MODEL') ??
       DEFAULT_EXTRACTION_MODEL;

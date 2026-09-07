@@ -22,6 +22,7 @@ import { Sale } from '../../sales/entities/sale.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitStatusHistory } from '../../unit-status-history/entities/unit-status-history.entity';
 import { User } from '../../users/entities/user.entity';
+import { DayTask } from '../../my-day/entities/day-task.entity';
 
 /**
  * These build real TypeORM SQL without opening a connection, so the assertions
@@ -51,6 +52,7 @@ const GLOBAL_ENTITIES = ['Role', 'UnitStatus', 'Tenant'];
 const TENANT_OWNED: [Function, string][] = [
   [Project, 'projects'],
   [User, 'users'],
+  [DayTask, 'users'],
   [Conversation, 'conversations'],
   [Unit, 'projects'],
   [Automation, 'projects'],

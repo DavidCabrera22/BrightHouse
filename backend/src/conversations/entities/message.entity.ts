@@ -5,10 +5,13 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Conversation } from './conversation.entity';
 
 @Entity('messages')
+// Created with descending order and a partial predicate in AddMyDay.
+@Index('IDX_messages_day_activity', { synchronize: false })
 export class Message {
   @PrimaryGeneratedColumn('uuid')
   id: string;

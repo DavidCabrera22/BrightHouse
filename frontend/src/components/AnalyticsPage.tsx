@@ -385,7 +385,7 @@ const AnalyticsPage: React.FC = () => {
               {!aiResult && !aiLoading && (
                 <>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    Claude analiza tus datos reales y genera recomendaciones accionables para esta semana.
+                    La IA analiza tus datos reales y genera recomendaciones accionables para esta semana.
                   </p>
                   <button
                     onClick={handleGenerateAI}
@@ -401,7 +401,7 @@ const AnalyticsPage: React.FC = () => {
               {aiLoading && (
                 <div className="flex flex-col items-center gap-3 py-4">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-violet-600" />
-                  <p className="text-xs text-slate-400">Claude está analizando los datos...</p>
+                  <p className="text-xs text-slate-400">La IA está analizando los datos...</p>
                 </div>
               )}
 

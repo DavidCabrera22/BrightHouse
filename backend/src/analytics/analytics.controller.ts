@@ -2,7 +2,8 @@ import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { createAiClient, getAiModel, generateAiJson } from '../common/ai/ai-client';
 
 interface AnalyticsSummary {
   totalLeads: number;
@@ -15,17 +16,29 @@ interface AnalyticsSummary {
   topSources: string[];
 }
 
+interface AnalyticsInsights {
+  resumen: string;
+  insights: { tipo: string; titulo: string; descripcion: string; accion: string }[];
+  recomendacion_principal: string;
+}
+
+function isAnalyticsInsights(value: any): value is AnalyticsInsights {
+  return value != null && typeof value.resumen === 'string' &&
+    typeof value.recomendacion_principal === 'string' && Array.isArray(value.insights) &&
+    value.insights.every((item: any) => item != null &&
+      ['oportunidad', 'alerta', 'tendencia'].includes(item.tipo) &&
+      ['titulo', 'descripcion', 'accion'].every((key) => typeof item[key] === 'string'));
+}
+
 @ApiTags('Analytics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('analytics')
 export class AnalyticsController {
-  private readonly anthropic: Anthropic;
+  private readonly aiClient: OpenAI;
 
   constructor(private readonly configService: ConfigService) {
-    this.anthropic = new Anthropic({
-      apiKey: this.configService.get<string>('ANTHROPIC_API_KEY'),
-    });
+    this.aiClient = createAiClient(this.configService);
   }
 
   @Post('project-insights')
@@ -59,16 +72,7 @@ Responde con un JSON con esta estructura exacta (sin texto adicional):
 Genera 3-4 insights específicos para este proyecto. Sé concreto con los números.`;
 
     try {
-      const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 900,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const text = response.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as Anthropic.TextBlock).text)
-        .join('');
-      return JSON.parse(text);
+      return await generateAiJson(this.aiClient, getAiModel(this.configService), prompt, isAnalyticsInsights);
     } catch {
       return { resumen: 'No se pudo generar el análisis.', insights: [], recomendacion_principal: 'Intenta de nuevo.' };
     }
@@ -100,18 +104,7 @@ Responde con un JSON con esta estructura exacta (sin texto adicional):
 Genera 3-4 insights específicos basados en los datos reales. Si hay pocos datos, menciona qué mejoraría el análisis.`;
 
     try {
-      const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      const text = response.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as Anthropic.TextBlock).text)
-        .join('');
-
-      return JSON.parse(text);
+      return await generateAiJson(this.aiClient, getAiModel(this.configService), prompt, isAnalyticsInsights);
     } catch {
       return {
         resumen: 'No se pudo generar el análisis en este momento.',

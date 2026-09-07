@@ -2,7 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { createAiClient, getAiModel, generateAiJson } from '../common/ai/ai-client';
 import { Lead } from './entities/lead.entity';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -55,9 +56,15 @@ export interface AiSuggestion {
   reason: string;
 }
 
+function isAiSuggestion(value: any): value is AiSuggestion {
+  return value != null &&
+    ['action', 'whatsapp_message', 'reason'].every((key) => typeof value[key] === 'string' && value[key].trim().length > 0) &&
+    ['alta', 'media', 'baja'].includes(value.urgency);
+}
+
 @Injectable()
 export class LeadsService {
-  private readonly anthropic: Anthropic;
+  private readonly aiClient: OpenAI;
 
   constructor(
     @InjectRepository(Lead)
@@ -66,9 +73,7 @@ export class LeadsService {
     private readonly tenantScope: TenantScopeService,
     private readonly events: EventEmitter2,
   ) {
-    this.anthropic = new Anthropic({
-      apiKey: this.configService.get<string>('ANTHROPIC_API_KEY'),
-    });
+    this.aiClient = createAiClient(this.configService);
   }
 
   /**
@@ -180,16 +185,9 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdow
 }`;
 
     try {
-      const response = await this.anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
-      });
-
-      const text = (response.content[0] as Anthropic.TextBlock).text.trim();
-      return JSON.parse(text) as AiSuggestion;
+      return await generateAiJson(this.aiClient, getAiModel(this.configService), prompt, isAiSuggestion);
     } catch {
-      // Fallback if Claude is unavailable
+      // Fallback if the AI provider is unavailable
       return {
         action: 'Llamar o enviar WhatsApp para hacer seguimiento',
         whatsapp_message: `Hola ${lead.name}, te contactamos desde BrightHouse para saber si sigues interesado en ${lead.project?.name ?? 'el proyecto'}. ¿Tienes un momento?`,
