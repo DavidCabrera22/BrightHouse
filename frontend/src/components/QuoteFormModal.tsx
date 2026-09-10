@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { authHeaders, CONCEPT_LABEL, formatCOP, formatDate } from './quoteTypes';
 import type { PaymentPlan, PlannedPayment, Quote, QuoteCalculation } from './quoteTypes';
 import QuotePaymentPlanEditor from './QuotePaymentPlanEditor';
+import SearchableSelect from './SearchableSelect';
 
 interface UnitOption {
   id: string;
@@ -15,6 +16,14 @@ interface ClientOption {
   id: string;
   name: string;
   document_number: string;
+}
+
+interface LeadOption {
+  id: string;
+  project_id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
 }
 
 const firstOfNextMonth = () => {
@@ -40,6 +49,11 @@ export default function QuoteFormModal({
 }) {
   const [units, setUnits] = useState<UnitOption[]>([]);
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [leads, setLeads] = useState<LeadOption[]>([]);
+  const [sourceLead, setSourceLead] = useState<LeadOption | null>(null);
+  const [loadingOptions, setLoadingOptions] = useState(true);
+  const [optionsError, setOptionsError] = useState('');
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [form, setForm] = useState({
     unit_id: quote?.unit_id ?? '',
     client_id: quote?.client_id ?? '',
@@ -71,17 +85,63 @@ export default function QuoteFormModal({
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const controller = new AbortController();
     const headers = authHeaders();
-    Promise.all([
-      fetch(`/api/units?project_id=${projectId}`, { headers }).then((r) => r.json()),
-      fetch(`/api/clients?project_id=${projectId}`, { headers }).then((r) => r.json()),
-    ])
-      .then(([unitsData, clientsData]) => {
-        setUnits(Array.isArray(unitsData) ? unitsData : []);
-        setClients(Array.isArray(clientsData) ? clientsData : []);
-      })
-      .catch(() => setError('No se pudieron cargar unidades o clientes'));
-  }, [projectId]);
+    const load = async (url: string) => {
+      const response = await fetch(url, { headers, signal: controller.signal });
+      if (!response.ok) throw new Error('No se pudieron cargar las opciones');
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error('Respuesta inválida');
+      return data;
+    };
+    Promise.allSettled([
+      load(`/api/units?project_id=${encodeURIComponent(projectId)}`),
+      load(`/api/clients?project_id=${encodeURIComponent(projectId)}`),
+      load('/api/leads'),
+    ]).then(([unitsResult, clientsResult, leadsResult]) => {
+      if (controller.signal.aborted) return;
+      if (unitsResult.status === 'fulfilled') setUnits(unitsResult.value);
+      if (clientsResult.status === 'fulfilled') setClients(clientsResult.value);
+      if (leadsResult.status === 'fulfilled') setLeads(leadsResult.value.filter((lead: LeadOption) => lead.project_id === projectId));
+      const failed = [unitsResult, clientsResult, leadsResult].flatMap((result, index) =>
+        result.status === 'rejected' ? [['unidades', 'clientes', 'leads'][index]] : []);
+      setOptionsError(failed.length ? `No se pudieron cargar: ${failed.join(', ')}.` : '');
+      setLoadingOptions(false);
+    });
+    return () => controller.abort();
+  }, [projectId, loadAttempt]);
+
+  const unitOptions = units.map((unit) => ({
+    value: unit.id,
+    label: unit.code,
+    detail: `Torre ${unit.tower ?? '-'} · Piso ${unit.floor ?? '-'} · ${formatCOP(quote?.unit_id === unit.id ? quote.unit_price : unit.price)}`,
+  }));
+  if (quote?.unit && !unitOptions.some((unit) => unit.value === quote.unit_id)) {
+    unitOptions.unshift({ value: quote.unit_id, label: quote.unit.code, detail: `Precio cotizado: ${formatCOP(quote.unit_price)}` });
+  }
+  const clientOptions = [
+    ...leads.map((lead) => ({ value: `lead:${lead.id}`, label: lead.name,
+      detail: ['Lead', lead.phone, lead.email].filter(Boolean).join(' · '), searchText: lead.phone?.replace(/\D/g, '') })),
+    ...clients.map((client) => ({ value: `client:${client.id}`, label: client.name,
+      detail: `Cliente · ${client.document_number}` })),
+  ];
+  if (quote?.client && !clientOptions.some((client) => client.value === `client:${quote.client_id}`)) {
+    clientOptions.push({ value: `client:${quote.client_id}`, label: quote.client.name, detail: `Cliente · ${quote.client.document_number}` });
+  }
+
+  const selectClient = (value: string) => {
+    if (value.startsWith('lead:')) {
+      const lead = leads.find((item) => `lead:${item.id}` === value);
+      if (!lead) return;
+      setSourceLead(lead);
+      setNewClient({ name: lead.name, phone: lead.phone ?? '', email: lead.email ?? '', document_number: '' });
+      setForm((current) => ({ ...current, client_id: '' }));
+    } else {
+      setSourceLead(null);
+      setNewClient(null);
+      setForm((current) => ({ ...current, client_id: value.replace(/^client:/, '') }));
+    }
+  };
 
   const selectedUnit = useMemo(
     () => units.find((u) => u.id === form.unit_id),
@@ -159,22 +219,31 @@ export default function QuoteFormModal({
       let clientId = form.client_id;
 
       if (newClient) {
-        const res = await fetch('/api/clients', {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ name: newClient.name.trim(), document_number: newClient.document_number.trim(),
-            phone: newClient.phone.trim(), email: newClient.email.trim(), project_id: projectId }),
-        });
-        const body = await res.json();
-        if (!res.ok) {
-          throw new Error(
-            Array.isArray(body.message) ? body.message[0] : body.message ?? 'No se pudo crear el cliente',
-          );
+        const existing = clients.find((client) => client.document_number.trim() === newClient.document_number.trim());
+        if (existing) {
+          clientId = existing.id;
+          setForm((current) => ({ ...current, client_id: existing.id }));
+          setNewClient(null);
+          setSourceLead(null);
+        } else {
+          const res = await fetch('/api/clients', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ name: newClient.name.trim(), document_number: newClient.document_number.trim(),
+              phone: newClient.phone.trim(), email: newClient.email.trim(), project_id: projectId }),
+          });
+          const body = await res.json();
+          if (!res.ok) {
+            throw new Error(
+              Array.isArray(body.message) ? body.message[0] : body.message ?? 'No se pudo crear el cliente',
+            );
+          }
+          clientId = body.id;
+          setClients((current) => [...current, body]);
+          setForm((current) => ({ ...current, client_id: body.id }));
+          setNewClient(null);
+          setSourceLead(null);
         }
-        clientId = body.id;
-        setClients((current) => [...current, body]);
-        setForm((current) => ({ ...current, client_id: body.id }));
-        setNewClient(null);
       }
 
       const res = await fetch(quote ? `/api/quotes/${quote.id}` : '/api/quotes', {
@@ -219,20 +288,14 @@ export default function QuoteFormModal({
         <fieldset disabled={saving} className="grid md:grid-cols-2 gap-6 p-6 min-w-0">
           {/* Parámetros */}
           <div className="space-y-4">
+            {optionsError && <div role="alert" className="rounded-lg bg-red-50 dark:bg-red-950 p-3 text-sm text-red-700 dark:text-red-300">
+              {optionsError} <button type="button" disabled={loadingOptions} className="font-bold underline"
+                onClick={() => { setLoadingOptions(true); setLoadAttempt((attempt) => attempt + 1); }}>Reintentar</button>
+            </div>}
             <div>
-              <label className={LABEL}>Unidad</label>
-              <select
-                className={FIELD}
-                value={form.unit_id}
-                onChange={(e) => setForm({ ...form, unit_id: e.target.value })}
-              >
-                <option value="">Seleccione una unidad…</option>
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.code} · Torre {u.tower ?? '-'} · Piso {u.floor ?? '-'} · {formatCOP(quote?.unit_id === u.id ? quote.unit_price : u.price)}
-                  </option>
-                ))}
-              </select>
+              <SearchableSelect label="Unidad" placeholder="Buscar por código, torre o piso…"
+                value={form.unit_id} options={unitOptions} loading={loadingOptions}
+                onChange={(unitId) => setForm((current) => ({ ...current, unit_id: unitId }))} />
               {selectedUnit && (
                 <p className="mt-1 text-xs text-slate-500">
                   {quote?.unit_id === form.unit_id ? 'Precio cotizado' : 'Precio de lista'}: {formatCOP(unitPrice)}
@@ -241,26 +304,18 @@ export default function QuoteFormModal({
             </div>
 
             <div>
-              <label className={LABEL}>Cliente</label>
               {!newClient && (
                 <>
-                  <select
-                    className={FIELD}
-                    value={form.client_id}
-                    onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                  >
-                    <option value="">Seleccione un cliente…</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} · {c.document_number}
-                      </option>
-                    ))}
-                  </select>
+                  <SearchableSelect label="Cliente" placeholder="Buscar lead o cliente…"
+                    value={form.client_id ? `client:${form.client_id}` : ''} options={clientOptions}
+                    loading={loadingOptions} onChange={selectClient} />
+                  <p className="mt-1 text-xs text-slate-500">Leads y clientes de este proyecto. Busca por nombre, teléfono, correo o cédula.</p>
                   <button
                     type="button"
-                    onClick={() =>
-                      setNewClient({ name: '', document_number: '', phone: '', email: '' })
-                    }
+                    onClick={() => {
+                      setSourceLead(null);
+                      setNewClient({ name: '', document_number: '', phone: '', email: '' });
+                    }}
                     className="mt-2 text-xs font-bold text-blue-600 hover:underline"
                   >
                     + Nuevo cliente
@@ -270,7 +325,8 @@ export default function QuoteFormModal({
 
               {newClient && (
                 <div className="space-y-2 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Completa nombre, cédula y correo. El cliente se crea al guardar la cotización y queda disponible en este proyecto.</p>
+                  <p className="text-sm font-bold">{sourceLead ? `Cliente desde lead: ${sourceLead.name}` : 'Nuevo cliente'}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{sourceLead ? 'Revisa los datos del lead y completa la cédula y el correo si faltan. ' : 'Completa nombre, cédula y correo. '}El cliente se guarda con la cotización. Si su cédula ya está registrada en este proyecto, se usa ese cliente.</p>
                   <input
                     className={FIELD}
                     placeholder="Nombre completo"
@@ -305,10 +361,10 @@ export default function QuoteFormModal({
                   />
                   <button
                     type="button"
-                    onClick={() => setNewClient(null)}
+                    onClick={() => { setNewClient(null); setSourceLead(null); }}
                     className="text-xs font-bold text-slate-500 hover:underline"
                   >
-                    Usar un cliente existente
+                    Elegir otro lead o cliente
                   </button>
                 </div>
               )}
