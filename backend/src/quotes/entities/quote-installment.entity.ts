@@ -23,7 +23,9 @@ export class QuoteInstallment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Quote, (quote) => quote.installments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Quote, (quote) => quote.installments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'quote_id' })
   quote: Quote;
 
@@ -33,11 +35,15 @@ export class QuoteInstallment {
   @Column('int')
   number: number;
 
-  /** 'separacion' | 'cuota' | 'saldo' */
+  /** 'separacion' | 'cuota' | 'extra' | 'saldo' */
   @Column()
   concept: string;
 
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   amount: number;
 
   @Column({ type: 'date' })

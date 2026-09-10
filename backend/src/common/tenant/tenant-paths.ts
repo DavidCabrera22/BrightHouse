@@ -12,6 +12,7 @@ import { Lead } from '../../leads/entities/lead.entity';
 import { Project } from '../../projects/entities/project.entity';
 import { Quote } from '../../quotes/entities/quote.entity';
 import { QuoteInstallment } from '../../quotes/entities/quote-installment.entity';
+import { QuoteReceipt } from '../../quotes/entities/quote-receipt.entity';
 import { Sale } from '../../sales/entities/sale.entity';
 import { Unit } from '../../units/entities/unit.entity';
 import { UnitStatusHistory } from '../../unit-status-history/entities/unit-status-history.entity';
@@ -50,6 +51,7 @@ const TENANT_PATHS = new Map<Function, string[]>([
   [Commission, ['sale', 'unit', 'project']],
   [Quote, ['project']],
   [QuoteInstallment, ['quote', 'project']],
+  [QuoteReceipt, ['quote', 'project']],
 ]);
 
 /**

@@ -3,14 +3,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Quote } from './entities/quote.entity';
 import { QuoteInstallment } from './entities/quote-installment.entity';
+import { QuoteReceipt } from './entities/quote-receipt.entity';
 import { Unit } from '../units/entities/unit.entity';
 import { Client } from '../clients/entities/client.entity';
 import { CreateQuoteDto } from './dto/create-quote.dto';
-import { PreviewQuoteDto } from './dto/preview-quote.dto';
+import { PreviewQuoteDto, QuotePreviewRequestDto } from './dto/preview-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { TenantContext, TenantScopeService } from '../common/tenant';
-import { calculateQuote, QuoteCalculation, QuoteCalculationError } from './quote-calculator';
-import { assertTransition, businessToday, isEditable, isExpired, QuoteStatus } from './quote-status';
+import {
+  calculateQuote,
+  PlannedPayment,
+  QuoteCalculation,
+  QuoteCalculationError,
+} from './quote-calculator';
+import {
+  assertTransition,
+  businessToday,
+  isEditable,
+  isExpired,
+  QuoteStatus,
+} from './quote-status';
 
 const DEFAULT_VALID_DAYS = 15;
 const UNIQUE_VIOLATION = '23505';
@@ -25,7 +37,16 @@ export class QuotesService {
   ) {}
 
   /** Vista previa: calcula sin escribir nada. */
-  async preview(dto: PreviewQuoteDto, ctx: TenantContext): Promise<QuoteCalculation> {
+  async preview(dto: QuotePreviewRequestDto, ctx: TenantContext): Promise<QuoteCalculation> {
+    if (dto.quote_id) {
+      const quote = await this.scopedOne(dto.quote_id, ctx);
+      if (quote.unit_id === dto.unit_id) {
+        return this.calculate(
+          { ...dto, quote_date: dto.quote_date ?? quote.quote_date },
+          quote.unit_price,
+        );
+      }
+    }
     const unit = await this.loadUnit(dto.unit_id, ctx);
     return this.calculate(dto, unit.price);
   }
@@ -73,6 +94,8 @@ export class QuotesService {
         installments_count: dto.installments_count,
         installment_amount: calculation.installment_amount,
         first_installment_date: dto.first_installment_date,
+        payment_plan: dto.payment_plan ?? 'fixed',
+        balance_due_date: dto.balance_due_date?.slice(0, 10) ?? null,
         balance_value: calculation.balance_value,
         notes: dto.notes ?? null,
         installments: calculation.installments.map((i) => manager.create(QuoteInstallment, i)),
@@ -121,14 +144,18 @@ export class QuotesService {
       );
     }
 
+    if (((dto.unit_id && dto.unit_id !== quote.unit_id) || (dto.client_id && dto.client_id !== quote.client_id))
+      && await this.hasReceipts(id, ctx)) {
+      throw new BadRequestException('Una cotización con comprobantes debe conservar su cliente y unidad. Crea otra cotización para cambiarlos.');
+    }
     await this.tenantScope.assertReference(Unit, dto.unit_id, ctx);
     await this.tenantScope.assertReference(Client, dto.client_id, ctx);
 
     const unitId = dto.unit_id ?? quote.unit_id;
     const unit = await this.loadUnit(unitId, ctx);
 
+    const client = dto.client_id ? await this.loadClient(dto.client_id, ctx) : quote.client;
     if (dto.client_id) {
-      const client = await this.loadClient(dto.client_id, ctx);
       if (client.project_id !== quote.project_id) {
         throw new BadRequestException('El cliente no pertenece al proyecto de la cotización');
       }
@@ -137,6 +164,14 @@ export class QuotesService {
       throw new BadRequestException('La unidad no pertenece al proyecto de la cotización');
     }
 
+    const paymentPlan = dto.payment_plan ?? quote.payment_plan ?? 'fixed';
+    const savedPayments: PlannedPayment[] = quote.installments
+      .filter((i) => i.concept === 'cuota' || i.concept === 'extra')
+      .map((i) => ({
+        concept: i.concept as PlannedPayment['concept'],
+        amount: i.amount,
+        due_date: i.due_date,
+      }));
     const params = {
       unit_id: unitId,
       discount: dto.discount ?? quote.discount,
@@ -145,8 +180,18 @@ export class QuotesService {
       installments_count: dto.installments_count ?? quote.installments_count,
       first_installment_date: dto.first_installment_date ?? quote.first_installment_date,
       quote_date: dto.quote_date ?? quote.quote_date,
+      payment_plan: paymentPlan,
+      extra_installments:
+        dto.extra_installments ??
+        (paymentPlan === 'fixed' ? savedPayments.filter((i) => i.concept === 'extra') : []),
+      custom_installments:
+        dto.custom_installments ?? (paymentPlan === 'custom' ? savedPayments : []),
+      balance_due_date:
+        dto.balance_due_date === undefined ? quote.balance_due_date : dto.balance_due_date,
     };
-    const calculation = this.calculate(params, unit.price);
+    // Modificar el acuerdo conserva el precio cotizado si no cambia la unidad.
+    const unitPrice = unitId === quote.unit_id ? quote.unit_price : unit.price;
+    const calculation = this.calculate(params, unitPrice);
 
     await this.dataSource.transaction(async (manager) => {
       // El cronograma se borra entero y se regenera. No es una de dos opciones:
@@ -156,14 +201,18 @@ export class QuotesService {
       await manager.delete(QuoteInstallment, { quote_id: quote.id });
 
       Object.assign(quote, {
+        unit,
+        client,
         unit_id: unitId,
         client_id: dto.client_id ?? quote.client_id,
-        unit_price: unit.price,
+        unit_price: unitPrice,
         discount: params.discount,
         reservation_amount: params.reservation_amount,
         down_payment_percent: params.down_payment_percent,
         installments_count: params.installments_count,
         first_installment_date: params.first_installment_date,
+        payment_plan: paymentPlan,
+        balance_due_date: params.balance_due_date?.slice(0, 10) ?? null,
         quote_date: params.quote_date,
         valid_until: dto.valid_days
           ? addDays(params.quote_date, dto.valid_days)
@@ -192,23 +241,21 @@ export class QuotesService {
 
   async remove(id: string, ctx: TenantContext) {
     const quote = await this.scopedOne(id, ctx);
+    if (await this.hasReceipts(id, ctx)) {
+      throw new BadRequestException('No se puede eliminar una cotización con comprobantes guardados');
+    }
     // Las cuotas caen por ON DELETE CASCADE.
     return this.quoteRepository.remove(quote);
   }
 
   // ── Internos ──────────────────────────────────────────────────────────
 
-  private calculate(
-    params: {
-      discount?: number;
-      reservation_amount?: number;
-      down_payment_percent: number;
-      installments_count: number;
-      first_installment_date: string;
-      quote_date?: string;
-    },
-    unitPrice: number,
-  ): QuoteCalculation {
+  private hasReceipts(quoteId: string, ctx: TenantContext): Promise<boolean> {
+    return this.tenantScope.scoped(QuoteReceipt, 'receipt', ctx)
+      .andWhere('receipt.quote_id = :quoteId', { quoteId }).getExists();
+  }
+
+  private calculate(params: Omit<PreviewQuoteDto, 'unit_id'>, unitPrice: number): QuoteCalculation {
     try {
       return calculateQuote({
         unit_price: unitPrice,
@@ -218,6 +265,10 @@ export class QuotesService {
         installments_count: params.installments_count,
         quote_date: params.quote_date ?? businessToday(),
         first_installment_date: params.first_installment_date,
+        payment_plan: params.payment_plan,
+        extra_installments: params.extra_installments,
+        custom_installments: params.custom_installments,
+        balance_due_date: params.balance_due_date,
       });
     } catch (error) {
       if (error instanceof QuoteCalculationError) {

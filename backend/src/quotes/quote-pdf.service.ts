@@ -12,6 +12,7 @@ const money = (value: number) =>
 const CONCEPT_LABEL: Record<string, string> = {
   separacion: 'Separación',
   cuota: 'Cuota inicial',
+  extra: 'Abono extra',
   saldo: 'Saldo crédito',
 };
 
@@ -46,12 +47,18 @@ export class QuotePdfService {
   }
 
   private header(doc: PDFKit.PDFDocument, quote: Quote) {
-    doc.fontSize(18).font('Helvetica-Bold').text(quote.project?.name ?? 'Cotización');
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(quote.project?.name ?? 'Cotización');
     doc.fontSize(10).font('Helvetica').fillColor('#555');
     if (quote.project?.location) doc.text(quote.project.location);
     doc.moveDown(0.5);
     doc.fillColor('#000').fontSize(12).font('Helvetica-Bold').text(`Cotización ${quote.code}`);
-    doc.fontSize(10).font('Helvetica').text(`Fecha: ${date(quote.quote_date)}`);
+    doc
+      .fontSize(10)
+      .font('Helvetica')
+      .text(`Fecha: ${date(quote.quote_date)}`);
     doc.moveDown();
   }
 
@@ -79,7 +86,17 @@ export class QuotePdfService {
       ['Valor total', money(quote.total_value)],
       ['Separación', money(quote.reservation_amount)],
       [`Cuota inicial (${Number(quote.down_payment_percent)}%)`, money(quote.down_payment_value)],
-      [`${quote.installments_count} cuotas de`, money(quote.installment_amount)],
+      quote.payment_plan === 'custom'
+        ? ['Plan de pagos', 'Personalizado: ver cronograma']
+        : ['Cuota mensual base', money(quote.installment_amount)],
+      [
+        'Abonos extra pactados',
+        money(
+          (quote.installments ?? [])
+            .filter((i) => i.concept === 'extra')
+            .reduce((sum, i) => sum + i.amount, 0),
+        ),
+      ],
       ['Saldo con crédito hipotecario', money(quote.balance_value)],
     ];
 
@@ -96,31 +113,46 @@ export class QuotePdfService {
   }
 
   private schedule(doc: PDFKit.PDFDocument, quote: Quote) {
+    doc.x = 50;
     doc.fontSize(11).font('Helvetica-Bold').text('Plan de pagos');
     doc.moveDown(0.3);
 
-    const head = doc.y;
-    doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('#', 50, head);
-    doc.text('Concepto', 80, head);
-    doc.text('Vencimiento', 240, head);
-    doc.text('Valor', 350, head, { width: 200, align: 'right' });
-    doc.moveTo(50, doc.y + 2).lineTo(550, doc.y + 2).strokeColor('#cccccc').stroke();
-    doc.moveDown(0.5);
+    const tableHeader = () => {
+      const head = doc.y;
+      doc.fontSize(9).font('Helvetica-Bold');
+      doc.text('#', 50, head);
+      doc.text('Concepto', 80, head);
+      doc.text('Vencimiento', 240, head);
+      doc.text('Valor', 350, head, { width: 200, align: 'right' });
+      doc
+        .moveTo(50, doc.y + 2)
+        .lineTo(550, doc.y + 2)
+        .strokeColor('#cccccc')
+        .stroke();
+      doc.moveDown(0.5).font('Helvetica');
+    };
+    tableHeader();
 
     doc.font('Helvetica');
     for (const installment of quote.installments ?? []) {
-      if (doc.y > 700) doc.addPage();
+      if (doc.y > 700) {
+        doc.addPage();
+        tableHeader();
+      }
       const y = doc.y;
       doc.text(String(installment.number), 50, y);
       doc.text(CONCEPT_LABEL[installment.concept] ?? installment.concept, 80, y);
       doc.text(date(installment.due_date), 240, y);
-      doc.text(money(installment.amount), 350, y, { width: 200, align: 'right' });
+      doc.text(money(installment.amount), 350, y, {
+        width: 200,
+        align: 'right',
+      });
     }
     doc.moveDown();
   }
 
   private footer(doc: PDFKit.PDFDocument, quote: Quote) {
+    doc.x = 50;
     if (quote.notes) {
       doc.moveDown(0.5).fontSize(9).font('Helvetica-Oblique').fillColor('#333').text(quote.notes);
     }

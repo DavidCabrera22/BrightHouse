@@ -8,6 +8,7 @@ import {
   STATUS_LABEL,
 } from './quoteTypes';
 import type { Quote, QuoteStatus } from './quoteTypes';
+import QuoteReceipts from './QuoteReceipts';
 
 /** Acciones ofrecidas según el estado actual, en el mismo orden del flujo. */
 const NEXT_ACTIONS: Record<QuoteStatus, { status: QuoteStatus; label: string }[]> = {
@@ -24,10 +25,12 @@ export default function QuoteDetailModal({
   quoteId,
   onClose,
   onChanged,
+  onEdit,
 }: {
   quoteId: string;
   onClose: () => void;
   onChanged: () => void;
+  onEdit: (quote: Quote) => void;
 }) {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState('');
@@ -142,7 +145,9 @@ export default function QuoteDetailModal({
                 [
                   ['Valor total', quote.total_value],
                   [`Inicial (${Number(quote.down_payment_percent)}%)`, quote.down_payment_value],
-                  ['Cuota mensual', quote.installment_amount],
+                  [quote.payment_plan === 'custom' ? 'Abonos extra pactados' : 'Cuota mensual base', quote.payment_plan === 'custom'
+                    ? (quote.installments ?? []).filter((i) => i.concept === 'extra').reduce((sum, i) => sum + Number(i.amount), 0)
+                    : quote.installment_amount],
                   ['Saldo crédito', quote.balance_value],
                 ] as [string, number][]
               ).map(([labelText, value]) => (
@@ -156,7 +161,9 @@ export default function QuoteDetailModal({
             </div>
 
             <div>
-              <p className="text-xs font-bold text-slate-400 uppercase mb-2">Plan de pagos</p>
+              <p className="text-xs font-bold text-slate-400 uppercase mb-2">
+                {quote.payment_plan === 'custom' ? 'Plan de pagos personalizado' : 'Plan de pagos mensual con abonos extra'}
+              </p>
               <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500">
@@ -189,11 +196,16 @@ export default function QuoteDetailModal({
             {quote.notes && (
               <p className="text-sm text-slate-600 dark:text-slate-300 italic">{quote.notes}</p>
             )}
+            <QuoteReceipts key={quote.id} quoteId={quote.id} installments={quote.installments ?? []} />
           </div>
         )}
 
         {quote && (
           <div className="flex flex-wrap justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800">
+            {quote.status === 'draft' && <button disabled={busy} onClick={() => onEdit(quote)}
+              className="px-4 py-2 rounded-lg border border-blue-200 text-blue-600 text-sm font-bold disabled:opacity-40">
+              Editar cotización
+            </button>}
             <button
               onClick={downloadPdf}
               className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-700 dark:text-slate-200"

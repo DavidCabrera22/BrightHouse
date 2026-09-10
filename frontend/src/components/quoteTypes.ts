@@ -1,14 +1,34 @@
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'rejected';
-
-export interface Installment {
-  number: number;
-  concept: 'separacion' | 'cuota' | 'saldo';
+export type PaymentPlan = 'fixed' | 'custom';
+export interface PlannedPayment {
+  concept: 'cuota' | 'extra';
   amount: number;
   due_date: string;
 }
 
+export interface Installment {
+  id?: string;
+  number: number;
+  concept: 'separacion' | 'cuota' | 'extra' | 'saldo';
+  amount: number;
+  due_date: string;
+}
+
+export interface QuoteReceipt {
+  id: string;
+  quote_id: string;
+  original_name: string;
+  mime_type: string;
+  file_size: number;
+  installment_snapshot: Installment | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Quote {
   id: string;
+  unit_id: string;
+  client_id: string;
   code: string;
   status: QuoteStatus;
   is_expired: boolean;
@@ -23,6 +43,8 @@ export interface Quote {
   installments_count: number;
   installment_amount: number;
   first_installment_date: string;
+  payment_plan: PaymentPlan;
+  balance_due_date: string | null;
   balance_value: number;
   notes?: string | null;
   installments?: Installment[];
@@ -68,6 +90,7 @@ export const formatDate = (iso?: string) => {
 export const CONCEPT_LABEL: Record<Installment['concept'], string> = {
   separacion: 'Separación',
   cuota: 'Cuota inicial',
+  extra: 'Abono extra',
   saldo: 'Saldo crédito',
 };
 

@@ -9,19 +9,27 @@ import {
   Query,
   Res,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import { QuotesService } from './quotes.service';
 import { QuotePdfService } from './quote-pdf.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
-import { PreviewQuoteDto } from './dto/preview-quote.dto';
+import { QuotePreviewRequestDto } from './dto/preview-quote.dto';
 import { UpdateQuoteDto } from './dto/update-quote.dto';
 import { UpdateQuoteStatusDto } from './dto/update-quote-status.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { CurrentTenant, TenantContext } from '../common/tenant';
+import { QuoteReceiptsService } from './quote-receipts.service';
+import { CreateQuoteReceiptDto } from './dto/create-quote-receipt.dto';
+import { MAX_RECEIPT_BYTES } from './quote-receipt-file';
 
 @ApiTags('Quotes')
 @ApiBearerAuth()
@@ -31,12 +39,13 @@ export class QuotesController {
   constructor(
     private readonly quotesService: QuotesService,
     private readonly quotePdfService: QuotePdfService,
+    private readonly quoteReceiptsService: QuoteReceiptsService,
   ) {}
 
   /** Alimenta el cronograma en vivo del formulario. No escribe nada. */
   @Post('preview')
   @Roles('Admin', 'Agent')
-  preview(@Body() dto: PreviewQuoteDto, @CurrentTenant() tenant: TenantContext) {
+  preview(@Body() dto: QuotePreviewRequestDto, @CurrentTenant() tenant: TenantContext) {
     return this.quotesService.preview(dto, tenant);
   }
 
@@ -64,11 +73,7 @@ export class QuotesController {
 
   @Get(':id/pdf')
   @Roles('Admin', 'Agent')
-  async pdf(
-    @Param('id') id: string,
-    @CurrentTenant() tenant: TenantContext,
-    @Res() res: Response,
-  ) {
+  async pdf(@Param('id') id: string, @CurrentTenant() tenant: TenantContext, @Res() res: Response) {
     const quote = await this.quotesService.findOneEntity(id, tenant);
     const buffer = await this.quotePdfService.render(quote);
 
@@ -88,6 +93,46 @@ export class QuotesController {
     @CurrentTenant() tenant: TenantContext,
   ) {
     return this.quotesService.update(id, dto, tenant);
+  }
+
+  @Get(':id/receipts')
+  @Roles('Admin', 'Agent')
+  receipts(@Param('id', ParseUUIDPipe) id: string, @CurrentTenant() tenant: TenantContext) {
+    return this.quoteReceiptsService.list(id, tenant);
+  }
+
+  @Post(':id/receipts')
+  @Roles('Admin', 'Agent')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: memoryStorage(), limits: { fileSize: MAX_RECEIPT_BYTES, files: 1, fields: 2 },
+  }))
+  uploadReceipt(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateQuoteReceiptDto,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentTenant() tenant: TenantContext,
+  ) {
+    return this.quoteReceiptsService.create(id, dto, file, tenant);
+  }
+
+  @Get(':id/receipts/:receiptId/file')
+  @Roles('Admin', 'Agent')
+  async receiptFile(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('receiptId', ParseUUIDPipe) receiptId: string,
+    @CurrentTenant() tenant: TenantContext,
+    @Res() res: Response,
+  ) {
+    const file = await this.quoteReceiptsService.download(id, receiptId, tenant);
+    res.set({
+      'Content-Type': file.mime_type,
+      'Content-Length': String(file.buffer.length),
+      'Content-Disposition': `attachment; filename="comprobante"; filename*=UTF-8''${encodeURIComponent(file.original_name)}`,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(file.buffer);
   }
 
   @Patch(':id/status')

@@ -6,7 +6,14 @@
  * cronograma sin levantar un módulo.
  */
 
-export type InstallmentConcept = 'separacion' | 'cuota' | 'saldo';
+export type InstallmentConcept = 'separacion' | 'cuota' | 'extra' | 'saldo';
+export type PaymentPlan = 'fixed' | 'custom';
+
+export interface PlannedPayment {
+  concept: 'cuota' | 'extra';
+  amount: number;
+  due_date: string;
+}
 
 export interface QuoteCalculationInput {
   unit_price: number;
@@ -18,6 +25,12 @@ export interface QuoteCalculationInput {
   quote_date: string;
   /** 'YYYY-MM-DD'. Vencimiento de la primera cuota. */
   first_installment_date: string;
+  payment_plan?: PaymentPlan;
+  /** En el plan fijo, estos abonos reducen el valor de las cuotas mensuales. */
+  extra_installments?: PlannedPayment[];
+  /** En el plan personalizado, reemplaza todas las cuotas de la inicial. */
+  custom_installments?: PlannedPayment[];
+  balance_due_date?: string | null;
 }
 
 export interface CalculatedInstallment {
@@ -96,6 +109,11 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   const reservationInput = Number(input.reservation_amount ?? 0);
   const percent = Number(input.down_payment_percent);
   const count = Number(input.installments_count);
+  const paymentPlan = input.payment_plan ?? 'fixed';
+
+  if (paymentPlan !== 'fixed' && paymentPlan !== 'custom') {
+    throw new QuoteCalculationError('El tipo de plan de pagos no es válido');
+  }
 
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
     throw new QuoteCalculationError('El precio de la unidad debe ser mayor a cero');
@@ -111,6 +129,9 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   }
   if (!Number.isInteger(count) || count < 1) {
     throw new QuoteCalculationError('El número de cuotas debe ser al menos 1');
+  }
+  if (count > 600) {
+    throw new QuoteCalculationError('El número de cuotas no puede superar 600');
   }
   if (!Number.isFinite(reservationInput) || reservationInput < 0) {
     throw new QuoteCalculationError('La separación no puede ser negativa');
@@ -141,7 +162,52 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
   const firstInstallmentDate = normalizeDate(input.first_installment_date);
 
   const financed = downPaymentValue - reservation;
-  const installmentAmount = Math.floor(financed / count);
+  const extras = input.extra_installments ?? [];
+  const custom = input.custom_installments ?? [];
+  if (
+    !Array.isArray(extras) ||
+    !Array.isArray(custom) ||
+    extras.length > 600 ||
+    custom.length > 600
+  ) {
+    throw new QuoteCalculationError('El plan debe contener como máximo 600 pagos pactados');
+  }
+  if (paymentPlan === 'fixed' && custom.length > 0) {
+    throw new QuoteCalculationError('Las cuotas variables requieren un plan personalizado');
+  }
+  if (paymentPlan === 'custom' && extras.length > 0) {
+    throw new QuoteCalculationError('Incluya los abonos extra dentro del plan personalizado');
+  }
+  const planned = (paymentPlan === 'custom' ? custom : extras).map((payment): PlannedPayment => {
+    if (
+      !payment ||
+      !['cuota', 'extra'].includes(payment.concept) ||
+      (paymentPlan === 'fixed' && payment.concept !== 'extra')
+    ) {
+      throw new QuoteCalculationError('El concepto del pago pactado no es válido');
+    }
+    const amount = Math.round(Number(payment.amount));
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new QuoteCalculationError('Cada pago pactado debe ser mayor a cero');
+    }
+    const dueDate = normalizeDate(payment.due_date);
+    if (dueDate < quoteDate) {
+      throw new QuoteCalculationError('Los pagos pactados no pueden vencer antes de la cotización');
+    }
+    return { concept: payment.concept, amount, due_date: dueDate };
+  });
+  const plannedTotal = planned.reduce((sum, payment) => sum + payment.amount, 0);
+  if (plannedTotal > financed) {
+    throw new QuoteCalculationError(
+      'Los pagos pactados superan la cuota inicial pendiente de distribuir',
+    );
+  }
+  if (paymentPlan === 'custom' && plannedTotal !== financed) {
+    const pending = new Intl.NumberFormat('es-CO').format(financed - plannedTotal);
+    throw new QuoteCalculationError(`Faltan $${pending} por distribuir en el plan personalizado`);
+  }
+  const monthlyFinanced = paymentPlan === 'fixed' ? financed - plannedTotal : 0;
+  const installmentAmount = Math.floor(monthlyFinanced / count);
 
   const installments: CalculatedInstallment[] = [];
   let number = 1;
@@ -157,18 +223,42 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
 
   // Cuando la separación ya cubre la inicial (o no hay inicial) no se emiten
   // doce filas en cero: misma regla que para la separación y el saldo.
-  if (financed > 0) {
+  if (monthlyFinanced > 0) {
     for (let i = 0; i < count; i++) {
       // El residuo de la división entera se acumula en la última cuota, nunca
       // en el saldo a crédito: así la suma de las filas cuadra con el total.
       const isLast = i === count - 1;
+      const amount = isLast ? monthlyFinanced - installmentAmount * (count - 1) : installmentAmount;
+      if (amount === 0) continue;
       installments.push({
         number: number++,
         concept: 'cuota',
-        amount: isLast ? financed - installmentAmount * (count - 1) : installmentAmount,
+        amount,
         due_date: addMonthsClamped(firstInstallmentDate, i),
       });
     }
+  }
+
+  for (const payment of planned) {
+    installments.push({ ...payment, number: number++ });
+  }
+  const latestDate = installments.reduce(
+    (latest, payment) => (payment.due_date > latest ? payment.due_date : latest),
+    quoteDate,
+  );
+  const defaultBalanceDate =
+    paymentPlan === 'fixed'
+      ? addMonthsClamped(firstInstallmentDate, count)
+      : addMonthsClamped(latestDate, 1);
+  const balanceDate = input.balance_due_date
+    ? normalizeDate(input.balance_due_date)
+    : defaultBalanceDate < latestDate
+      ? addMonthsClamped(latestDate, 1)
+      : defaultBalanceDate;
+  if (balanceDate < latestDate) {
+    throw new QuoteCalculationError(
+      'El saldo final no puede vencer antes del último pago de la inicial',
+    );
   }
 
   if (balanceValue > 0) {
@@ -176,9 +266,14 @@ export function calculateQuote(input: QuoteCalculationInput): QuoteCalculation {
       number: number++,
       concept: 'saldo',
       amount: balanceValue,
-      due_date: addMonthsClamped(firstInstallmentDate, count),
+      due_date: balanceDate,
     });
   }
+
+  installments.sort((a, b) => a.due_date.localeCompare(b.due_date) || a.number - b.number);
+  installments.forEach((payment, index) => {
+    payment.number = index + 1;
+  });
 
   return {
     total_value: totalValue,

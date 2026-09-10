@@ -15,6 +15,7 @@ import { Client } from '../../clients/entities/client.entity';
 import { User } from '../../users/entities/user.entity';
 import { QuoteInstallment } from './quote-installment.entity';
 import { decimalTransformer } from './decimal-transformer';
+import { PaymentPlan } from '../quote-calculator';
 
 @Entity('quotes')
 // El consecutivo es por proyecto y por año; el índice es lo que arbitra dos
@@ -68,40 +69,82 @@ export class Quote {
   valid_until: string;
 
   /** Precio de la unidad el día de la cotización, congelado a propósito. */
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   unit_price: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    default: 0,
+    transformer: decimalTransformer,
+  })
   discount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   total_value: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    default: 0,
+    transformer: decimalTransformer,
+  })
   reservation_amount: number;
 
-  @Column('decimal', { precision: 5, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 5,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   down_payment_percent: number;
 
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   down_payment_value: number;
 
   @Column('int')
   installments_count: number;
 
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   installment_amount: number;
 
   @Column({ type: 'date' })
   first_installment_date: string;
 
-  @Column('decimal', { precision: 15, scale: 2, transformer: decimalTransformer })
+  @Column({ type: 'varchar', default: 'fixed' })
+  payment_plan: PaymentPlan;
+
+  @Column({ type: 'date', nullable: true })
+  balance_due_date: string | null;
+
+  @Column('decimal', {
+    precision: 15,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   balance_value: number;
 
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @OneToMany(() => QuoteInstallment, (installment) => installment.quote, { cascade: ['insert'] })
+  @OneToMany(() => QuoteInstallment, (installment) => installment.quote, {
+    cascade: ['insert'],
+  })
   installments: QuoteInstallment[];
 
   @CreateDateColumn()

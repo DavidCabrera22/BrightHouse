@@ -1,4 +1,9 @@
-import { addMonthsClamped, calculateQuote, QuoteCalculationError } from './quote-calculator';
+import {
+  addMonthsClamped,
+  calculateQuote,
+  PlannedPayment,
+  QuoteCalculationError,
+} from './quote-calculator';
 
 const base = {
   unit_price: 320_000_000,
@@ -46,7 +51,12 @@ describe('calculateQuote', () => {
     const casos = [
       base,
       { ...base, installments_count: 7, reservation_amount: 0 },
-      { ...base, unit_price: 187_654_321, discount: 1_234_567, down_payment_percent: 33.33 },
+      {
+        ...base,
+        unit_price: 187_654_321,
+        discount: 1_234_567,
+        down_payment_percent: 33.33,
+      },
       { ...base, down_payment_percent: 100, installments_count: 3 },
     ];
 
@@ -198,7 +208,10 @@ describe('calculateQuote', () => {
   });
 
   it('acepta una fecha de cotización con hora, normalizándola al día', () => {
-    const { installments } = calculateQuote({ ...base, quote_date: '2026-08-26T00:00:00Z' });
+    const { installments } = calculateQuote({
+      ...base,
+      quote_date: '2026-08-26T00:00:00Z',
+    });
 
     expect(installments[0].due_date).toBe('2026-08-26');
   });
@@ -240,5 +253,158 @@ describe('addMonthsClamped', () => {
 
   it('acepta una fecha con hora', () => {
     expect(addMonthsClamped('2026-09-15T00:00:00Z', 1)).toBe('2026-10-15');
+  });
+});
+
+describe('planes de pagos flexibles', () => {
+  const extra: PlannedPayment = {
+    concept: 'extra',
+    amount: 19_000_000,
+    due_date: '2026-12-15',
+  };
+  const custom: PlannedPayment[] = [
+    { concept: 'cuota', amount: 12_000_000, due_date: '2026-09-15' },
+    extra,
+    { concept: 'cuota', amount: 60_000_000, due_date: '2027-03-31' },
+  ];
+
+  it('descuenta los extras de las mensualidades, conservando la inicial y el saldo', () => {
+    const result = calculateQuote({ ...base, extra_installments: [extra] });
+    expect(result.installment_amount).toBe(6_000_000);
+    expect(result.down_payment_value).toBe(96_000_000);
+    expect(result.balance_value).toBe(224_000_000);
+    expect(result.installments.filter((i) => i.concept === 'extra')).toEqual([
+      expect.objectContaining(extra),
+    ]);
+    expect(result.installments.reduce((sum, i) => sum + i.amount, 0)).toBe(result.total_value);
+  });
+
+  it('conserva los valores y fechas pactados y ordena el cronograma', () => {
+    const result = calculateQuote({
+      ...base,
+      payment_plan: 'custom',
+      custom_installments: [...custom].reverse(),
+    });
+    expect(result.installments.slice(1, -1).map(({ number, ...i }) => i)).toEqual(custom);
+    expect(result.installments.at(-1).due_date).toBe('2027-04-30');
+    expect(result.installments.map((i) => i.number)).toEqual([1, 2, 3, 4, 5]);
+    expect(result.installments.reduce((sum, i) => sum + i.amount, 0)).toBe(320_000_000);
+    expect(result.installment_amount).toBe(0);
+  });
+
+  it('permite pactar solo abonos extra que cubren toda la inicial pendiente', () => {
+    const result = calculateQuote({
+      ...base,
+      extra_installments: [{ ...extra, amount: 91_000_000 }],
+    });
+    expect(result.installments.map((i) => i.concept)).toEqual(['separacion', 'extra', 'saldo']);
+    expect(result.installment_amount).toBe(0);
+  });
+
+  it('permite fijar la fecha del saldo final y ampliarla para un extra tardío', () => {
+    const fixed = calculateQuote({ ...base, balance_due_date: '2028-01-15' });
+    expect(fixed.installments.at(-1).due_date).toBe('2028-01-15');
+    const extended = calculateQuote({
+      ...base,
+      extra_installments: [{ ...extra, due_date: '2027-12-31' }],
+    });
+    expect(extended.installments.at(-1).due_date).toBe('2028-01-31');
+  });
+
+  it('rechaza el saldo antes del último pago y los pagos anteriores a la cotización', () => {
+    expect(() => calculateQuote({ ...base, balance_due_date: '2026-12-01' })).toThrow(
+      /saldo final/i,
+    );
+    expect(() =>
+      calculateQuote({
+        ...base,
+        extra_installments: [{ ...extra, due_date: '2026-08-01' }],
+      }),
+    ).toThrow(/antes de la cotización/i);
+  });
+
+  it('rechaza faltantes y excedentes del plan personalizado', () => {
+    expect(() =>
+      calculateQuote({
+        ...base,
+        payment_plan: 'custom',
+        custom_installments: custom.slice(0, 2),
+      }),
+    ).toThrow(/faltan/i);
+    expect(() =>
+      calculateQuote({
+        ...base,
+        payment_plan: 'custom',
+        custom_installments: [...custom, extra],
+      }),
+    ).toThrow(/superan/i);
+    expect(() =>
+      calculateQuote({
+        ...base,
+        extra_installments: [{ ...extra, amount: 92_000_000 }],
+      }),
+    ).toThrow(/superan/i);
+  });
+
+  it.each([0, -1, NaN, Infinity])('rechaza un abono extra de %s', (amount) => {
+    expect(() => calculateQuote({ ...base, extra_installments: [{ ...extra, amount }] })).toThrow(
+      /mayor a cero/i,
+    );
+  });
+
+  it('rechaza fechas inexistentes y conceptos reservados', () => {
+    expect(() =>
+      calculateQuote({
+        ...base,
+        extra_installments: [{ ...extra, due_date: '2026-02-31' }],
+      }),
+    ).toThrow(/fecha inválida/i);
+    expect(() => calculateQuote({ ...base, balance_due_date: '2027-02-30' })).toThrow(
+      /fecha inválida/i,
+    );
+    expect(() =>
+      calculateQuote({
+        ...base,
+        extra_installments: [{ ...extra, concept: 'saldo' as any }],
+      }),
+    ).toThrow(/concepto/i);
+  });
+
+  it('no ignora pagos enviados en el modo equivocado', () => {
+    expect(() => calculateQuote({ ...base, custom_installments: custom })).toThrow(/requieren/i);
+    expect(() =>
+      calculateQuote({
+        ...base,
+        payment_plan: 'custom',
+        custom_installments: custom,
+        extra_installments: [extra],
+      }),
+    ).toThrow(/dentro del plan/i);
+  });
+
+  it('admite un plan vacío cuando la separación cubre la inicial', () => {
+    const result = calculateQuote({
+      ...base,
+      payment_plan: 'custom',
+      custom_installments: [],
+      reservation_amount: 96_000_000,
+    });
+    expect(result.installments.map((i) => i.concept)).toEqual(['separacion', 'saldo']);
+  });
+
+  it('conserva los totales y omite cuotas de cero con diferentes divisiones', () => {
+    for (const count of [1, 7, 12, 120]) {
+      for (const amount of [1, 19_000_001, 90_999_999, 91_000_000]) {
+        const result = calculateQuote({
+          ...base,
+          installments_count: count,
+          extra_installments: [{ ...extra, amount }],
+        });
+        expect(result.installments.reduce((sum, i) => sum + i.amount, 0)).toBe(result.total_value);
+        expect(result.installments.every((i) => i.amount > 0 && Number.isInteger(i.amount))).toBe(
+          true,
+        );
+      }
+    }
   });
 });

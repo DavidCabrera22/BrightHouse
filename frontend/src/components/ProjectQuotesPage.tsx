@@ -23,6 +23,7 @@ export default function ProjectQuotesPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'' | QuoteStatus>('');
   const [showForm, setShowForm] = useState(false);
+  const [editingQuote, setEditingQuote] = useState<Quote | undefined>();
   const [detailId, setDetailId] = useState<string | null>(searchParams.get('quote'));
 
   const load = useCallback(async () => {
@@ -58,7 +59,7 @@ export default function ProjectQuotesPage() {
             </p>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { setEditingQuote(undefined); setShowForm(true); }}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg"
           >
             Nueva cotización
@@ -95,7 +96,7 @@ export default function ProjectQuotesPage() {
                 <th className="px-4 py-3">Cliente</th>
                 <th className="px-4 py-3">Unidad</th>
                 <th className="px-4 py-3 text-right">Valor total</th>
-                <th className="px-4 py-3 text-right">Cuota mensual</th>
+                <th className="px-4 py-3 text-right">Plan / cuota base</th>
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3">Vigencia</th>
                 <th className="px-4 py-3" />
@@ -137,7 +138,7 @@ export default function ProjectQuotesPage() {
                       {formatCOP(quote.total_value)}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {formatCOP(quote.installment_amount)}
+                      {quote.payment_plan === 'custom' ? 'Personalizado' : formatCOP(quote.installment_amount)}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -172,16 +173,19 @@ export default function ProjectQuotesPage() {
       {showForm && (
         <QuoteFormModal
           projectId={projectId!}
+          quote={editingQuote}
           onClose={() => setShowForm(false)}
-          onSaved={() => {
+          onSaved={(savedQuote) => {
             setShowForm(false);
+            setDetailId(savedQuote.id);
             load();
           }}
         />
       )}
 
       {detailId && (
-        <QuoteDetailModal quoteId={detailId} onClose={() => setDetailId(null)} onChanged={load} />
+        <QuoteDetailModal quoteId={detailId} onClose={() => setDetailId(null)} onChanged={load}
+          onEdit={(quote) => { setDetailId(null); setEditingQuote(quote); setShowForm(true); }} />
       )}
     </CrmLayout>
   );
