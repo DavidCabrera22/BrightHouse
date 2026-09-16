@@ -8,7 +8,10 @@ export const TENANT_NOT_ASSIGNED = 'TENANT_NOT_ASSIGNED';
 export interface TenantContext {
   userId: string;
   role: string;
-  /** Null only for SuperAdmin. Every other role is pinned to exactly one tenant. */
+  /**
+   * Null only for SuperAdmin. Every other role acts in exactly one tenant per
+   * token; users with extra tenants (user_tenants) get a new token to switch.
+   */
   tenantId: string | null;
   isSuperAdmin: boolean;
 }

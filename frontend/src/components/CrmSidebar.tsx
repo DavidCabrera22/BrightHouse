@@ -1,5 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+
+interface TenantOption {
+  id: string;
+  name: string;
+}
+
+/**
+ * Solo aparece para quien opera en más de una empresa. Cambiar de empresa pide
+ * un token nuevo y recarga el CRM desde el panel: las rutas con un id de
+ * proyecto o de lead de la empresa anterior ya no existirían en la nueva.
+ */
+const TenantSwitcher: React.FC = () => {
+  const [tenants, setTenants] = useState<TenantOption[]>([]);
+  const [active, setActive] = useState<string>('');
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    fetch('/api/auth/tenants', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setTenants(data.tenants ?? []);
+        setActive(data.active_tenant_id ?? '');
+      })
+      .catch(() => {});
+  }, []);
+
+  if (tenants.length < 2) return null;
+
+  const handleChange = async (tenantId: string) => {
+    if (tenantId === active) return;
+    setSwitching(true);
+    const res = await fetch('/api/auth/switch-tenant', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tenant_id: tenantId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      localStorage.setItem('access_token', data.access_token);
+      window.location.assign('/crm');
+    } else {
+      setSwitching(false);
+      alert('No se pudo cambiar de empresa.');
+    }
+  };
+
+  return (
+    <div className="mb-8">
+      <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5 px-1">
+        Empresa
+      </label>
+      <select
+        value={active}
+        disabled={switching}
+        onChange={(e) => handleChange(e.target.value)}
+        className="w-full px-3 py-2.5 rounded-xl bg-white/5 border border-slate-700 text-sm text-white focus:ring-2 focus:ring-crm-primary outline-none disabled:opacity-50"
+      >
+        {tenants.map((t) => (
+          <option key={t.id} value={t.id} className="text-slate-900">
+            {t.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 interface CrmSidebarProps {
   sidebarOpen: boolean;
@@ -47,6 +118,8 @@ const CrmSidebar: React.FC<CrmSidebarProps> = ({ sidebarOpen, setSidebarOpen }) 
               <p className="text-slate-400 text-xs font-medium">AI Real Estate CRM</p>
             </div>
           </div>
+
+          <TenantSwitcher />
 
           {/* Navigation */}
           <nav className="flex flex-col gap-2">

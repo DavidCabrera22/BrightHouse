@@ -3,6 +3,7 @@ import { DataSource, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { TenantContext } from './tenant-context';
 import { getTenantPath } from './tenant-paths';
 import { Project } from '../../projects/entities/project.entity';
+import { User } from '../../users/entities/user.entity';
 
 type EntityClass<T> = new (...args: any[]) => T;
 
@@ -30,12 +31,26 @@ export class TenantScopeService {
     if (ctx.isSuperAdmin) return qb;
 
     let alias = qb.alias;
+    let owner = this.dataSource.getMetadata(entity);
     // Prefixed aliases so they never collide with joins the caller added.
     getTenantPath(entity).forEach((relation, i) => {
       const next = `__tenant_${i}`;
       qb.innerJoin(`${alias}.${relation}`, next);
       alias = next;
+      owner = owner.findRelationWithPropertyPath(relation)!.inverseEntityMetadata;
     });
+
+    // Un usuario pertenece a su tenant principal y a los que tenga en
+    // user_tenants. Sin esto, quien opera en un segundo tenant no aparece como
+    // asesor asignable ahí y pierde su agenda al cambiar de tenant.
+    if (owner.target === User) {
+      return qb.andWhere(
+        `(${alias}.tenant_id = :__tenantId OR EXISTS (` +
+          `SELECT 1 FROM user_tenants __member WHERE __member.user_id = ${alias}.id ` +
+          `AND __member.tenant_id = :__memberTenantId))`,
+        { __tenantId: ctx.tenantId, __memberTenantId: ctx.tenantId },
+      );
+    }
 
     return qb.andWhere(`${alias}.tenant_id = :__tenantId`, { __tenantId: ctx.tenantId });
   }

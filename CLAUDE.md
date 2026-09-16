@@ -83,6 +83,14 @@ Only `projects`, `users` and `conversations` have a `tenant_id` column; every
 other table reaches one through relations. `roles`, `unit_statuses` and
 `tenants` are global — their writes are SuperAdmin-only.
 
+A user can operate in more than one tenant: `users.tenant_id` is the primary, and
+`user_tenants` (SuperAdmin-managed, via `extra_tenant_ids` on the users API) holds
+the rest. The JWT still carries a single active `tenant_id`; `POST /api/auth/switch-tenant`
+reissues it after checking membership, and the CRM sidebar shows the switcher.
+`TenantScopeService` treats a user as belonging to a tenant if it is either their
+primary or a membership, so User/DayTask/AuditLog scoping follows that. A tenant
+Admin cannot edit or delete a user whose primary tenant is another one.
+
 A non-SuperAdmin whose `tenant_id` is NULL is **denied**, not treated as global.
 Run `npm run backfill:tenants` (dry run; `-- --apply` to write) to assign a
 tenant to rows created before multi-tenancy existed.

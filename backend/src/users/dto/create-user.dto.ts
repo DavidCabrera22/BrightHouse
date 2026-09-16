@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsUUID, IsEnum, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -36,4 +36,14 @@ export class CreateUserDto {
   @IsUUID()
   @IsOptional()
   tenant_id?: string;
+
+  @ApiProperty({
+    required: false,
+    type: [String],
+    description: 'SuperAdmin only - additional tenants the user can switch into',
+  })
+  @IsArray()
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  extra_tenant_ids?: string[];
 }

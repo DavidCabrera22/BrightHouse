@@ -47,7 +47,7 @@ const superAdminCtx: TenantContext = {
 };
 
 /** Entities that are intentionally global rather than tenant-owned. */
-const GLOBAL_ENTITIES = ['Role', 'UnitStatus', 'Tenant'];
+const GLOBAL_ENTITIES = ['Role', 'UnitStatus', 'Tenant', 'UserTenant'];
 
 /** Every tenant-owned entity, with the table its tenant_id ultimately lives on. */
 const TENANT_OWNED: [Function, string][] = [
@@ -141,6 +141,21 @@ describe('tenant isolation', () => {
       expect(sql).toContain('INNER JOIN "units" "__tenant_1"');
       expect(sql).toContain('INNER JOIN "projects" "__tenant_2"');
       expect(sql).toContain('"__tenant_2"."tenant_id" = :__tenantId');
+    });
+
+    it.each([User, DayTask, AuditLog])(
+      '%p also accepts users that belong to the tenant through user_tenants',
+      (entity: any) => {
+        const qb = scope.scoped(entity, 'entity', tenantCtx);
+        expect(qb.getQuery()).toMatch(
+          /EXISTS \(SELECT 1 FROM user_tenants __member WHERE __member.user_id = "[\w]+"."id" AND __member.tenant_id = :__memberTenantId\)/,
+        );
+        expect(qb.getParameters().__memberTenantId).toBe(TENANT_A);
+      },
+    );
+
+    it('does not add the membership clause to entities owned by a project', () => {
+      expect(scope.scoped(Unit, 'entity', tenantCtx).getQuery()).not.toContain('user_tenants');
     });
 
     it('leaves SuperAdmin queries unfiltered', () => {

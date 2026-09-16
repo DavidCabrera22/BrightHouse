@@ -27,6 +27,7 @@ interface User {
   project_id?: string;
   project?: Project;
   tenant_id?: string;
+  extra_tenant_ids?: string[];
   created_at?: string;
 }
 
@@ -39,6 +40,7 @@ const emptyForm = {
   project_id: '',
   status: 'active',
   tenant_id: '',
+  extra_tenant_ids: [] as string[],
 };
 
 const roleColors: Record<string, string> = {
@@ -134,6 +136,7 @@ const UsersPage: React.FC = () => {
       project_id: u.project_id || '',
       status: u.status || 'active',
       tenant_id: u.tenant_id || '',
+      extra_tenant_ids: u.extra_tenant_ids || [],
     });
     setFormError('');
     setShowModal(true);
@@ -152,6 +155,9 @@ const UsersPage: React.FC = () => {
     };
     if (form.project_id) payload.project_id = form.project_id;
     if (isSuperAdmin && form.tenant_id) payload.tenant_id = form.tenant_id;
+    if (isSuperAdmin) {
+      payload.extra_tenant_ids = form.extra_tenant_ids.filter((id) => id !== form.tenant_id);
+    }
     // Se manda siempre: vaciar el campo en una edición tiene que borrar el teléfono.
     payload.phone = form.phone.trim() || null;
     // On edit an empty field means "leave the current password alone".
@@ -290,6 +296,11 @@ const UsersPage: React.FC = () => {
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         {tenantName(u.tenant_id) || (
                           <span className="text-amber-500 font-medium">Sin empresa asignada</span>
+                        )}
+                        {(u.extra_tenant_ids ?? []).length > 0 && (
+                          <span className="ml-1">
+                            + {(u.extra_tenant_ids ?? []).map((id) => tenantName(id) || id).join(', ')}
+                          </span>
                         )}
                       </p>
                     )}
@@ -485,6 +496,42 @@ const UsersPage: React.FC = () => {
                   <p className="text-xs text-slate-400 mt-1">
                     Un usuario sin empresa no podrá acceder al CRM, salvo que su rol sea Super Admin.
                   </p>
+
+                  {tenants.some((t) => t.id !== form.tenant_id) && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        Empresas adicionales <span className="text-slate-400 font-normal">(opcional)</span>
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {tenants
+                          .filter((t) => t.id !== form.tenant_id)
+                          .map((t) => (
+                            <label
+                              key={t.id}
+                              className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.extra_tenant_ids.includes(t.id)}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    extra_tenant_ids: e.target.checked
+                                      ? [...form.extra_tenant_ids, t.id]
+                                      : form.extra_tenant_ids.filter((id) => id !== t.id),
+                                  })
+                                }
+                                className="rounded border-slate-300"
+                              />
+                              {t.name}
+                            </label>
+                          ))}
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">
+                        El usuario podrá cambiar a estas empresas desde el menú lateral.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

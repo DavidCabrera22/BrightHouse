@@ -30,6 +30,8 @@ import { DayTask } from '../../my-day/entities/day-task.entity';
  * Entities deliberately absent are global, not tenant-owned:
  *   Role, UnitStatus  - shared catalogs
  *   Tenant            - the tenant registry itself (SuperAdmin only)
+ *   UserTenant        - user-to-tenant memberships (SuperAdmin only); consulted
+ *                       by TenantScopeService itself for every User-owned row
  */
 const TENANT_PATHS = new Map<Function, string[]>([
   [Project, []],
